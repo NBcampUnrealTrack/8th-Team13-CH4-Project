@@ -25,3 +25,7 @@ Saved/
 
 # Keep project documentation
 CLAUDE.md
+
+# Individual work folder (folder exists in repo, but contents are ignored)
+Content/individualFolder/*
+!Content/individualFolder/.gitkeep
