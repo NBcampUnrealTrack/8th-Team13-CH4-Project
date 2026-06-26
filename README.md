@@ -38,7 +38,7 @@
 ---
 
 ## 🛠️ 개발 및 기술 스택
-* **엔진:** Unreal Engine 5
+* **엔진:** Unreal Engine 5.5.4
 * **핵심 기술:** **GAS (Gameplay Ability System)**
   * 캐릭터의 스탯(Attributes), 버프/디버프(Gameplay Effects), 전투 및 특수 액션(Gameplay Abilities) 등 핵심 게임 로직을 GAS를 활용하여 체계적이고 안정적인 멀티플레이 환경으로 구축합니다.
 * **네트워크 아키텍처:** 데디케이트 서버 기반의 멀티플레이 루프 및 복제(Replication), 로컬 예측(Local Prediction) 적용
@@ -49,4 +49,3 @@
 ## 👥 팀 협업 및 규칙
 * **데일리 스크럼 (Daily Scrum):** **매일 오전 10:00** 진행
   * 전일 작업 공유, 오늘 목표 설정 및 장애 요인 토론
-* **작업 및 설계 아카이브:** [week1_progress.md](file:///C:/Users/gimunkwon/Desktop/Ch4TeamProject/Gang_Squirrel/Docs/week1_progress.md) 파일에서 설계 방향 및 1주차 진행 상황을 확인할 수 있습니다.
