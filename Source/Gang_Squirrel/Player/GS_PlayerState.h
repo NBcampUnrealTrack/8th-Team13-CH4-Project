@@ -6,6 +6,8 @@
 #include "GS_PlayerState.generated.h"
 
 
+class UGS_PlayerAttributeSet;
+
 UCLASS()
 class GANG_SQUIRREL_API AGS_PlayerState : public APlayerState, public IAbilitySystemInterface
 {
@@ -18,4 +20,6 @@ public:
 private:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComp;
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UGS_PlayerAttributeSet> AttributeSet;
 };
