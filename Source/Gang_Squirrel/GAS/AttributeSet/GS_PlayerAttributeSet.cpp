@@ -45,10 +45,11 @@ void UGS_PlayerAttributeSet::PostGameplayEffectExecute(const struct FGameplayEff
 	// Damage Logic
 	else if (ChangeAttribute == GetDamageAttribute())
 	{
-		UE_LOG(LogTemp,Warning,TEXT("DamageApply"));
 		const float DamageValue = GetDamage();
+		UE_LOG(LogTemp,Warning,TEXT("DamageApply - DamageValue : %f, CurrentHealth: %f"),DamageValue, GetHealth());
 		SetDamage(0.f);
 		SetHealth(FMath::Clamp(GetHealth() - DamageValue,0.f, GetMaxHealth()));
+		UE_LOG(LogTemp, Warning, TEXT("DamageApply - HealthAfter: %f"),GetHealth());
 	}
 #pragma endregion 
 }
