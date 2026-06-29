@@ -21,23 +21,32 @@ void UGA_Attack::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 		EndAbility(Handle,ActorInfo,ActivationInfo,true,true);
 		return;
 	}
+	
 	HitActors.Empty();
 	
-	EnableAttackCollision(Character,true);
-	
-	// TODO::Make AttackMontage
-	if (AM_Attack)
+	// Server
+	if (ActorInfo->IsNetAuthority())
 	{
-		UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-			this,NAME_None,AM_Attack);
-		
-		MontageTask->OnCompleted.AddDynamic(this, &UGA_Attack::K2_EndAbility);
-		MontageTask->OnInterrupted.AddDynamic(this, &UGA_Attack::K2_EndAbility);
-		MontageTask->OnCancelled.AddDynamic(this, &UGA_Attack::K2_EndAbility);
-		
-		MontageTask->ReadyForActivation();
+		GetAbilitySystemComponentFromActorInfo()->AbilityTargetDataSetDelegate(Handle,ActivationInfo.GetActivationPredictionKey()).AddUObject(this, &UGA_Attack::OnTargetDataReceived);
 	}
 	
+	// Client
+	if (Character->IsLocallyControlled())
+	{
+		EnableAttackCollision(Character,true);
+	}
+	
+	// AnimMontage Logic
+	if (AM_Attack)
+	{
+		UAbilityTask_PlayMontageAndWait* TaskMontage = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this,NAME_None,AM_Attack);
+		
+		TaskMontage->OnCompleted.AddDynamic(this, &UGA_Attack::K2_EndAbility);
+		TaskMontage->OnCancelled.AddDynamic(this, &UGA_Attack::K2_EndAbility);
+		TaskMontage->OnInterrupted.AddDynamic(this, &UGA_Attack::K2_EndAbility);
+		
+		TaskMontage->ReadyForActivation();
+	}
 }
 
 void UGA_Attack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
@@ -45,10 +54,16 @@ void UGA_Attack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGame
 {
 	AGSCharacter* Character = Cast<AGSCharacter>(GetAvatarActorFromActorInfo());
 	
-	if (Character)
+	if (Character && Character->IsLocallyControlled())
 	{
 		EnableAttackCollision(Character,false);
 	}
+	// Server
+	if (ActorInfo->IsNetAuthority())
+	{
+		GetAbilitySystemComponentFromActorInfo()->AbilityTargetDataSetDelegate(Handle,ActivationInfo.GetActivationPredictionKey()).RemoveAll(this);
+	}
+	
 	HitActors.Empty();
 	
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
@@ -58,17 +73,11 @@ void UGA_Attack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGame
 void UGA_Attack::OnAttackOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	UE_LOG(LogTemp,Warning,TEXT("Overlap - HasAuthority : %s"),GetOwningActorFromActorInfo()->HasAuthority() ? TEXT("True") : TEXT("False"));
-	
-	if (!GetOwningActorFromActorInfo()->HasAuthority())
-	{
-		return;
-	}
-	
 	if (!OtherActor || OtherActor == GetAvatarActorFromActorInfo())
 	{
 		return;
 	}
+	
 	if (HitActors.Contains(OtherActor))
 	{
 		return;
@@ -76,29 +85,16 @@ void UGA_Attack::OnAttackOverlap(UPrimitiveComponent* OverlappedComp, AActor* Ot
 	
 	HitActors.Add(OtherActor);
 	
-	UAbilitySystemComponent* HitActorASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
-	UAbilitySystemComponent* SourceASC = GetAbilitySystemComponentFromActorInfo();
+	FGameplayAbilityTargetDataHandle TargetDataHandle;
+	FGameplayAbilityTargetData_ActorArray* TargetData = new FGameplayAbilityTargetData_ActorArray();
 	
-	UE_LOG(LogTemp, Warning, TEXT("HitActorASC: %s"), HitActorASC ?TEXT("Valid") : TEXT("NULL"));                                            
-	UE_LOG(LogTemp, Warning, TEXT("SourceASC: %s"), SourceASC ? TEXT("Valid") : TEXT("NULL"));                                                          
-	UE_LOG(LogTemp, Warning, TEXT("GE_Damage: %s"), GE_Damage ? TEXT("Valid") : TEXT("NULL"));
+	TargetData->TargetActorArray.Add(OtherActor);
+	TargetDataHandle.Add(TargetData);
 	
-	if (!HitActorASC || !GE_Damage || !SourceASC)
-	{
-		return;
-	}
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+	ASC->CallServerSetReplicatedTargetData(GetCurrentAbilitySpecHandle(), GetCurrentActivationInfo().GetActivationPredictionKey()
+		,TargetDataHandle,FGameplayTag::EmptyTag,ASC->ScopedPredictionKey);
 	
-	// Who make GE
-	FGameplayEffectContextHandle ContextHandle = SourceASC->MakeEffectContext();
-	ContextHandle.AddSourceObject(this);
-	
-	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(GE_Damage,1.f,ContextHandle);
-	
-	if (SpecHandle.IsValid())
-	{
-		FActiveGameplayEffectHandle ApplyResult = SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(),HitActorASC);
-		UE_LOG(LogTemp,Warning,TEXT("ApplyResult : %s"),ApplyResult.IsValid() ? TEXT("Applied") : TEXT("Failed"));
-	}
 }
 
 void UGA_Attack::EnableAttackCollision(AGSCharacter* OwnerCharacter, bool bEnable)
@@ -126,4 +122,51 @@ void UGA_Attack::EnableAttackCollision(AGSCharacter* OwnerCharacter, bool bEnabl
 	// Enable AttackHand Collision
 	OnCollision(OwnerCharacter->GetLeftHandCollision());
 	OnCollision(OwnerCharacter->GetRightHandCollision());
+}
+
+// Server Outgoing to GE
+void UGA_Attack::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& TargetData, FGameplayTag ActivationTag)
+{
+	GetAbilitySystemComponentFromActorInfo()->ConsumeClientReplicatedTargetData(GetCurrentAbilitySpecHandle(),GetCurrentActivationInfo().GetActivationPredictionKey());
+	
+	if (!GE_Damage)
+	{
+		return;
+	}
+	
+	UAbilitySystemComponent* SourceASC = GetAbilitySystemComponentFromActorInfo();
+	
+	FGameplayEffectContextHandle Context = SourceASC->MakeEffectContext();
+	Context.AddSourceObject(this);
+	
+	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(GE_Damage, 1.f, Context);
+	if (!SpecHandle.IsValid())
+	{
+		return;
+	}
+	
+	for (const TSharedPtr<FGameplayAbilityTargetData>& Data : TargetData.Data)
+	{
+		if (!Data.IsValid())
+		{
+			continue;
+		}
+		for (TWeakObjectPtr<AActor> TargetActor : Data->GetActors())
+		{
+			if (!TargetActor.IsValid())
+			{
+				continue;
+			}
+			
+			UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor.Get());
+			
+			if (TargetASC)
+			{
+				SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(),TargetASC);
+			}
+		}
+		
+	}
+	
+	
 }
