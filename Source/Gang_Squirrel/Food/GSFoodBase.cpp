@@ -39,8 +39,28 @@ void AGSFoodBase::Tick(float DeltaTime)
 
 void AGSFoodBase::Init(UGSFoodPrimaryDataAsset* InData)
 {
+	if (!IsValid(InData)) return;
 	FoodData = InData;
 	
+	if (!IsValid(StaticMeshComponent)) return;
 	StaticMeshComponent->SetStaticMesh(FoodData->FoodMesh);
+}
+
+void AGSFoodBase::Activate()
+{
+	this->SetActorHiddenInGame(false);
+	this->SetActorEnableCollision(true);
+	this->SetActorTickEnabled(true);
+	
+	bIsActive = true;
+}
+
+void AGSFoodBase::Deactivate()
+{
+	this->SetActorHiddenInGame(true);
+	this->SetActorEnableCollision(false);
+	this->SetActorTickEnabled(false);
+	
+	bIsActive = false;
 }
 

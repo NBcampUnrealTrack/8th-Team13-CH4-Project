@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Gang_Squirrel/SpawnSystem/GSSpawnPoint.h"
 #include "GSFoodBase.generated.h"
 
 class UGSFoodPrimaryDataAsset;
@@ -18,16 +19,19 @@ public:
 	// Sets default values for this actor's properties
 	AGSFoodBase();
 	
+	bool bIsActive = false;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UGSFoodPrimaryDataAsset> FoodData;
-	
-	void Init(UGSFoodPrimaryDataAsset* InData);
 	
 	UPROPERTY()
 	TObjectPtr<UStaticMeshComponent> StaticMeshComponent;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<USphereComponent> SphereComponent;
+	
+	UPROPERTY()
+	TObjectPtr<AGSSpawnPoint> SpawnPoint;
 
 protected:
 	// Called when the game starts or when spawned
@@ -37,4 +41,8 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	void Init(UGSFoodPrimaryDataAsset* InData);
+	
+	void Activate();
+	void Deactivate();
 };

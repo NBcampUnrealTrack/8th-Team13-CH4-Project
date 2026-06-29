@@ -1,0 +1,94 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "GSSpawnManager.h"
+
+#include "GSSpawnPoint.h"
+#include "Gang_Squirrel/SpawnSystem/GSPoolSubsystem.h"
+#include "Gang_Squirrel/Food/GSFoodBase.h"
+#include "Kismet/GameplayStatics.h"
+
+// Sets default values
+AGSSpawnManager::AGSSpawnManager()
+{
+ 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	PrimaryActorTick.bCanEverTick = true;
+
+}
+
+// Called when the game starts or when spawned
+void AGSSpawnManager::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	SpawnPoints.Empty();
+	
+	PoolSubsystem = GetWorld()->GetSubsystem<UGSPoolSubsystem>();
+	if (!IsValid(PoolSubsystem)) return;
+	
+	PoolSubsystem->InitializePool(DataAssets);
+	
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(
+		GetWorld(),
+		AGSSpawnPoint::StaticClass(),
+		FoundActors
+	);
+	
+	for (AActor* Actor : FoundActors)
+	{
+		if (!IsValid(Actor)) continue;
+		SpawnPoints.Add(Cast<AGSSpawnPoint>(Actor));
+		
+		UE_LOG(LogTemp, Warning, TEXT("Spawned Actor: %s"), *Actor->GetName());
+	}
+	
+	UE_LOG(LogTemp, Warning, TEXT("SPawnPoint Count : %d"), SpawnPoints.Num());
+	
+	Spawn();
+}
+
+// Called every frame
+void AGSSpawnManager::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+}
+
+void AGSSpawnManager::Spawn()
+{
+	for (AGSSpawnPoint* SpawnPoint : SpawnPoints)
+	{
+		if (!IsValid(SpawnPoint))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("SpawnPoint null"));
+			return;
+		}
+		for (int i = 0; i < SpawnPoint->MaxSpawnAmount; ++i)
+		{
+			if (SpawnPoint->MaxSpawnAmount > SpawnPoint->CurrentFoodCount)
+			{
+				FVector CurrentLocation = SpawnPoint->GetRandomLocation();
+				AGSFoodBase* Food = PoolSubsystem->GetFood();
+				if (!IsValid(Food))
+				{
+					UE_LOG(LogTemp, Warning, TEXT("Food Null"));
+					return;
+				}
+			
+				Food->SetActorLocation(CurrentLocation);
+				Food->Activate();
+			
+				UE_LOG(LogTemp, Warning, TEXT("Spawn Actor"));
+			
+				SpawnPoint->CurrentFoodCount+=1;
+			}
+			else
+			{
+				return;
+			}
+		}
+	}
+	UE_LOG(LogTemp, Warning, TEXT("Spawn Work"));
+}
+
