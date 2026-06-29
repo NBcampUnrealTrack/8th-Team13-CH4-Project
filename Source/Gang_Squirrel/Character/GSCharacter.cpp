@@ -11,6 +11,7 @@
 #include "EnhancedInputComponent.h"
 #include "Gang_Squirrel/Player/GS_PlayerState.h"
 #include "Components/SphereComponent.h"
+#include "Gang_Squirrel/GAS/GA/Attack/GA_Attack.h"
 
 AGSCharacter::AGSCharacter()
 {
@@ -118,6 +119,12 @@ void AGSCharacter::IAInteract(const FInputActionValue& InValue)
 void AGSCharacter::IAAttack(const FInputActionValue& InValue)
 {
 	UE_LOG(LogTemp, Log, TEXT("Attack!"));
+	
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (PS)
+	{
+		PS->GetAbilitySystemComponent()->TryActivateAbilityByClass(GA_Attack);
+	}
 }
 
 void AGSCharacter::PossessedBy(AController* NewController)
@@ -128,7 +135,13 @@ void AGSCharacter::PossessedBy(AController* NewController)
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (PS)
 	{
+		// Init ASC
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS,this);
+		//Give Ability
+		if (!PS->GetAbilitySystemComponent()->FindAbilitySpecFromClass(UGA_Attack::StaticClass()))
+		{
+			PS->GetAbilitySystemComponent()->GiveAbility(FGameplayAbilitySpec(GA_Attack,1));
+		}
 	}
 }
 
@@ -140,6 +153,7 @@ void AGSCharacter::OnRep_PlayerState()
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (PS)
 	{
+		// Init ASC
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS,this);
 	}
 }

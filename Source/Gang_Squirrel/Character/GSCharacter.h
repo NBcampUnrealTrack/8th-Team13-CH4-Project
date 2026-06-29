@@ -7,6 +7,7 @@
 #include "InputActionValue.h"
 #include "GSCharacter.generated.h"
 
+class UGA_Attack;
 class UCameraComponent;
 class USpringArmComponent;
 class UInputMappingContext;
@@ -30,6 +31,10 @@ public:
 	//ASC Connection
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
+	
+	FORCEINLINE USphereComponent* GetLeftHandCollision() const {return leftHandCollision;}
+	FORCEINLINE USphereComponent* GetRightHandCollision() const {return rightHandCollision;}
+	
 
 private:
 	void IAMove(const FInputActionValue& InValue);
@@ -78,4 +83,10 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Component")
 	TObjectPtr<USphereComponent> rightHandCollision;
+	
+#pragma region GA
+protected:
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="GameplayAbility")
+	TSubclassOf<UGA_Attack> GA_Attack;
+#pragma endregion 
 };
