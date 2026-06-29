@@ -26,7 +26,9 @@ protected:
 public:
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
+	//ASC Connection
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
 
 private:
 	void IAMove(const FInputActionValue& InValue);
