@@ -10,6 +10,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
 #include "Gang_Squirrel/Player/GS_PlayerState.h"
+#include "Components/SphereComponent.h"
 
 AGSCharacter::AGSCharacter()
 {
@@ -33,6 +34,12 @@ AGSCharacter::AGSCharacter()
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm);
 	Camera->bUsePawnControlRotation = false;
+
+	leftHandCollision = CreateDefaultSubobject<USphereComponent>(TEXT("leftHandCollision"));
+	leftHandCollision->SetupAttachment(GetMesh(), TEXT("L_Hand"));
+
+	rightHandCollision = CreateDefaultSubobject<USphereComponent>(TEXT("rightHandCollision"));
+	rightHandCollision->SetupAttachment(GetMesh(), TEXT("R_Hand"));
 }
 
 void AGSCharacter::BeginPlay()
