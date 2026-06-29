@@ -15,11 +15,15 @@ AGS_FallingHazard::AGS_FallingHazard()
 	HazardMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HazardMesh"));
 	HazardMesh->SetupAttachment(SceneRoot);
 	HazardMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	HazardMesh->SetRelativeLocation(FVector::ZeroVector);
+	HazardMesh->SetRelativeRotation(FRotator::ZeroRotator);
 	HazardMesh->SetRelativeScale3D(FVector(3.f, 3.f, 0.5f));
 
 
 	DamageBox = CreateDefaultSubobject<UBoxComponent>(TEXT("DamageBox"));
 	DamageBox->SetupAttachment(HazardMesh);
+	DamageBox->SetRelativeLocation(FVector::ZeroVector);
+	DamageBox->SetRelativeRotation(FRotator::ZeroRotator);
 	DamageBox->SetBoxExtent(FVector(150.f, 150.f, 50.f));
 	DamageBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	DamageBox->SetCollisionObjectType(ECC_WorldDynamic);
