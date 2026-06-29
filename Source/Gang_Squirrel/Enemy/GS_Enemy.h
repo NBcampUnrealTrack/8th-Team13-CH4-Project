@@ -21,9 +21,8 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	
-private:
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly)
 	TObjectPtr<UAbilitySystemComponent> EnemyAbilitySystemComp;
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly)
 	TObjectPtr<UGS_PlayerAttributeSet> EnemyAttributeSet;
 };
