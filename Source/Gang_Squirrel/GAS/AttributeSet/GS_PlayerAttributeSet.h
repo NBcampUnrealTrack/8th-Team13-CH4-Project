@@ -39,6 +39,10 @@ public:
 	UPROPERTY(BlueprintReadOnly,Category="Attributes|Speed",ReplicatedUsing=OnRep_SlowSpeedMultiplier)
 	FGameplayAttributeData SlowSpeedMultiplier;
 	ATTRIBUTE_ACCESSORS(ThisClass,SlowSpeedMultiplier)
+	// Combat Data
+	UPROPERTY(BlueprintReadOnly,Category="Attributes|Combat")
+	FGameplayAttributeData Damage;
+	ATTRIBUTE_ACCESSORS(ThisClass,Damage);
 #pragma endregion 
 	
 protected:
