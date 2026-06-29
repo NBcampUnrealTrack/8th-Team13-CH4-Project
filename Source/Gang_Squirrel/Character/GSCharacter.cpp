@@ -65,6 +65,8 @@ void AGSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EIC->BindAction(Look, ETriggerEvent::Triggered, this, &ThisClass::IALook);
 		EIC->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
 		EIC->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+		EIC->BindAction(Interact, ETriggerEvent::Started, this, &ThisClass::IAInteract);
+		EIC->BindAction(Attack, ETriggerEvent::Started, this, &ThisClass::IAAttack);
 	}
 }
 
@@ -99,6 +101,16 @@ void AGSCharacter::IALook(const FInputActionValue& InValue)
 	//Change controller rotation
 	AddControllerYawInput(InLookVector.X);
 	AddControllerPitchInput(InLookVector.Y);
+}
+
+void AGSCharacter::IAInteract(const FInputActionValue& InValue)
+{
+	UE_LOG(LogTemp, Log, TEXT("Interact!"));
+}
+
+void AGSCharacter::IAAttack(const FInputActionValue& InValue)
+{
+	UE_LOG(LogTemp, Log, TEXT("Attack!"));
 }
 
 void AGSCharacter::PossessedBy(AController* NewController)
