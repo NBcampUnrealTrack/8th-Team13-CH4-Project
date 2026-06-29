@@ -12,6 +12,8 @@
 #include "Gang_Squirrel/Player/GS_PlayerState.h"
 #include "Components/SphereComponent.h"
 #include "Gang_Squirrel/GAS/GA/Attack/GA_Attack.h"
+#include "Components/WidgetComponent.h"
+#include "Gang_Squirrel/UI/GSPlayerNameTag.h"
 
 AGSCharacter::AGSCharacter()
 {
@@ -41,6 +43,12 @@ AGSCharacter::AGSCharacter()
 
 	rightHandCollision = CreateDefaultSubobject<USphereComponent>(TEXT("rightHandCollision"));
 	rightHandCollision->SetupAttachment(GetMesh(), TEXT("R_Hand"));
+
+	//Nickname Widget Component
+	PlayerNameTagWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("PlayerNameTagWidget"));
+	PlayerNameTagWidget->SetupAttachment(GetMesh());
+	PlayerNameTagWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 120.0f)); // 머리 위
+	PlayerNameTagWidget->SetWidgetSpace(EWidgetSpace::Screen); // 항상 카메라를 향함
 }
 
 void AGSCharacter::BeginPlay()
@@ -60,6 +68,17 @@ void AGSCharacter::BeginPlay()
 
 	}
 	
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (IsValid(PS))
+	{
+		PS->OnPlayerNameChanged.AddDynamic(this, &ThisClass::UpdateNameTag);
+
+		//If controller already has nickname.
+		if (PS->PlayerNickname.IsEmpty() == false)
+		{
+			UpdateNameTag(PS->PlayerNickname);
+		}
+	}
 }
 
 void AGSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -124,6 +143,16 @@ void AGSCharacter::IAAttack(const FInputActionValue& InValue)
 	if (PS)
 	{
 		PS->GetAbilitySystemComponent()->TryActivateAbilityByClass(GA_Attack);
+	}
+}
+
+void AGSCharacter::UpdateNameTag(const FString& Newname)
+{
+	UGSPlayerNameTag* NameTag = Cast<UGSPlayerNameTag>(PlayerNameTagWidget->GetWidget());
+
+	if (NameTag)
+	{
+		NameTag->SetNickname(Newname);
 	}
 }
 
