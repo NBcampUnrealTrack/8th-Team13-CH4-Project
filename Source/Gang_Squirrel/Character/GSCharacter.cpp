@@ -2,11 +2,14 @@
 
 
 #include "GSCharacter.h"
+
+#include "AbilitySystemComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
+#include "Gang_Squirrel/Player/GS_PlayerState.h"
 
 AGSCharacter::AGSCharacter()
 {
@@ -96,5 +99,29 @@ void AGSCharacter::IALook(const FInputActionValue& InValue)
 	//Change controller rotation
 	AddControllerYawInput(InLookVector.X);
 	AddControllerPitchInput(InLookVector.Y);
+}
+
+void AGSCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	
+	// Server
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (PS)
+	{
+		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS,this);
+	}
+}
+
+void AGSCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	
+	//Client
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (PS)
+	{
+		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS,this);
+	}
 }
 

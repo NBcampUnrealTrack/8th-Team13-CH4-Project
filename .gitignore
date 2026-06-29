@@ -1,0 +1,31 @@
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+
+*.sln
+*.suo
+*.xcodeproj
+*.xcworkspace
+*.VC.db
+*.VC.VC.opendb
+
+*.log
+*.tmp
+
+.DS_Store
+
+.vscode/
+.idea/
+
+# Visual Studio cache
+.vs/
+*.ipch
+
+# Keep project documentation
+CLAUDE.md
+
+# Individual work folder (folder exists in repo, but contents are ignored)
+Content/individualFolder/*
+!Content/individualFolder/.gitkeep
