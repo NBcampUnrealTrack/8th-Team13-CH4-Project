@@ -5,6 +5,8 @@
 #include "GameFramework/PlayerState.h"
 #include "GS_PlayerState.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerNameChanged, const FString&, NewName);
+
 
 class UGS_PlayerAttributeSet;
 
@@ -16,10 +18,27 @@ public:
 	AGS_PlayerState();
 	
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;
 	
 private:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComp;
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UGS_PlayerAttributeSet> AttributeSet;
+
+public:
+	//Input NickName
+	UPROPERTY(ReplicatedUsing = OnRep_PlayerNickname, BlueprintReadOnly, Category = "Player")
+	FString PlayerNickname;
+
+	//Changed NickName Delegate
+	FOnPlayerNameChanged OnPlayerNameChanged;
+
+public:
+	//Nickname Setting
+	void SetPlayerNickname(const FString& NewName);
+
+	UFUNCTION()
+	void OnRep_PlayerNickname();
 };

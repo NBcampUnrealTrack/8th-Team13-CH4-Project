@@ -13,6 +13,7 @@ class USpringArmComponent;
 class UInputMappingContext;
 class UInputAction;
 class USphereComponent;
+class UWidgetComponent;
 
 UCLASS()
 class GANG_SQUIRREL_API AGSCharacter : public ACharacter
@@ -37,6 +38,7 @@ public:
 	
 
 private:
+	//InputAction Function
 	void IAMove(const FInputActionValue& InValue);
 
 	void IALook(const FInputActionValue& InValue);
@@ -44,6 +46,10 @@ private:
 	void IAInteract(const FInputActionValue& InValue);
 
 	void IAAttack(const FInputActionValue& InValue);
+
+public:
+	UFUNCTION()
+	void UpdateNameTag(const FString& Newname);
 
 protected:
 
@@ -83,6 +89,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Component")
 	TObjectPtr<USphereComponent> rightHandCollision;
+
+	//Head Up Widget
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Component")
+	TObjectPtr<UWidgetComponent> PlayerNameTagWidget;
+
+#pragma endregion
 	
 #pragma region GA
 protected:
