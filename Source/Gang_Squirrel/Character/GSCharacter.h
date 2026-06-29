@@ -35,6 +35,9 @@ private:
 
 	void IALook(const FInputActionValue& InValue);
 
+	void IAInteract(const FInputActionValue& InValue);
+
+	void IAAttack(const FInputActionValue& InValue);
 
 protected:
 
@@ -58,4 +61,10 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> JumpAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> Interact;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> Attack;
 };
