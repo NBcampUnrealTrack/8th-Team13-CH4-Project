@@ -11,6 +11,7 @@ class UCameraComponent;
 class USpringArmComponent;
 class UInputMappingContext;
 class UInputAction;
+class USphereComponent;
 
 UCLASS()
 class GANG_SQUIRREL_API AGSCharacter : public ACharacter
@@ -67,4 +68,14 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> Attack;
+
+#pragma region Component
+
+protected:
+	//left right hand Collision Component 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Component")
+	TObjectPtr<USphereComponent> leftHandCollision;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Component")
+	TObjectPtr<USphereComponent> rightHandCollision;
 };
