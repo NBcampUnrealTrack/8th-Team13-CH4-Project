@@ -25,6 +25,7 @@ void UGS_PlayerAttributeSet::GetLifetimeReplicatedProps(TArray<class FLifetimePr
 
 void UGS_PlayerAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data)
 {
+	// Only Server
 	Super::PostGameplayEffectExecute(Data);
 	
 	const FGameplayAttribute& ChangeAttribute = Data.EvaluatedData.Attribute;
@@ -40,6 +41,14 @@ void UGS_PlayerAttributeSet::PostGameplayEffectExecute(const struct FGameplayEff
 	{
 		// TODO:: Test Value Change to DataStruct
 		SetSlowSpeedMultiplier(FMath::Clamp(GetSlowSpeedMultiplier(),0.1f,1.f));
+	}
+	// Damage Logic
+	else if (ChangeAttribute == GetDamageAttribute())
+	{
+		UE_LOG(LogTemp,Warning,TEXT("DamageApply"));
+		const float DamageValue = GetDamage();
+		SetDamage(0.f);
+		SetHealth(FMath::Clamp(GetHealth() - DamageValue,0.f, GetMaxHealth()));
 	}
 #pragma endregion 
 }
