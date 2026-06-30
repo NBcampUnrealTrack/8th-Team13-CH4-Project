@@ -7,6 +7,7 @@
 
 class UGS_PlayerAttributeSet;
 
+//TODO::Attach AIController, BB,BT
 UCLASS()
 class GANG_SQUIRREL_API AGS_Enemy : public ACharacter, public IAbilitySystemInterface
 {
