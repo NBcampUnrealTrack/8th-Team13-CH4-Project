@@ -288,6 +288,13 @@ void AGSCharacter::OnRep_PlayerState()
 	{
 		// Init ASC
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS,this);
+
+		PS->OnPlayerNameChanged.AddDynamic(this, &ThisClass::UpdateNameTag);
+
+		if (PS->PlayerNickname.IsEmpty() == false)
+		{
+			UpdateNameTag(PS->PlayerNickname);
+		}
 	}
 }
 
