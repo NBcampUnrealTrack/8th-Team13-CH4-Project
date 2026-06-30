@@ -17,7 +17,7 @@
 
 AGSCharacter::AGSCharacter()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
@@ -51,6 +51,28 @@ AGSCharacter::AGSCharacter()
 	PlayerNameTagWidget->SetWidgetSpace(EWidgetSpace::Screen); // 항상 카메라를 향함
 }
 
+void AGSCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (bIsRolling == false)
+	{
+		return;
+	}
+
+	RollingElapsedTime += DeltaTime;
+
+	const float RollingSpeed = RollingDistance / RollingDuration;
+	const FVector DeltaLocation = RollingDirection * RollingSpeed * DeltaTime;
+
+	AddActorWorldOffset(DeltaLocation, true);
+
+	if (RollingElapsedTime >= RollingDuration)
+	{
+		FinishRolling();
+	}
+}
+
 void AGSCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -79,6 +101,8 @@ void AGSCharacter::BeginPlay()
 			UpdateNameTag(PS->PlayerNickname);
 		}
 	}
+
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 }
 
 void AGSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -152,16 +176,48 @@ void AGSCharacter::IAAttack(const FInputActionValue& InValue)
 void AGSCharacter::IAStartSprint(const FInputActionValue& InValue)
 {
 	UE_LOG(LogTemp, Log, TEXT("Start Sprint!"));
+
+	SetSprinting(true);
+
+	if (HasAuthority() == false)
+	{
+		ServerSetSprinting(true);
+	}
 }
 
 void AGSCharacter::IAEndSprint(const FInputActionValue& InValue)
 {
 	UE_LOG(LogTemp, Log, TEXT("Complite Sprint!"));
+
+	SetSprinting(false);
+
+	if (HasAuthority() == false)
+	{
+		ServerSetSprinting(false);
+	}
 }
 
 void AGSCharacter::IARolling(const FInputActionValue& InValue)
 {
 	UE_LOG(LogTemp, Log, TEXT("Rolling!"));
+
+	if (bIsRolling)
+	{
+		return;
+	}
+	StartRolling();
+}
+
+void AGSCharacter::SetSprinting(bool bNewSprinting)
+{
+	bIsSprinting = bNewSprinting;
+
+	GetCharacterMovement()->MaxWalkSpeed = bIsSprinting ? SprintSpeed : WalkSpeed;
+}
+
+void AGSCharacter::ServerSetSprinting_Implementation(bool bNewSprinting)
+{
+	SetSprinting(bNewSprinting);
 }
 
 void AGSCharacter::UpdateNameTag(const FString& Newname)
@@ -172,6 +228,36 @@ void AGSCharacter::UpdateNameTag(const FString& Newname)
 	{
 		NameTag->SetNickname(Newname);
 	}
+}
+
+void AGSCharacter::StartRolling()
+{
+	bIsRolling = true;
+	RollingElapsedTime = 0.f;
+
+	RollingDirection = GetLastMovementInputVector();
+
+	if (RollingDirection.IsNearlyZero())
+	{
+		RollingDirection = GetActorForwardVector();
+	}
+
+	RollingDirection.Z = 0.f;
+	RollingDirection.Normalize();
+
+	if (AM_Roll)
+	{
+		PlayAnimMontage(AM_Roll);
+	}
+
+}
+
+void AGSCharacter::FinishRolling()
+{
+	bIsRolling = false;
+	RollingElapsedTime = 0.f;
+	RollingDirection = FVector::ZeroVector;
+
 }
 
 void AGSCharacter::PossessedBy(AController* NewController)
@@ -202,6 +288,13 @@ void AGSCharacter::OnRep_PlayerState()
 	{
 		// Init ASC
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS,this);
+
+		PS->OnPlayerNameChanged.AddDynamic(this, &ThisClass::UpdateNameTag);
+
+		if (PS->PlayerNickname.IsEmpty() == false)
+		{
+			UpdateNameTag(PS->PlayerNickname);
+		}
 	}
 }
 
