@@ -5,6 +5,7 @@
 #include "GameFramework/Character.h"
 #include "GS_Enemy.generated.h"
 
+class UGameplayAbility;
 class UGS_PlayerAttributeSet;
 
 //TODO::Attach AIController, BB,BT
@@ -19,6 +20,8 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	
+	FORCEINLINE TSubclassOf<UGameplayAbility> GetGA_Attack() const { return GA_Attack; }
+	
 protected:
 	virtual void BeginPlay() override;
 	
@@ -26,4 +29,6 @@ protected:
 	TObjectPtr<UAbilitySystemComponent> EnemyAbilitySystemComp;
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly)
 	TObjectPtr<UGS_PlayerAttributeSet> EnemyAttributeSet;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="GAS|GameplayAbility")
+	TSubclassOf<UGameplayAbility> GA_Attack;
 };
