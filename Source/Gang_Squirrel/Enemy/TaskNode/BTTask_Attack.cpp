@@ -30,7 +30,7 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 		return EBTNodeResult::Failed;
 	}
 	
-	ASC->TryActivateAbilityByClass(Enemy->GetGA_Attack());
+	const bool bActivated = ASC->TryActivateAbilityByClass(Enemy->GetGA_Attack());
 	
 	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
 	if (BB)
@@ -38,5 +38,5 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 		BB->SetValueAsBool(FName("bCanAttack"),false);
 	}
 	
-	return EBTNodeResult::Succeeded;
+	return EBTNodeResult::Succeeded;//bActivated ? EBTNodeResult::Succeeded : EBTNodeResult::Failed;
 }
