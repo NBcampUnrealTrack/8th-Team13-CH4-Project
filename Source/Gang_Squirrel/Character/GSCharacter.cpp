@@ -94,6 +94,9 @@ void AGSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EIC->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 		EIC->BindAction(Interact, ETriggerEvent::Started, this, &ThisClass::IAInteract);
 		EIC->BindAction(Attack, ETriggerEvent::Started, this, &ThisClass::IAAttack);
+		EIC->BindAction(Sprint, ETriggerEvent::Started, this, &ThisClass::IAStartSprint);
+		EIC->BindAction(Sprint, ETriggerEvent::Completed, this, &ThisClass::IAEndSprint);
+		EIC->BindAction(Rolling, ETriggerEvent::Started, this, &ThisClass::IARolling);
 	}
 }
 
@@ -146,6 +149,21 @@ void AGSCharacter::IAAttack(const FInputActionValue& InValue)
 	}
 }
 
+void AGSCharacter::IAStartSprint(const FInputActionValue& InValue)
+{
+	UE_LOG(LogTemp, Log, TEXT("Start Sprint!"));
+}
+
+void AGSCharacter::IAEndSprint(const FInputActionValue& InValue)
+{
+	UE_LOG(LogTemp, Log, TEXT("Complite Sprint!"));
+}
+
+void AGSCharacter::IARolling(const FInputActionValue& InValue)
+{
+	UE_LOG(LogTemp, Log, TEXT("Rolling!"));
+}
+
 void AGSCharacter::UpdateNameTag(const FString& Newname)
 {
 	UGSPlayerNameTag* NameTag = Cast<UGSPlayerNameTag>(PlayerNameTagWidget->GetWidget());
@@ -184,6 +202,13 @@ void AGSCharacter::OnRep_PlayerState()
 	{
 		// Init ASC
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS,this);
+
+		PS->OnPlayerNameChanged.AddDynamic(this, &ThisClass::UpdateNameTag);
+
+		if (PS->PlayerNickname.IsEmpty() == false)
+		{
+			UpdateNameTag(PS->PlayerNickname);
+		}
 	}
 }
 
