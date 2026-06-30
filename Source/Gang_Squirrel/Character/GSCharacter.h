@@ -47,6 +47,12 @@ private:
 
 	void IAAttack(const FInputActionValue& InValue);
 
+	void IAStartSprint(const FInputActionValue& InValue);
+
+	void IAEndSprint(const FInputActionValue& InValue);
+
+	void IARolling(const FInputActionValue& InValue);
+
 public:
 	UFUNCTION()
 	void UpdateNameTag(const FString& Newname);
@@ -54,10 +60,10 @@ public:
 protected:
 
 	//Components
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Component")
 	TObjectPtr<USpringArmComponent> SpringArm;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Component")
 	TObjectPtr<UCameraComponent> Camera;
 
 
@@ -79,6 +85,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> Attack;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> Sprint;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> Rolling;
 
 #pragma region Component
 
