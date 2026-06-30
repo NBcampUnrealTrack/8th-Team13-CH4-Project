@@ -15,15 +15,15 @@ AGS_FallingHazard::AGS_FallingHazard()
 	HazardMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HazardMesh"));
 	HazardMesh->SetupAttachment(SceneRoot);
 	HazardMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	HazardMesh->SetRelativeLocation(FVector::ZeroVector);
+	HazardMesh->SetRelativeRotation(FRotator::ZeroRotator);
 	HazardMesh->SetRelativeScale3D(FVector(3.f, 3.f, 0.5f));
 
-	WarningMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WarningMesh"));
-	WarningMesh->SetupAttachment(SceneRoot);
-	WarningMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	WarningMesh->SetRelativeScale3D(FVector(3.f, 3.f, 0.02f));
 
 	DamageBox = CreateDefaultSubobject<UBoxComponent>(TEXT("DamageBox"));
 	DamageBox->SetupAttachment(HazardMesh);
+	DamageBox->SetRelativeLocation(FVector::ZeroVector);
+	DamageBox->SetRelativeRotation(FRotator::ZeroRotator);
 	DamageBox->SetBoxExtent(FVector(150.f, 150.f, 50.f));
 	DamageBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	DamageBox->SetCollisionObjectType(ECC_WorldDynamic);
@@ -43,7 +43,6 @@ void AGS_FallingHazard::BeginPlay()
 	State = EGSFallingHazardState::Tracking;
 
 	HazardMesh->SetHiddenInGame(false);
-	WarningMesh->SetHiddenInGame(true);
 	DamageBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	GetWorldTimerManager().SetTimer(
@@ -161,11 +160,6 @@ void AGS_FallingHazard::StartWarning()
 
 	FixedDropLocation = GetActorLocation();
 
-	HazardMesh->SetHiddenInGame(true);
-
-	WarningMesh->SetHiddenInGame(false);
-	WarningMesh->SetWorldLocation(GroundLocation + FVector(0.f, 0.f, 3.f));
-
 	GetWorldTimerManager().SetTimer(
 		WarningTimerHandle,
 		this,
@@ -186,7 +180,6 @@ void AGS_FallingHazard::StartFalling()
 
 	SetActorLocation(FixedDropLocation);
 
-	WarningMesh->SetHiddenInGame(true);
 	HazardMesh->SetHiddenInGame(false);
 
 	DamageBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);

@@ -11,6 +11,9 @@
 #include "EnhancedInputComponent.h"
 #include "Gang_Squirrel/Player/GS_PlayerState.h"
 #include "Components/SphereComponent.h"
+#include "Gang_Squirrel/GAS/GA/Attack/GA_Attack.h"
+#include "Components/WidgetComponent.h"
+#include "Gang_Squirrel/UI/GSPlayerNameTag.h"
 
 AGSCharacter::AGSCharacter()
 {
@@ -40,6 +43,12 @@ AGSCharacter::AGSCharacter()
 
 	rightHandCollision = CreateDefaultSubobject<USphereComponent>(TEXT("rightHandCollision"));
 	rightHandCollision->SetupAttachment(GetMesh(), TEXT("R_Hand"));
+
+	//Nickname Widget Component
+	PlayerNameTagWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("PlayerNameTagWidget"));
+	PlayerNameTagWidget->SetupAttachment(GetMesh());
+	PlayerNameTagWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 120.0f)); // 머리 위
+	PlayerNameTagWidget->SetWidgetSpace(EWidgetSpace::Screen); // 항상 카메라를 향함
 }
 
 void AGSCharacter::BeginPlay()
@@ -59,6 +68,17 @@ void AGSCharacter::BeginPlay()
 
 	}
 	
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (IsValid(PS))
+	{
+		PS->OnPlayerNameChanged.AddDynamic(this, &ThisClass::UpdateNameTag);
+
+		//If controller already has nickname.
+		if (PS->PlayerNickname.IsEmpty() == false)
+		{
+			UpdateNameTag(PS->PlayerNickname);
+		}
+	}
 }
 
 void AGSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -74,6 +94,9 @@ void AGSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EIC->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 		EIC->BindAction(Interact, ETriggerEvent::Started, this, &ThisClass::IAInteract);
 		EIC->BindAction(Attack, ETriggerEvent::Started, this, &ThisClass::IAAttack);
+		EIC->BindAction(Sprint, ETriggerEvent::Started, this, &ThisClass::IAStartSprint);
+		EIC->BindAction(Sprint, ETriggerEvent::Completed, this, &ThisClass::IAEndSprint);
+		EIC->BindAction(Rolling, ETriggerEvent::Started, this, &ThisClass::IARolling);
 	}
 }
 
@@ -118,6 +141,37 @@ void AGSCharacter::IAInteract(const FInputActionValue& InValue)
 void AGSCharacter::IAAttack(const FInputActionValue& InValue)
 {
 	UE_LOG(LogTemp, Log, TEXT("Attack!"));
+	
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (PS)
+	{
+		PS->GetAbilitySystemComponent()->TryActivateAbilityByClass(GA_Attack);
+	}
+}
+
+void AGSCharacter::IAStartSprint(const FInputActionValue& InValue)
+{
+	UE_LOG(LogTemp, Log, TEXT("Start Sprint!"));
+}
+
+void AGSCharacter::IAEndSprint(const FInputActionValue& InValue)
+{
+	UE_LOG(LogTemp, Log, TEXT("Complite Sprint!"));
+}
+
+void AGSCharacter::IARolling(const FInputActionValue& InValue)
+{
+	UE_LOG(LogTemp, Log, TEXT("Rolling!"));
+}
+
+void AGSCharacter::UpdateNameTag(const FString& Newname)
+{
+	UGSPlayerNameTag* NameTag = Cast<UGSPlayerNameTag>(PlayerNameTagWidget->GetWidget());
+
+	if (NameTag)
+	{
+		NameTag->SetNickname(Newname);
+	}
 }
 
 void AGSCharacter::PossessedBy(AController* NewController)
@@ -128,7 +182,13 @@ void AGSCharacter::PossessedBy(AController* NewController)
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (PS)
 	{
+		// Init ASC
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS,this);
+		//Give Ability
+		if (!PS->GetAbilitySystemComponent()->FindAbilitySpecFromClass(UGA_Attack::StaticClass()))
+		{
+			PS->GetAbilitySystemComponent()->GiveAbility(FGameplayAbilitySpec(GA_Attack,1));
+		}
 	}
 }
 
@@ -140,6 +200,7 @@ void AGSCharacter::OnRep_PlayerState()
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (PS)
 	{
+		// Init ASC
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS,this);
 	}
 }

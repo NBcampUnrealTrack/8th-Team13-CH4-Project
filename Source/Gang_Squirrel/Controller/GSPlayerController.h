@@ -14,4 +14,17 @@ class GANG_SQUIRREL_API AGSPlayerController : public APlayerController
 public:
 	virtual void BeginPlay() override;
 	
+	//Call after entring nickname
+	UFUNCTION(BlueprintCallable, Category = "Player")
+	void SubmitNickname(const FString& Nickname);
+
+private:
+	UFUNCTION(Server, Reliable)
+	void ServerSetNickname(const FString& Nickname);
+
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UUserWidget> NicknameInputWidgetClass;
 };
+
+

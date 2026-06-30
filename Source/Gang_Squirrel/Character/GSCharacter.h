@@ -7,11 +7,13 @@
 #include "InputActionValue.h"
 #include "GSCharacter.generated.h"
 
+class UGA_Attack;
 class UCameraComponent;
 class USpringArmComponent;
 class UInputMappingContext;
 class UInputAction;
 class USphereComponent;
+class UWidgetComponent;
 
 UCLASS()
 class GANG_SQUIRREL_API AGSCharacter : public ACharacter
@@ -30,8 +32,13 @@ public:
 	//ASC Connection
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
+	
+	FORCEINLINE USphereComponent* GetLeftHandCollision() const {return leftHandCollision;}
+	FORCEINLINE USphereComponent* GetRightHandCollision() const {return rightHandCollision;}
+	
 
 private:
+	//InputAction Function
 	void IAMove(const FInputActionValue& InValue);
 
 	void IALook(const FInputActionValue& InValue);
@@ -40,13 +47,23 @@ private:
 
 	void IAAttack(const FInputActionValue& InValue);
 
+	void IAStartSprint(const FInputActionValue& InValue);
+
+	void IAEndSprint(const FInputActionValue& InValue);
+
+	void IARolling(const FInputActionValue& InValue);
+
+public:
+	UFUNCTION()
+	void UpdateNameTag(const FString& Newname);
+
 protected:
 
 	//Components
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Component")
 	TObjectPtr<USpringArmComponent> SpringArm;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Component")
 	TObjectPtr<UCameraComponent> Camera;
 
 
@@ -69,6 +86,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> Attack;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> Sprint;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> Rolling;
+
 #pragma region Component
 
 protected:
@@ -78,4 +101,16 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Component")
 	TObjectPtr<USphereComponent> rightHandCollision;
+
+	//Head Up Widget
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Component")
+	TObjectPtr<UWidgetComponent> PlayerNameTagWidget;
+
+#pragma endregion
+	
+#pragma region GA
+protected:
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="GameplayAbility")
+	TSubclassOf<UGA_Attack> GA_Attack;
+#pragma endregion 
 };
