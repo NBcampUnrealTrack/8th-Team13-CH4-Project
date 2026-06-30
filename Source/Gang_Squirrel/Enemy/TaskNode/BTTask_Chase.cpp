@@ -6,6 +6,7 @@
 UBTTask_Chase::UBTTask_Chase()
 {
 	NodeName = TEXT("Chase_Target");
+	bCreateNodeInstance = true;
 	TargetActorKey.AddObjectFilter(this,GET_MEMBER_NAME_CHECKED(UBTTask_Chase,TargetActorKey),AActor::StaticClass());
 }
 
@@ -25,34 +26,77 @@ EBTNodeResult::Type UBTTask_Chase::ExecuteTask(UBehaviorTreeComponent& OwnerComp
 		return EBTNodeResult::Failed;
 	}
 	
-	FAIRequestID RequestID = OwnerAIController->MoveToActor(Target,AcceptanceRadius);
+	FAIRequestID NewRequestID = OwnerAIController->MoveToActor(Target,AcceptanceRadius);
 	
-	if (RequestID.IsValid())
+	UE_LOG(LogTemp, Warning, TEXT("[Chase] ExecuteTask - RequestID: %u, Valid:%s"),(uint32)NewRequestID, NewRequestID.IsValid() ? TEXT("true") :TEXT("false"));
+	
+	if (!NewRequestID.IsValid())
 	{
-		WaitForMessage(OwnerComp, UBrainComponent::AIMessage_MoveFinished,RequestID);
-		
-		return EBTNodeResult::InProgress;
+		BB->SetValueAsBool(FName("bCanAttack"),true);
+		return EBTNodeResult::Succeeded;
 	}
 	
-	return EBTNodeResult::Failed;
+	CachedAIController = OwnerAIController;
+	CachedAIController->ReceiveMoveCompleted.AddDynamic(this,&UBTTask_Chase::OnMoveCompleted);
+	
+	return EBTNodeResult::InProgress;
 }
 
-void UBTTask_Chase::OnMessage(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, FName Message, int32 RequestID,
-	bool bSuccess)
+// When Task Wask Aborted
+EBTNodeResult::Type UBTTask_Chase::AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	Super::OnMessage(OwnerComp, NodeMemory, Message, RequestID, bSuccess);
-	
-	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
-	
-	if (bSuccess && BB)
+	if (CachedAIController)
 	{
-		// When Enemy Reached to TargetActor
-		BB->SetValueAsBool(FName("bCanAttack"),true);
-		FinishLatentTask(OwnerComp,EBTNodeResult::Succeeded);
+		CachedAIController->ReceiveMoveCompleted.RemoveDynamic(this, &UBTTask_Chase::OnMoveCompleted);
+		CachedAIController->StopMovement();
+		CachedAIController = nullptr;
+	}
+	
+	return Super::AbortTask(OwnerComp, NodeMemory);
+}
+
+void UBTTask_Chase::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult)
+{
+	if (CachedAIController)
+	{
+		CachedAIController->ReceiveMoveCompleted.RemoveDynamic(this,&UBTTask_Chase::OnMoveCompleted);
+		CachedAIController = nullptr;
+	}
+	
+	
+	Super::OnTaskFinished(OwnerComp, NodeMemory, TaskResult);
+}
+
+void UBTTask_Chase::OnMoveCompleted(FAIRequestID RequestID, EPathFollowingResult::Type Result)
+{
+	if (!CachedAIController)
+	{
+		return;
+	}
+	
+	UBehaviorTreeComponent* BTComp = Cast<UBehaviorTreeComponent>(CachedAIController->GetBrainComponent());
+	
+	if (!BTComp)
+	{
+		CachedAIController->ReceiveMoveCompleted.RemoveDynamic(this,&UBTTask_Chase::OnMoveCompleted);
+		CachedAIController = nullptr;
+		return;
+	}
+	
+	CachedAIController->ReceiveMoveCompleted.RemoveDynamic(this,&UBTTask_Chase::OnMoveCompleted);
+	CachedAIController = nullptr;
+	
+	if (Result == EPathFollowingResult::Success)
+	{
+		UBlackboardComponent* BB = BTComp->GetBlackboardComponent();
+		if (BB)
+		{
+			BB->SetValueAsBool(FName("bCanAttack"),true);
+		}
+		FinishLatentTask(*BTComp,EBTNodeResult::Succeeded);
 	}
 	else
 	{
-		FinishLatentTask(OwnerComp,EBTNodeResult::Failed);
+		FinishLatentTask(*BTComp, EBTNodeResult::Failed);
 	}
-	
-}
+} 
