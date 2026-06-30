@@ -16,6 +16,8 @@ public class Gang_Squirrel : ModuleRules
 			,"GameplayAbilities","GameplayTags","GameplayTasks"
 			// UMG Module
 			,"UMG","Slate","SlateCore"
+			// AI Module
+			,"AIModule","NavigationSystem"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
