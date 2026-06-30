@@ -14,6 +14,7 @@ class UInputMappingContext;
 class UInputAction;
 class USphereComponent;
 class UWidgetComponent;
+class UAnimMontage;
 
 UCLASS()
 class GANG_SQUIRREL_API AGSCharacter : public ACharacter
@@ -22,6 +23,7 @@ class GANG_SQUIRREL_API AGSCharacter : public ACharacter
 
 public:
 	AGSCharacter();
+	virtual void Tick(float DeltaTime) override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -52,6 +54,15 @@ private:
 	void IAEndSprint(const FInputActionValue& InValue);
 
 	void IARolling(const FInputActionValue& InValue);
+
+
+private:
+	//Sprint Function
+	void SetSprinting(bool bNewSprinting);
+
+	UFUNCTION(Server, Reliable)
+	void ServerSetSprinting(bool bNewSprinting);
+
 
 public:
 	UFUNCTION()
@@ -91,6 +102,41 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> Rolling;
+
+
+protected:
+	//Feature
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Sprint")
+	float WalkSpeed = 600.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Sprint")
+	float SprintSpeed = 900.f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Movement|Sprint")
+	uint8 bIsSprinting : 1 = false;
+
+#pragma region Animation
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Roll")
+	TObjectPtr<UAnimMontage> AM_Roll;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Roll")
+	float RollingDistance = 450.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Roll")
+	float RollingDuration = 0.6f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Animation|Roll")
+	uint8 bIsRolling : 1 = false;
+
+	UPROPERTY()
+	FVector RollingDirection = FVector::ZeroVector;
+
+	float RollingElapsedTime = 0.f;
+
+	void StartRolling();
+	void FinishRolling();
+#pragma endregion
 
 #pragma region Component
 
