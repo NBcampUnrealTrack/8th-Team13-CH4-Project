@@ -46,6 +46,22 @@ void AGSSpawnManager::BeginPlay()
 	UE_LOG(LogTemp, Warning, TEXT("SPawnPoint Count : %d"), SpawnPoints.Num());
 	
 	Spawn();
+	
+	GetWorld()->GetTimerManager().SetTimer(
+		SpawnTimer,
+		this,
+		&AGSSpawnManager::Spawn,
+		60.f,
+		true,
+		60.f
+	);
+}
+
+void AGSSpawnManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	GetWorld()->GetTimerManager().ClearTimer(SpawnTimer);
+	
+	Super::EndPlay(EndPlayReason);
 }
 
 // Called every frame
@@ -57,18 +73,29 @@ void AGSSpawnManager::Tick(float DeltaTime)
 
 void AGSSpawnManager::Spawn()
 {
+	int32 RetryCount = 0;
 	for (AGSSpawnPoint* SpawnPoint : SpawnPoints)
 	{
 		if (!IsValid(SpawnPoint))
 		{
 			UE_LOG(LogTemp, Warning, TEXT("SpawnPoint null"));
-			return;
+			continue;
 		}
 		for (int i = 0; i < SpawnPoint->MaxSpawnAmount; ++i)
 		{
+			if (RetryCount > 50)
+			{
+				return;
+			}
 			if (SpawnPoint->MaxSpawnAmount > SpawnPoint->CurrentFoodCount)
 			{
 				FVector CurrentLocation = SpawnPoint->GetRandomLocation();
+				if (bCheckArround(CurrentLocation))
+				{
+					RetryCount++;
+					continue;
+				}
+				
 				AGSFoodBase* Food = PoolSubsystem->GetFood();
 				if (!IsValid(Food))
 				{
@@ -90,5 +117,30 @@ void AGSSpawnManager::Spawn()
 		}
 	}
 	UE_LOG(LogTemp, Warning, TEXT("Spawn Work"));
+}
+
+bool AGSSpawnManager::bCheckArround(const FVector& CheckLocation) const
+{
+	TArray<AActor*> OverlappingActors;
+	TArray<AActor*> IgnoreActors;
+	
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldDynamic));
+	
+	bool bOverlap = UKismetSystemLibrary::SphereOverlapActors(
+		GetWorld(),
+		CheckLocation,
+		270.f,
+		ObjectTypes,
+		AGSFoodBase::StaticClass(),
+		IgnoreActors,
+		OverlappingActors
+		);
+	
+	if (!bOverlap)
+	{
+		return false;
+	}
+	return true;
 }
 

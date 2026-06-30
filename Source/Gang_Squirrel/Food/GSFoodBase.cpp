@@ -6,6 +6,7 @@
 #include "NaniteSceneProxy.h"
 #include "Gang_Squirrel/DataAsset/GSFoodPrimaryDataAsset.h"
 #include "Components/SphereComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 // Sets default values
 AGSFoodBase::AGSFoodBase()
@@ -13,6 +14,7 @@ AGSFoodBase::AGSFoodBase()
 	
 	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>("StaticMeshComponent");
 	RootComponent = StaticMeshComponent;
+	
 	SphereComponent = CreateDefaultSubobject<USphereComponent>("OverlapCollision");
 	SphereComponent->SetupAttachment(StaticMeshComponent);
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
@@ -63,4 +65,6 @@ void AGSFoodBase::Deactivate()
 	
 	bIsActive = false;
 }
+
+
 

@@ -30,6 +30,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<USphereComponent> SphereComponent;
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<USphereComponent> OverlapComponent;
+	
 	UPROPERTY()
 	TObjectPtr<AGSSpawnPoint> SpawnPoint;
 
@@ -45,4 +48,6 @@ public:
 	
 	void Activate();
 	void Deactivate();
+	
+	
 };

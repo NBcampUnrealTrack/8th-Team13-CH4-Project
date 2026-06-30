@@ -33,6 +33,9 @@ void AGSSpawnPoint::Tick(float DeltaTime)
 
 FVector AGSSpawnPoint::GetRandomLocation() const
 {
+	
+	
+	
 	const FVector Origin = SpawnArea->GetComponentLocation();
 	const FVector Extent = SpawnArea->GetScaledBoxExtent();
 	
