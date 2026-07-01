@@ -4,6 +4,7 @@
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Gang_Squirrel/Enemy/GS_Enemy.h"
+#include "Gang_Squirrel/GAS/GA/Attack/Enemy/GA_EnemyAttack.h"
 
 UBTTask_Attack::UBTTask_Attack()
 {
@@ -38,5 +39,5 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 		BB->SetValueAsBool(FName("bCanAttack"),false);
 	}
 	
-	return EBTNodeResult::Succeeded;//bActivated ? EBTNodeResult::Succeeded : EBTNodeResult::Failed;
+	return bActivated ? EBTNodeResult::Succeeded : EBTNodeResult::Failed;
 }
