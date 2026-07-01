@@ -88,5 +88,7 @@ void AGS_EnemyAIController::DrawDebug_SightRadius()
 	DrawDebugSphere(GetWorld(),OwnerPawn->GetActorLocation(),Sight_Config->SightRadius,32,FColor::Green,false);
 	// Lose Sense SightRadius
 	DrawDebugSphere(GetWorld(),OwnerPawn->GetActorLocation(),Sight_Config->LoseSightRadius,32,FColor::Red,false);
+	// AttackDistance
+	DrawDebugSphere(GetWorld(),OwnerPawn->GetActorLocation(),150.f,32,FColor::Red,false);
 }
 

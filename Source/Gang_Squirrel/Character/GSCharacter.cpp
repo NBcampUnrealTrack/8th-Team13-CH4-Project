@@ -14,6 +14,8 @@
 #include "Gang_Squirrel/GAS/GA/Attack/GA_Attack.h"
 #include "Components/WidgetComponent.h"
 #include "Gang_Squirrel/UI/GSPlayerNameTag.h"
+#include "Gang_Squirrel/Gang_Squirrel.h"
+#include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 
 AGSCharacter::AGSCharacter()
 {
@@ -179,7 +181,7 @@ void AGSCharacter::IAAttack(const FInputActionValue& InValue)
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (PS)
 	{
-		PS->GetAbilitySystemComponent()->TryActivateAbilityByClass(GA_Attack);
+		PS->GetAbilitySystemComponent()->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag::TAG_Ability_Attack));
 	}
 }
 
@@ -309,5 +311,11 @@ void AGSCharacter::OnRep_PlayerState()
 			UpdateNameTag(PS->PlayerNickname);
 		}
 	}
+}
+
+UAbilitySystemComponent* AGSCharacter::GetAbilitySystemComponent() const
+{
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	return PS ? PS->GetAbilitySystemComponent() : nullptr;
 }
 
