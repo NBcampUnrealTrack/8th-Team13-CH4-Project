@@ -8,5 +8,10 @@ namespace DebuffTag
 
 namespace EventTag
 {
-	UE_DEFINE_GAMEPLAY_TAG(TAG_Event_Enemy_Hit, "Event.Enemy.Hit");
+	UE_DEFINE_GAMEPLAY_TAG(TAG_Event_Enemy_Hit, "Event.Enemy.Hit")
+}
+
+namespace AbilityTag
+{
+	UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Attack,"Ability.Attack")
 }
