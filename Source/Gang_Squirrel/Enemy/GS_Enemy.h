@@ -5,6 +5,7 @@
 #include "GameFramework/Character.h"
 #include "GS_Enemy.generated.h"
 
+class UGA_EnemyAttack;
 class USphereComponent;
 class UGameplayAbility;
 class UGS_PlayerAttributeSet;
@@ -30,7 +31,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	
-	FORCEINLINE TSubclassOf<UGameplayAbility> GetGA_Attack() const { return GA_Attack; }
+	FORCEINLINE TSubclassOf<UGA_EnemyAttack> GetGA_Attack() const { return GA_Attack; }
 	
 	USphereComponent* GetCombatCollision(EHandCombatType HandType) const;
 	
@@ -43,7 +44,7 @@ protected:
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly)
 	TObjectPtr<UGS_PlayerAttributeSet> EnemyAttributeSet;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="GAS|GameplayAbility")
-	TSubclassOf<UGameplayAbility> GA_Attack;
+	TSubclassOf<UGA_EnemyAttack> GA_Attack;
 #pragma endregion
 	
 #pragma region CombatComp

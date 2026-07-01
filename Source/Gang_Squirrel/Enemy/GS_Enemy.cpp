@@ -2,6 +2,7 @@
 
 #include "AbilitySystemComponent.h"
 #include "Components/SphereComponent.h"
+#include "Gang_Squirrel/GAS/GA/Attack/Enemy/GA_EnemyAttack.h"
 #include "Gang_Squirrel/GAS/AttributeSet/GS_PlayerAttributeSet.h"
 
 
@@ -36,6 +37,7 @@ void AGS_Enemy::BeginPlay()
 	if (HasAuthority())
 	{
 		EnemyAbilitySystemComp->InitAbilityActorInfo(this,this);
+		EnemyAbilitySystemComp->GiveAbility(FGameplayAbilitySpec(GA_Attack,1));
 	}
 }
 
