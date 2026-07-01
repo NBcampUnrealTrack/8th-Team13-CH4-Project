@@ -18,6 +18,15 @@ void AGSPlayerController::BeginPlay()
 	FInputModeGameOnly IMGameOnly;
 	SetInputMode(IMGameOnly);
 
+	if (HUDWidgetClass)
+	{
+		UUserWidget* HUDWidget = CreateWidget<UUserWidget>(this, HUDWidgetClass);
+		if (HUDWidget)
+		{
+			HUDWidget->AddToViewport();
+		}
+	}
+
 	if (IsLocalController() && NicknameInputWidgetClass)
 	{
 		UUserWidget* Widget = CreateWidget<UUserWidget>(this, NicknameInputWidgetClass);
