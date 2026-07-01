@@ -64,7 +64,11 @@ void AGSCharacter::Tick(float DeltaTime)
 
 	RollingElapsedTime += DeltaTime;
 
-	const float RollingSpeed = RollingDistance / RollingDuration;
+	// GiDam - Character Scale(Z) * RollingDistance
+	const float CurrentScale = GetActorScale3D().Z;
+	const float ScaledDistance = RollingDistance * CurrentScale;
+
+	const float RollingSpeed = ScaledDistance / RollingDuration;
 	const FVector DeltaLocation = RollingDirection * RollingSpeed * DeltaTime;
 
 	AddActorWorldOffset(DeltaLocation, true);
