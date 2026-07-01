@@ -13,7 +13,7 @@ void AGS_GameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	StartMatch();
+	//StartMatch();
 }
 
 void AGS_GameModeBase::StartMatch()
@@ -50,7 +50,28 @@ void AGS_GameModeBase::EndMatch()
 	UE_LOG(LogTemp, Log, TEXT("[Server] Match Ended."))
 }
 
+void AGS_GameModeBase::NotifyPlayerReady()
+{
+	ReadyPlayerCount++;
+
+	MultiCastRPCPrintStatus(ReadyPlayerCount, GetNumPlayers());
+
+	UE_LOG(LogTemp, Warning, TEXT("[Server] Player ready : %d / %d"), ReadyPlayerCount, GetNumPlayers());
+
+
+	//Match started when all players input nickname
+	if (ReadyPlayerCount >= GetNumPlayers())
+	{
+		StartMatch();
+	}
+}
+
 void AGS_GameModeBase::OnMatchTimeExpired()
 {
 	EndMatch();
+}
+
+void AGS_GameModeBase::MultiCastRPCPrintStatus_Implementation(int32 Ready, int32 Total)
+{
+	UE_LOG(LogTemp, Log, TEXT("%d / %d 준비완료!!"), Ready, Total)
 }
