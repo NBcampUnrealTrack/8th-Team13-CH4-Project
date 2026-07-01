@@ -26,14 +26,20 @@ EBTNodeResult::Type UBTTask_Chase::ExecuteTask(UBehaviorTreeComponent& OwnerComp
 		return EBTNodeResult::Failed;
 	}
 	
-	FAIRequestID NewRequestID = OwnerAIController->MoveToActor(Target,AcceptanceRadius);
+	FAIMoveRequest MoveRequest(Target);
+	MoveRequest.SetAcceptanceRadius(AcceptanceRadius);
 	
-	UE_LOG(LogTemp, Warning, TEXT("[Chase] ExecuteTask - RequestID: %u, Valid:%s"),(uint32)NewRequestID, NewRequestID.IsValid() ? TEXT("true") :TEXT("false"));
+	const FPathFollowingRequestResult RequestResult = OwnerAIController->MoveTo(MoveRequest);
 	
-	if (!NewRequestID.IsValid())
+	if (RequestResult.Code == EPathFollowingRequestResult::AlreadyAtGoal)
 	{
 		BB->SetValueAsBool(FName("bCanAttack"),true);
 		return EBTNodeResult::Succeeded;
+	}
+	
+	if (RequestResult.Code != EPathFollowingRequestResult::RequestSuccessful)
+	{
+		return EBTNodeResult::Failed;
 	}
 	
 	CachedAIController = OwnerAIController;
@@ -69,6 +75,8 @@ void UBTTask_Chase::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 
 void UBTTask_Chase::OnMoveCompleted(FAIRequestID RequestID, EPathFollowingResult::Type Result)
 {
+	UE_LOG(LogTemp, Warning, TEXT("[Chase] OnMoveCompleted - RequestID: %u, Result: %d"),(uint32)RequestID, (int32)Result);
+	
 	if (!CachedAIController)
 	{
 		return;
