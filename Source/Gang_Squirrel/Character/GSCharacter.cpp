@@ -95,6 +95,12 @@ void AGSCharacter::BeginPlay()
 	{
 		PS->OnPlayerNameChanged.AddDynamic(this, &ThisClass::UpdateNameTag);
 
+		if (PS->OnPlayerNameChanged.IsAlreadyBound(this, &ThisClass::UpdateNameTag) == false)
+		{
+			PS->OnPlayerNameChanged.AddDynamic(this, &ThisClass::UpdateNameTag);
+		}
+
+
 		//If controller already has nickname.
 		if (PS->PlayerNickname.IsEmpty() == false)
 		{
@@ -289,7 +295,10 @@ void AGSCharacter::OnRep_PlayerState()
 		// Init ASC
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS,this);
 
-		PS->OnPlayerNameChanged.AddDynamic(this, &ThisClass::UpdateNameTag);
+		if (PS->OnPlayerNameChanged.IsAlreadyBound(this, &ThisClass::UpdateNameTag) == false)
+		{
+			PS->OnPlayerNameChanged.AddDynamic(this, &ThisClass::UpdateNameTag);
+		}
 
 		if (PS->PlayerNickname.IsEmpty() == false)
 		{
