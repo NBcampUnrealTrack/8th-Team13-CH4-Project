@@ -30,10 +30,12 @@ protected:
 	
 private:
 	bool IsFacingTarget(const AActor* Enemy, const AActor* Target)const;
-	EBTNodeResult::Type TryActivateAttack(UBehaviorTreeComponent& OwnerComp);
+	bool TryActivateAttack(UBehaviorTreeComponent& OwnerComp);
 	
 	UPROPERTY()
 	TObjectPtr<AGS_Enemy> CachedEnemy;
 	UPROPERTY()
 	TObjectPtr<AActor> CachedTarget;
+	
+	bool bAbilityActivated = false;
 };

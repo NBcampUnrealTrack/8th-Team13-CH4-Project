@@ -28,6 +28,7 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 	
 	CachedEnemy = Cast<AGS_Enemy>(OwnerAIController->GetPawn());
 	CachedTarget = Cast<AGSCharacter>(BB->GetValueAsObject(TargetActorkey.SelectedKeyName));
+	bAbilityActivated = false;
 	
 	if (!CachedEnemy || !CachedTarget)
 	{
@@ -36,7 +37,10 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 	
 	if (IsFacingTarget(CachedEnemy,CachedTarget))
 	{
-		return TryActivateAttack(OwnerComp);
+		if (!TryActivateAttack(OwnerComp))
+		{
+			return EBTNodeResult::Failed;
+		}
 	}
 	
 	return EBTNodeResult::InProgress;
@@ -52,6 +56,18 @@ void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 		return;
 	}
 	
+	if (bAbilityActivated)
+	{
+		UAbilitySystemComponent* ASC = CachedEnemy->GetAbilitySystemComponent();
+		const FGameplayAbilitySpec* Spec = ASC ? ASC->FindAbilitySpecFromClass(CachedEnemy->GetGA_Attack()) : nullptr;
+		
+		if (!Spec || !Spec->IsActive())
+		{
+			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+		}
+		return;
+	}
+	
 	const FVector ToTarget = (CachedTarget->GetActorLocation() - CachedEnemy->GetActorLocation()).GetSafeNormal2D();
 	const FRotator DesiredRotation = ToTarget.Rotation();
 	const FRotator NewRotation = FMath::RInterpTo(CachedEnemy->GetActorRotation(),DesiredRotation,DeltaSeconds,RotationInterpSpeed);
@@ -60,7 +76,10 @@ void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 	
 	if (IsFacingTarget(CachedEnemy,CachedTarget))
 	{
-		FinishLatentTask(OwnerComp,TryActivateAttack(OwnerComp));
+		if (!TryActivateAttack(OwnerComp))
+		{
+			FinishLatentTask(OwnerComp,EBTNodeResult::Failed);
+		}
 	}
 	
 }
@@ -69,6 +88,7 @@ EBTNodeResult::Type UBTTask_Attack::AbortTask(UBehaviorTreeComponent& OwnerComp,
 {
 	CachedEnemy = nullptr;
 	CachedTarget = nullptr;
+	bAbilityActivated = false;
 	return Super::AbortTask(OwnerComp, NodeMemory);
 }
 
@@ -83,12 +103,12 @@ bool UBTTask_Attack::IsFacingTarget(const AActor* Enemy, const AActor* Target) c
 	return AngleDegrees <= FacingToleranceDegrees;
 }
 
-EBTNodeResult::Type UBTTask_Attack::TryActivateAttack(UBehaviorTreeComponent& OwnerComp)
+bool UBTTask_Attack::TryActivateAttack(UBehaviorTreeComponent& OwnerComp)
 {
 	UAbilitySystemComponent* ASC = CachedEnemy->GetAbilitySystemComponent();
 	if (!ASC)
 	{
-		return EBTNodeResult::Failed;
+		return false;
 	}
 	
 	const bool bActivated = ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag::TAG_Ability_Attack));
@@ -98,5 +118,7 @@ EBTNodeResult::Type UBTTask_Attack::TryActivateAttack(UBehaviorTreeComponent& Ow
 		BB->SetValueAsBool(FName("bCanAttack"),false);
 	}
 	
-	return bActivated ? EBTNodeResult::Succeeded : EBTNodeResult::Failed;
+	bAbilityActivated = bActivated;
+	
+	return bActivated;
 }
