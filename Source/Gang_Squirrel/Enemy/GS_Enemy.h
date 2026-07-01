@@ -48,6 +48,7 @@ protected:
 #pragma endregion
 	
 #pragma region CombatComp
+	//TODO::Need to Custom CollisionChannel
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USphereComponent> SphereComp_LeftHand;
 	UPROPERTY(VisibleAnywhere)
