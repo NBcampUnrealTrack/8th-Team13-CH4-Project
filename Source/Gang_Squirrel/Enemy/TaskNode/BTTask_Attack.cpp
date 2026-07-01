@@ -5,6 +5,8 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Gang_Squirrel/Enemy/GS_Enemy.h"
 #include "Gang_Squirrel/GAS/GA/Attack/Enemy/GA_EnemyAttack.h"
+#include "Gang_Squirrel/Gang_Squirrel.h"
+#include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 
 UBTTask_Attack::UBTTask_Attack()
 {
@@ -31,7 +33,7 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 		return EBTNodeResult::Failed;
 	}
 	
-	const bool bActivated = ASC->TryActivateAbilityByClass(Enemy->GetGA_Attack());
+	const bool bActivated = ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag::TAG_Ability_Attack));
 	
 	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
 	if (BB)
