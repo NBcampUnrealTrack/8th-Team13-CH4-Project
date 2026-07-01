@@ -5,9 +5,12 @@
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Components/SphereComponent.h"
 #include "Gang_Squirrel/Character/GSCharacter.h"
+#include "Gang_Squirrel/Gang_Squirrel.h"
+#include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 
 UGA_Attack::UGA_Attack()
 {
+	AbilityTags.AddTag(AbilityTag::TAG_Ability_Attack);
 }
 
 void UGA_Attack::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AbilitySystemInterface.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
 #include "GSCharacter.generated.h"
@@ -17,7 +18,7 @@ class UWidgetComponent;
 class UAnimMontage;
 
 UCLASS()
-class GANG_SQUIRREL_API AGSCharacter : public ACharacter
+class GANG_SQUIRREL_API AGSCharacter : public ACharacter ,public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -34,6 +35,7 @@ public:
 	//ASC Connection
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	
 	FORCEINLINE USphereComponent* GetLeftHandCollision() const {return leftHandCollision;}
 	FORCEINLINE USphereComponent* GetRightHandCollision() const {return rightHandCollision;}

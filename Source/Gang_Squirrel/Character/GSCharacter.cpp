@@ -14,6 +14,8 @@
 #include "Gang_Squirrel/GAS/GA/Attack/GA_Attack.h"
 #include "Components/WidgetComponent.h"
 #include "Gang_Squirrel/UI/GSPlayerNameTag.h"
+#include "Gang_Squirrel/Gang_Squirrel.h"
+#include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 
 AGSCharacter::AGSCharacter()
 {
@@ -62,7 +64,11 @@ void AGSCharacter::Tick(float DeltaTime)
 
 	RollingElapsedTime += DeltaTime;
 
-	const float RollingSpeed = RollingDistance / RollingDuration;
+	// GiDam - Character Scale(Z) * RollingDistance
+	const float CurrentScale = GetActorScale3D().Z;
+	const float ScaledDistance = RollingDistance * CurrentScale;
+
+	const float RollingSpeed = ScaledDistance / RollingDuration;
 	const FVector DeltaLocation = RollingDirection * RollingSpeed * DeltaTime;
 
 	AddActorWorldOffset(DeltaLocation, true);
@@ -94,6 +100,12 @@ void AGSCharacter::BeginPlay()
 	if (IsValid(PS))
 	{
 		PS->OnPlayerNameChanged.AddDynamic(this, &ThisClass::UpdateNameTag);
+
+		if (PS->OnPlayerNameChanged.IsAlreadyBound(this, &ThisClass::UpdateNameTag) == false)
+		{
+			PS->OnPlayerNameChanged.AddDynamic(this, &ThisClass::UpdateNameTag);
+		}
+
 
 		//If controller already has nickname.
 		if (PS->PlayerNickname.IsEmpty() == false)
@@ -169,7 +181,7 @@ void AGSCharacter::IAAttack(const FInputActionValue& InValue)
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (PS)
 	{
-		PS->GetAbilitySystemComponent()->TryActivateAbilityByClass(GA_Attack);
+		PS->GetAbilitySystemComponent()->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag::TAG_Ability_Attack));
 	}
 }
 
@@ -289,12 +301,21 @@ void AGSCharacter::OnRep_PlayerState()
 		// Init ASC
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS,this);
 
-		PS->OnPlayerNameChanged.AddDynamic(this, &ThisClass::UpdateNameTag);
+		if (PS->OnPlayerNameChanged.IsAlreadyBound(this, &ThisClass::UpdateNameTag) == false)
+		{
+			PS->OnPlayerNameChanged.AddDynamic(this, &ThisClass::UpdateNameTag);
+		}
 
 		if (PS->PlayerNickname.IsEmpty() == false)
 		{
 			UpdateNameTag(PS->PlayerNickname);
 		}
 	}
+}
+
+UAbilitySystemComponent* AGSCharacter::GetAbilitySystemComponent() const
+{
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	return PS ? PS->GetAbilitySystemComponent() : nullptr;
 }
 
