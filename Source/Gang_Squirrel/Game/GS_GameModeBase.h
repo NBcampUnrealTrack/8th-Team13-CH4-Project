@@ -28,9 +28,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Match")
 	void EndMatch();
 
+	//Notify completed Player nickname
+	void NotifyPlayerReady();
+
 protected:
 	//Call when timer == 0.f
 	void OnMatchTimeExpired();
+
+	//Multicast 
+	UFUNCTION(NetMulticast, Unreliable)
+	void MultiCastRPCPrintStatus(int32 Ready, int32 Total);
 
 protected:
 
@@ -44,4 +51,6 @@ protected:
 private:
 	//Match Timer
 	FTimerHandle MatchTimerHandle;
+
+	int32 ReadyPlayerCount = 0;
 };
