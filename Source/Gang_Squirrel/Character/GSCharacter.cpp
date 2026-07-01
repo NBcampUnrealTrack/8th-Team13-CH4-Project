@@ -298,3 +298,9 @@ void AGSCharacter::OnRep_PlayerState()
 	}
 }
 
+UAbilitySystemComponent* AGSCharacter::GetAbilitySystemComponent() const
+{
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	return PS ? PS->GetAbilitySystemComponent() : nullptr;
+}
+
