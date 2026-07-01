@@ -5,9 +5,12 @@
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Components/SphereComponent.h"
 #include "Gang_Squirrel/Enemy/GS_Enemy.h"
+#include "Gang_Squirrel/Gang_Squirrel.h"
+#include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 
 UGA_EnemyAttack::UGA_EnemyAttack()
 {
+	AbilityTags.AddTag(AbilityTag::TAG_Ability_Attack);
 }
 
 void UGA_EnemyAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
