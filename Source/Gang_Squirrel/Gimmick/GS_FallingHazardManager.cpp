@@ -1,40 +1,53 @@
 #include "GS_FallingHazardManager.h"
 
 #include "GS_FallingHazard.h"
+#include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
-#include "GameFramework/Character.h"
 
 AGS_FallingHazardManager::AGS_FallingHazardManager()
 {
 	PrimaryActorTick.bCanEverTick = false;
+
+	bReplicates = true;
 }
 
 void AGS_FallingHazardManager::BeginPlay()
 {
 	Super::BeginPlay();
 
-	ACharacter* PlayerCharacter = UGameplayStatics::GetPlayerCharacter(this, 0);
-	TargetActor = Cast<AActor>(PlayerCharacter);
+	if (HasAuthority() == false)
+	{
+		return;
+	}
 
 	GetWorldTimerManager().SetTimer(
 		SpawnTimerHandle,
 		this,
 		&AGS_FallingHazardManager::SpawnFallingHazard,
 		SpawnInterval,
-		true
+		true,
+		FirstSpawnDelay
 	);
 }
 
 void AGS_FallingHazardManager::SpawnFallingHazard()
 {
-	if (IsValid(TargetActor) == false)
+	if (HasAuthority() == false)
 	{
 		return;
 	}
 
 	if (FallingHazardClass == nullptr)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("FallingHazardClass is nullptr."));
+		return;
+	}
+
+	AActor* TargetActor = FindTargetActor();
+	if (IsValid(TargetActor) == false)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("FallingHazard target actor is invalid."));
 		return;
 	}
 
@@ -61,4 +74,29 @@ void AGS_FallingHazardManager::SpawnFallingHazard()
 	{
 		FallingHazard->SetTargetActor(TargetActor);
 	}
+}
+
+AActor* AGS_FallingHazardManager::FindTargetActor() const
+{
+	UWorld* World = GetWorld();
+	if (IsValid(World) == false)
+	{
+		return nullptr;
+	}
+
+	TArray<AActor*> PlayerCharacters;
+
+	UGameplayStatics::GetAllActorsOfClass(
+		World,
+		ACharacter::StaticClass(),
+		PlayerCharacters
+	);
+
+	if (PlayerCharacters.Num() <= 0)
+	{
+		return nullptr;
+	}
+
+	const int32 RandomIndex = FMath::RandRange(0, PlayerCharacters.Num() - 1);
+	return PlayerCharacters[RandomIndex];
 }
