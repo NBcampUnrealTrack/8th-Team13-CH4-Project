@@ -135,6 +135,11 @@ void UGA_EnemyAttack::ApplyDamageToTarget(AActor* TargetActor)
 	}
 
 	UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
+	
+	if (IsSameTeam(GetAvatarActorFromActorInfo(),TargetActor))
+	{
+		return;
+	}
 
 	UE_LOG(LogGAS, Warning, TEXT("[GA_EnemyAttack] ApplyDamageToTarget - TargetASC:%s"), TargetASC ? TEXT("valid") : TEXT("NULL"));
 

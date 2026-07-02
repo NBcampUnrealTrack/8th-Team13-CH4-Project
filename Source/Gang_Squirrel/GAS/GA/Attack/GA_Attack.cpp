@@ -170,6 +170,10 @@ void UGA_Attack::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Ta
 			
 			if (TargetASC)
 			{
+				if (IsSameTeam(GetAvatarActorFromActorInfo(), TargetActor.Get()))
+				{
+					continue;
+				}
 				SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(),TargetASC);
 			}
 		}

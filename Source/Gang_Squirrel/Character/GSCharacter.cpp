@@ -283,6 +283,7 @@ void AGSCharacter::PossessedBy(AController* NewController)
 	{
 		// Init ASC
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS,this);
+		PS->GetAbilitySystemComponent()->AddLooseGameplayTag(TeamTag::TAG_Team_Player);
 		//Give Ability
 		if (!PS->GetAbilitySystemComponent()->FindAbilitySpecFromClass(UGA_Attack::StaticClass()))
 		{

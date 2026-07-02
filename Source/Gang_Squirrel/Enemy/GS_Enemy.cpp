@@ -39,6 +39,7 @@ void AGS_Enemy::BeginPlay()
 	if (HasAuthority())
 	{
 		EnemyAbilitySystemComp->InitAbilityActorInfo(this,this);
+		EnemyAbilitySystemComp->AddLooseGameplayTag(TeamTag::TAG_Team_Enemy);
 		EnemyAbilitySystemComp->GiveAbility(FGameplayAbilitySpec(GA_Attack,1));
 		EnemyAbilitySystemComp->GiveAbility(FGameplayAbilitySpec(GA_Death,1));
 	}
