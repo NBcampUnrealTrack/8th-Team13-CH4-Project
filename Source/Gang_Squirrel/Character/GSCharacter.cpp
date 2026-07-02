@@ -15,6 +15,7 @@
 #include "Components/WidgetComponent.h"
 #include "Gang_Squirrel/UI/GSPlayerNameTag.h"
 #include "Gang_Squirrel/Gang_Squirrel.h"
+#include "Gang_Squirrel/GAS/GA/Death/GA_PlayerDeath.h"
 #include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 
 AGSCharacter::AGSCharacter()
@@ -51,6 +52,9 @@ AGSCharacter::AGSCharacter()
 	PlayerNameTagWidget->SetupAttachment(GetMesh());
 	PlayerNameTagWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 120.0f)); // 머리 위
 	PlayerNameTagWidget->SetWidgetSpace(EWidgetSpace::Screen); // 항상 카메라를 향함
+	
+	// for AnimNotifyTick Func
+	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickMontagesAndRefreshBonesWhenPlayingMontages;
 }
 
 void AGSCharacter::Tick(float DeltaTime)
@@ -329,11 +333,19 @@ void AGSCharacter::PossessedBy(AController* NewController)
 	{
 		// Init ASC
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS,this);
+		PS->GetAbilitySystemComponent()->AddLooseGameplayTag(TeamTag::TAG_Team_Player);
 		//Give Ability
 		if (!PS->GetAbilitySystemComponent()->FindAbilitySpecFromClass(UGA_Attack::StaticClass()))
 		{
 			PS->GetAbilitySystemComponent()->GiveAbility(FGameplayAbilitySpec(GA_Attack,1));
 		}
+		if (!PS->GetAbilitySystemComponent()->FindAbilitySpecFromClass(UGA_PlayerDeath::StaticClass()))
+		{
+			PS->GetAbilitySystemComponent()->GiveAbility(FGameplayAbilitySpec(GA_Death,1));
+		}
+		
+		// When State.Dead Tag Was Attached or Detached Call to Func
+		PS->GetAbilitySystemComponent()->RegisterGameplayTagEvent(StateTag::TAG_State_Dead, EGameplayTagEventType::NewOrRemoved).AddUObject(this,&AGSCharacter::OnDeathStateTagChanged);
 	}
 }
 
@@ -357,6 +369,9 @@ void AGSCharacter::OnRep_PlayerState()
 		{
 			UpdateNameTag(PS->PlayerNickname);
 		}
+		
+		// When State.Dead Tag Was Attached or Detached Call to Func
+		PS->GetAbilitySystemComponent()->RegisterGameplayTagEvent(StateTag::TAG_State_Dead, EGameplayTagEventType::NewOrRemoved).AddUObject(this,&AGSCharacter::OnDeathStateTagChanged);
 	}
 }
 
@@ -366,3 +381,15 @@ UAbilitySystemComponent* AGSCharacter::GetAbilitySystemComponent() const
 	return PS ? PS->GetAbilitySystemComponent() : nullptr;
 }
 
+
+// GA_Death Callback Func : Temp Logic
+void AGSCharacter::OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	SetActorEnableCollision(NewCount <= 0);
+}
+
+// For After GA_Death Frozen Death Animation Func
+void AGSCharacter::NetMulticast_SetDeathPoseFrozen_Implementation(bool bFrozen)
+{
+	GetMesh()->bPauseAnims = bFrozen;
+}

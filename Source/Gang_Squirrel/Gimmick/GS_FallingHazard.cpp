@@ -37,13 +37,12 @@ AGS_FallingHazard::AGS_FallingHazard()
 	HazardMesh->SetCastShadow(false);
 
 	WarningDecal = CreateDefaultSubobject<UDecalComponent>(TEXT("WarningDecal"));
-	WarningDecal->SetupAttachment(GetRootComponent());
 	WarningDecal->DecalSize = FVector(
 		WarningDecalProjectionDepth,
 		TrackingDecalStartSize,
 		TrackingDecalStartSize
 	);
-	WarningDecal->SetRelativeRotation(FRotator(-90.f, 0.f, 0.f));
+	WarningDecal->SetWorldRotation(FRotator(-90.f, 0.f, 0.f));
 	WarningDecal->SetHiddenInGame(true);
 
 	DamageBox = CreateDefaultSubobject<UBoxComponent>(TEXT("DamageBox"));
@@ -69,6 +68,8 @@ void AGS_FallingHazard::BeginPlay()
 	State = EGSFallingHazardState::Tracking;
 
 	HazardMesh->SetHiddenInGame(false);
+
+	TrackingVisualElapsedTime = 0.f;
 	
 	if (WarningDecal)
 	{
@@ -82,6 +83,8 @@ void AGS_FallingHazard::BeginPlay()
 	{
 		return;
 	}
+
+	TrackingStartServerTime = GetServerWorldTime();
 
 	GetWorldTimerManager().SetTimer(
 		TrackingTimerHandle,
@@ -498,12 +501,10 @@ void AGS_FallingHazard::UpdateWarningDecalVisual(float DeltaTime)
 
 	if (State == EGSFallingHazardState::Tracking)
 	{
-		
-		const float CurrentServerTime = GetServerWorldTime();
-		const float ElapsedTime = CurrentServerTime - TrackingStartServerTime;
+		TrackingVisualElapsedTime += DeltaTime;
 
 		const float TrackingAlpha = FMath::Clamp(
-			ElapsedTime / FMath::Max(TrackingTime, KINDA_SMALL_NUMBER),
+			TrackingVisualElapsedTime / FMath::Max(TrackingTime, KINDA_SMALL_NUMBER),
 			0.f,
 			1.f
 		);
@@ -529,9 +530,12 @@ void AGS_FallingHazard::UpdateWarningDecalVisual(float DeltaTime)
 		);
 	}
 
-	WarningDecal->DecalSize = FVector(
+	const FVector NewDecalSize = FVector(
 		WarningDecalProjectionDepth,
 		CurrentSize,
 		CurrentSize
 	);
+
+	WarningDecal->DecalSize = NewDecalSize;
+	WarningDecal->MarkRenderStateDirty();
 }

@@ -31,6 +31,7 @@ protected:
 private:
 	bool IsFacingTarget(const AActor* Enemy, const AActor* Target)const;
 	bool TryActivateAttack(UBehaviorTreeComponent& OwnerComp);
+	bool IsTargetDead(AActor* TargetActor) const;
 	
 	UPROPERTY()
 	TObjectPtr<AGS_Enemy> CachedEnemy;

@@ -2,6 +2,7 @@
 
 #include "GameplayEffectExtension.h"
 #include "Net/UnrealNetwork.h"
+#include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 
 
 UGS_PlayerAttributeSet::UGS_PlayerAttributeSet()
@@ -46,10 +47,22 @@ void UGS_PlayerAttributeSet::PostGameplayEffectExecute(const struct FGameplayEff
 	else if (ChangeAttribute == GetDamageAttribute())
 	{
 		const float DamageValue = GetDamage();
-		UE_LOG(LogTemp,Warning,TEXT("DamageApply - DamageValue : %f, CurrentHealth: %f"),DamageValue, GetHealth());
+		// UE_LOG(LogTemp,Warning,TEXT("DamageApply - DamageValue : %f, CurrentHealth: %f"),DamageValue, GetHealth());
 		SetDamage(0.f);
 		SetHealth(FMath::Clamp(GetHealth() - DamageValue,0.f, GetMaxHealth()));
-		UE_LOG(LogTemp, Warning, TEXT("DamageApply - HealthAfter: %f"),GetHealth());
+		// UE_LOG(LogTemp, Warning, TEXT("DamageApply - HealthAfter: %f"),GetHealth());
+	}
+	
+	// Death Logic
+	if ((ChangeAttribute == GetHealthAttribute() || ChangeAttribute == GetDamageAttribute()) && GetHealth() <= 0.f)
+	{
+		if (AActor* OwnerActor = GetOwningActor())
+		{
+			if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
+			{
+				ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag::TAG_Ability_Death));
+			}
+		}
 	}
 #pragma endregion 
 }
