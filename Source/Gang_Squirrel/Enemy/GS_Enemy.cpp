@@ -3,7 +3,9 @@
 #include "AbilitySystemComponent.h"
 #include "Components/SphereComponent.h"
 #include "Gang_Squirrel/GAS/GA/Attack/Enemy/GA_EnemyAttack.h"
+#include "Gang_Squirrel/GAS/GA/Death/GA_EnemyDeath.h"
 #include "Gang_Squirrel/GAS/AttributeSet/GS_PlayerAttributeSet.h"
+#include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 
 
 AGS_Enemy::AGS_Enemy()
@@ -28,6 +30,9 @@ AGS_Enemy::AGS_Enemy()
 	SphereComp_RightHand = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent_RightHand"));
 	SphereComp_RightHand->SetupAttachment(GetMesh(), FName("R_Hand"));
 #pragma endregion
+	
+	// for AnimNotifyTick Func
+	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickMontagesAndRefreshBonesWhenPlayingMontages;
 }
 
 void AGS_Enemy::BeginPlay()
@@ -37,8 +42,12 @@ void AGS_Enemy::BeginPlay()
 	if (HasAuthority())
 	{
 		EnemyAbilitySystemComp->InitAbilityActorInfo(this,this);
+		EnemyAbilitySystemComp->AddLooseGameplayTag(TeamTag::TAG_Team_Enemy);
 		EnemyAbilitySystemComp->GiveAbility(FGameplayAbilitySpec(GA_Attack,1));
+		EnemyAbilitySystemComp->GiveAbility(FGameplayAbilitySpec(GA_Death,1));
 	}
+	
+	EnemyAbilitySystemComp->RegisterGameplayTagEvent(StateTag::TAG_State_Dead,EGameplayTagEventType::NewOrRemoved).AddUObject(this,&AGS_Enemy::OnDeathStateTagChanged);
 }
 
 void AGS_Enemy::Tick(float DeltaTime)
@@ -65,4 +74,14 @@ USphereComponent* AGS_Enemy::GetCombatCollision(EHandCombatType HandType) const
 	}
 	
 	return CombatHandComp;
+}
+
+void AGS_Enemy::OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	SetActorEnableCollision(NewCount <= 0);
+}
+
+void AGS_Enemy::NetMultiCast_FreezeDeathPose_Implementation()
+{
+	GetMesh()->bPauseAnims = true;
 }
