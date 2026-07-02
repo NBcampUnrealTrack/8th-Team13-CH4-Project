@@ -3,6 +3,7 @@
 
 #include "Gang_Squirrel/Controller/GS_StartMenuPlayerController.h"
 #include "Blueprint/UserWidget.h"
+#include "Gang_Squirrel/Game/GS_StartMenu_GameMode.h"
 
 void AGS_StartMenuPlayerController::BeginPlay()
 {
@@ -24,4 +25,18 @@ void AGS_StartMenuPlayerController::BeginPlay()
 		}
 	}
 	
+}
+
+void AGS_StartMenuPlayerController::RequestLobbyReady()
+{
+	ServerRequestLobbyReady();
+}
+
+void AGS_StartMenuPlayerController::ServerRequestLobbyReady_Implementation()
+{
+	AGS_StartMenu_GameMode* GM = Cast<AGS_StartMenu_GameMode>(GetWorld()->GetAuthGameMode());
+	if (IsValid(GM))
+	{
+		GM->OnLobbyPlayerReady();
+	}
 }

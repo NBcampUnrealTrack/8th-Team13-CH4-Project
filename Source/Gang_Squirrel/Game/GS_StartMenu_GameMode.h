@@ -14,4 +14,10 @@ class GANG_SQUIRREL_API AGS_StartMenu_GameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 	
+public:
+	void OnLobbyPlayerReady();
+
+private:
+	int32 LobbyReadyCount = 0;
+
 };
