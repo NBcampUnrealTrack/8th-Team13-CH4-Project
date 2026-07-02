@@ -11,6 +11,7 @@
 UGA_EnemyAttack::UGA_EnemyAttack()
 {
 	AbilityTags.AddTag(AbilityTag::TAG_Ability_Attack);
+	ActivationBlockedTags.AddTag(StateTag::TAG_State_Dead);
 }
 
 void UGA_EnemyAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
@@ -28,10 +29,6 @@ void UGA_EnemyAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	
 	HitActors.Empty();
 	
-	if (ActorInfo->IsNetAuthority())
-	{
-		EnableAttackCollision(Enemy,true);
-	}
 	
 	if (AM_Attack)
 	{
@@ -50,90 +47,57 @@ void UGA_EnemyAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, const 
 {
 	AGS_Enemy* Enemy = Cast<AGS_Enemy>(GetAvatarActorFromActorInfo());
 	
-	if (Enemy && ActorInfo->IsNetAuthority())
-	{
-		EnableAttackCollision(Enemy,false);
-	}
-	
 	HitActors.Empty();
 	
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void UGA_EnemyAttack::OnAttackOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void UGA_EnemyAttack::OnAttackTraceHit(AActor* HitActor)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[GA_EnemyAttack] OnAttackOverlap - Other:%s"),*GetNameSafe(OtherActor));
-	
-	if (!OtherActor || OtherActor == GetAvatarActorFromActorInfo())
+	if (!HitActor || HitActor == GetAvatarActorFromActorInfo() || HitActors.Contains(HitActor))
 	{
 		return;
 	}
 	
-	if (HitActors.Contains(OtherActor))
-	{
-		return;
-	}
-	
-	HitActors.Add(OtherActor);
-	
-	ApplyDamageToTarget(OtherActor);
-}
-
-void UGA_EnemyAttack::EnableAttackCollision(AGS_Enemy* OwnerEnemy, bool bEnable)
-{
-	UE_LOG(LogTemp, Warning, TEXT("[GA_EnemyAttack] EnableAttackCollision - bEnable:%s"), bEnable ? TEXT("true") : TEXT("false"));
-	
-	auto OnCollision = [&](USphereComponent* HandCollision)
-	{
-		if (!HandCollision)
-		{
-			UE_LOG(LogTemp, Error, TEXT("[GA_EnemyAttack] HandCollision is null!"));
-			return;
-		}
-		
-		HandCollision->SetCollisionEnabled(bEnable ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
-		
-		UE_LOG(LogTemp, Warning, TEXT("[GA_EnemyAttack] %s CollisionEnabled set to %d"),*HandCollision->GetName(), (int32)HandCollision->GetCollisionEnabled())
-		
-		if (bEnable)
-		{
-			HandCollision->OnComponentBeginOverlap.AddDynamic(this, &UGA_EnemyAttack::OnAttackOverlap);
-		}
-		else
-		{
-			HandCollision->OnComponentBeginOverlap.RemoveDynamic(this, &UGA_EnemyAttack::OnAttackOverlap);
-		}
-	};
-	
-	OnCollision(OwnerEnemy->GetCombatCollision(EHandCombatType::LeftCombatHand));
-	OnCollision(OwnerEnemy->GetCombatCollision(EHandCombatType::RightCombatHand));
+	HitActors.Add(HitActor);
+	ApplyDamageToTarget(HitActor);
 }
 
 void UGA_EnemyAttack::ApplyDamageToTarget(AActor* TargetActor)
 {
+	UE_LOG(LogGAS, Warning, TEXT("[GA_EnemyAttack] ApplyDamageToTarget - Target:%s, GE_Damage:%s"), *GetNameSafe(TargetActor), GE_Damage ? *GE_Damage->GetName() : TEXT("NULL"));
+
 	if (!GE_Damage || !TargetActor)
 	{
 		return;
 	}
-	
+
 	UAbilitySystemComponent* SourceASC = GetAbilitySystemComponentFromActorInfo();
-	
+
 	FGameplayEffectContextHandle GEContextHandle = SourceASC->MakeEffectContext();
 	GEContextHandle.AddSourceObject(this);
-	
+
 	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(GE_Damage,1.f,GEContextHandle);
-	
+
+	UE_LOG(LogGAS, Warning, TEXT("[GA_EnemyAttack] ApplyDamageToTarget - SpecHandle.IsValid:%s"), SpecHandle.IsValid() ? TEXT("true") : TEXT("false"));
+
 	if (!SpecHandle.IsValid())
 	{
 		return;
 	}
-	
+
 	UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
+	
+	if (IsSameTeam(GetAvatarActorFromActorInfo(),TargetActor))
+	{
+		return;
+	}
+
+	UE_LOG(LogGAS, Warning, TEXT("[GA_EnemyAttack] ApplyDamageToTarget - TargetASC:%s"), TargetASC ? TEXT("valid") : TEXT("NULL"));
+
 	if (TargetActor && TargetASC)
 	{
-		SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(),TargetASC);
+		FActiveGameplayEffectHandle AppliedHandle = SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(),TargetASC);
+		UE_LOG(LogGAS, Warning, TEXT("[GA_EnemyAttack] ApplyDamageToTarget - AppliedHandle.WasSuccessfullyApplied:%s"), AppliedHandle.WasSuccessfullyApplied() ? TEXT("true") : TEXT("false"));
 	}
-	
-	
 }
