@@ -109,10 +109,10 @@ protected:
 protected:
 	//Feature
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Sprint")
-	float WalkSpeed = 600.f;
+	float WalkSpeed = 50.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Sprint")
-	float SprintSpeed = 900.f;
+	float SprintSpeed = 100.f;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement|Sprint")
 	uint8 bIsSprinting : 1 = false;
