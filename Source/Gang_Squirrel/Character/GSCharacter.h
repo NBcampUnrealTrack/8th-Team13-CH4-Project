@@ -159,6 +159,10 @@ protected:
 #pragma endregion
 	
 #pragma region GA
+public:
+	UFUNCTION(NetMulticast,Reliable)
+	void NetMulticast_SetDeathPoseFrozen(bool bFrozen);
+	
 protected:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="GameplayAbility")
 	TSubclassOf<UGA_Attack> GA_Attack;

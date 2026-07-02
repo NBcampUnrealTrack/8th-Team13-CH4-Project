@@ -61,6 +61,7 @@ void UGA_PlayerDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		TaskMontage->OnCompleted.AddDynamic(this,&UGA_PlayerDeath::K2_EndAbility);
 		TaskMontage->OnInterrupted.AddDynamic(this,&UGA_PlayerDeath::K2_EndAbility);
 		TaskMontage->OnCancelled.AddDynamic(this,&UGA_PlayerDeath::K2_EndAbility);
+		TaskMontage->OnBlendOut.AddDynamic(this,&UGA_PlayerDeath::HandleDeathBlendOut);
 		
 		TaskMontage->ReadyForActivation();
 	}
@@ -106,6 +107,13 @@ void UGA_PlayerDeath::HandleRespawn()
 		return;
 	}
 
+	AGSCharacter* PlayerCharacter = Cast<AGSCharacter>(PlayerChar);
+	if (!PlayerCharacter)
+	{
+		return;
+	}
+	
+	PlayerCharacter->NetMulticast_SetDeathPoseFrozen(false);
 	PlayerChar->SetActorLocation(CachedRespawnLocation);
 	PlayerChar->SetActorRotation(CachedRespawnRotation);
 	PlayerChar->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
@@ -130,4 +138,13 @@ void UGA_PlayerDeath::HandleRespawn()
 		}
 	}
 
+}
+
+void UGA_PlayerDeath::HandleDeathBlendOut()
+{
+	if (AGSCharacter* OwnerChar = Cast<AGSCharacter>(GetAvatarActorFromActorInfo()))
+	{
+		OwnerChar->NetMulticast_SetDeathPoseFrozen(true);
+	}
+	K2_EndAbility();
 }

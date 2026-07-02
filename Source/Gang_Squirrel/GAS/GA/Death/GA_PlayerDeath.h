@@ -28,6 +28,10 @@ private:
 	//TODO:: TempLogic -> Refac to Respawn Logic
 	void HandleRespawn();
 	
+	// For AnimMontage Stop
+	UFUNCTION()
+	void HandleDeathBlendOut();
+	
 	FVector CachedRespawnLocation = FVector::ZeroVector;
 	FRotator CachedRespawnRotation = FRotator::ZeroRotator;
 	FTimerHandle RespawnTimerHandle;

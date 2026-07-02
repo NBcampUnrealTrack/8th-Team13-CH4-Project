@@ -331,9 +331,15 @@ UAbilitySystemComponent* AGSCharacter::GetAbilitySystemComponent() const
 	return PS ? PS->GetAbilitySystemComponent() : nullptr;
 }
 
+
 // GA_Death Callback Func : Temp Logic
 void AGSCharacter::OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount)
 {
 	SetActorEnableCollision(NewCount <= 0);
 }
 
+// For After GA_Death Frozen Death Animation Func
+void AGSCharacter::NetMulticast_SetDeathPoseFrozen_Implementation(bool bFrozen)
+{
+	GetMesh()->bPauseAnims = bFrozen;
+}
