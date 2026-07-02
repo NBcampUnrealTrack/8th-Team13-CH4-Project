@@ -51,17 +51,16 @@ void UGS_PlayerAttributeSet::PostGameplayEffectExecute(const struct FGameplayEff
 		SetDamage(0.f);
 		SetHealth(FMath::Clamp(GetHealth() - DamageValue,0.f, GetMaxHealth()));
 		// UE_LOG(LogTemp, Warning, TEXT("DamageApply - HealthAfter: %f"),GetHealth());
-		
-		// Death Logic
-		if (GetHealth() <= 0.f)
+	}
+	
+	// Death Logic
+	if ((ChangeAttribute == GetHealthAttribute() || ChangeAttribute == GetDamageAttribute()) && GetHealth() <= 0.f)
+	{
+		if (AActor* OwnerActor = GetOwningActor())
 		{
-			if (AActor* OwnerActor = GetOwningActor())
+			if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
 			{
-				if (UAbilitySystemComponent* ASC = OwnerActor->FindComponentByClass<UAbilitySystemComponent>())
-				{
-					ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag::TAG_Ability_Death));
-				}
-
+				ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag::TAG_Ability_Death));
 			}
 		}
 	}
