@@ -29,7 +29,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> HUDWidgetClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DEV")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MVP")
 	uint8 bSkipNicknameInputForDev : 1 = false;
 };
 
