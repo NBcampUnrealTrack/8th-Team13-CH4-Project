@@ -11,6 +11,7 @@
 UGA_Attack::UGA_Attack()
 {
 	AbilityTags.AddTag(AbilityTag::TAG_Ability_Attack);
+	ActivationBlockedTags.AddTag(StateTag::TAG_State_Dead);
 }
 
 void UGA_Attack::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,

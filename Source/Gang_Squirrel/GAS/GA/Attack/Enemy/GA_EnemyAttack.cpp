@@ -11,6 +11,7 @@
 UGA_EnemyAttack::UGA_EnemyAttack()
 {
 	AbilityTags.AddTag(AbilityTag::TAG_Ability_Attack);
+	ActivationBlockedTags.AddTag(StateTag::TAG_State_Dead);
 }
 
 void UGA_EnemyAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
