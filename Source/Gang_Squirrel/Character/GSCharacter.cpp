@@ -52,6 +52,9 @@ AGSCharacter::AGSCharacter()
 	PlayerNameTagWidget->SetupAttachment(GetMesh());
 	PlayerNameTagWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 120.0f)); // 머리 위
 	PlayerNameTagWidget->SetWidgetSpace(EWidgetSpace::Screen); // 항상 카메라를 향함
+	
+	// for AnimNotifyTick Func
+	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickMontagesAndRefreshBonesWhenPlayingMontages;
 }
 
 void AGSCharacter::Tick(float DeltaTime)

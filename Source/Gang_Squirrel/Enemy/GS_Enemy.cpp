@@ -30,6 +30,9 @@ AGS_Enemy::AGS_Enemy()
 	SphereComp_RightHand = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent_RightHand"));
 	SphereComp_RightHand->SetupAttachment(GetMesh(), FName("R_Hand"));
 #pragma endregion
+	
+	// for AnimNotifyTick Func
+	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickMontagesAndRefreshBonesWhenPlayingMontages;
 }
 
 void AGS_Enemy::BeginPlay()
