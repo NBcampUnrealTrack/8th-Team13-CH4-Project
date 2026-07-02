@@ -1,27 +1,53 @@
 #include "GS_FallingHazard.h"
 
 #include "Components/BoxComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
+#include "Components/DecalComponent.h"
+#include "GameFramework/GameStateBase.h"
+
 
 AGS_FallingHazard::AGS_FallingHazard()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
-	SetRootComponent(SceneRoot);
+	bReplicates = true;
+	SetReplicateMovement(true);
+
+	SetNetUpdateFrequency(30.f);
+	SetMinNetUpdateFrequency(15.f);
+
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetCapsuleComponent()->SetCapsuleHalfHeight(50.f);
+	GetCapsuleComponent()->SetCapsuleRadius(50.f);
+	GetCharacterMovement()->GravityScale = 0.f;
+	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+	GetCharacterMovement()->bOrientRotationToMovement = false;
 
 	HazardMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HazardMesh"));
-	HazardMesh->SetupAttachment(SceneRoot);
+	HazardMesh->SetupAttachment(GetRootComponent());
 	HazardMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	HazardMesh->SetRelativeLocation(FVector::ZeroVector);
 	HazardMesh->SetRelativeRotation(FRotator::ZeroRotator);
 	HazardMesh->SetRelativeScale3D(FVector(3.f, 3.f, 0.5f));
+	HazardMesh->SetCastShadow(false);
 
+	WarningDecal = CreateDefaultSubobject<UDecalComponent>(TEXT("WarningDecal"));
+	WarningDecal->SetupAttachment(GetRootComponent());
+	WarningDecal->DecalSize = FVector(
+		WarningDecalProjectionDepth,
+		TrackingDecalStartSize,
+		TrackingDecalStartSize
+	);
+	WarningDecal->SetRelativeRotation(FRotator(-90.f, 0.f, 0.f));
+	WarningDecal->SetHiddenInGame(true);
 
 	DamageBox = CreateDefaultSubobject<UBoxComponent>(TEXT("DamageBox"));
-	DamageBox->SetupAttachment(HazardMesh);
+	DamageBox->SetupAttachment(GetRootComponent());
 	DamageBox->SetRelativeLocation(FVector::ZeroVector);
 	DamageBox->SetRelativeRotation(FRotator::ZeroRotator);
 	DamageBox->SetBoxExtent(FVector(150.f, 150.f, 50.f));
@@ -43,7 +69,19 @@ void AGS_FallingHazard::BeginPlay()
 	State = EGSFallingHazardState::Tracking;
 
 	HazardMesh->SetHiddenInGame(false);
+	
+	if (WarningDecal)
+	{
+		WarningDecal->SetHiddenInGame(false);
+	}
+
 	DamageBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	
+	if (HasAuthority() == false)
+	{
+		return;
+	}
 
 	GetWorldTimerManager().SetTimer(
 		TrackingTimerHandle,
@@ -52,11 +90,20 @@ void AGS_FallingHazard::BeginPlay()
 		TrackingTime,
 		false
 	);
+
+	ForceNetUpdate();
 }
 
 void AGS_FallingHazard::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	UpdateWarningDecalVisual(DeltaTime);
+
+	if (HasAuthority() == false)
+	{
+		return;
+	}
 
 	if (State == EGSFallingHazardState::Tracking)
 	{
@@ -65,6 +112,8 @@ void AGS_FallingHazard::Tick(float DeltaTime)
 	else if (State == EGSFallingHazardState::Falling)
 	{
 		const FVector DeltaLocation = FVector(0.f, 0.f, -FallSpeed * DeltaTime);
+
+	
 		AddActorWorldOffset(DeltaLocation, true);
 
 		if (GetActorLocation().Z <= GroundLocation.Z + GroundCheckDistance)
@@ -76,7 +125,30 @@ void AGS_FallingHazard::Tick(float DeltaTime)
 
 void AGS_FallingHazard::SetTargetActor(AActor* InTargetActor)
 {
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
 	TargetActor = InTargetActor;
+}
+
+float AGS_FallingHazard::GetServerWorldTime() const
+{
+	UWorld* World = GetWorld();
+	if (IsValid(World) == false)
+	{
+		return 0.f;
+	}
+
+	AGameStateBase* GameState = World->GetGameState();
+	if (IsValid(GameState) == false)
+	{
+		return World->GetTimeSeconds();
+	}
+
+	
+	return GameState->GetServerWorldTimeSeconds();
 }
 
 void AGS_FallingHazard::UpdateTrackingLocation()
@@ -104,12 +176,20 @@ void AGS_FallingHazard::UpdateTrackingLocation()
 	if (FindGroundLocation(PredictLocation, FoundGroundLocation) == true)
 	{
 		GroundLocation = FoundGroundLocation;
+
 		SetActorLocation(GroundLocation + FVector(0.f, 0.f, HeightOffset));
+
 	}
 	else
 	{
 		SetActorLocation(PredictLocation + FVector(0.f, 0.f, HeightOffset));
+
+		if (WarningDecal)
+		{
+			WarningDecal->SetHiddenInGame(true);
+		}
 	}
+	
 }
 
 bool AGS_FallingHazard::FindGroundLocation(const FVector& InLocation, FVector& OutGroundLocation) const
@@ -151,6 +231,11 @@ bool AGS_FallingHazard::FindGroundLocation(const FVector& InLocation, FVector& O
 
 void AGS_FallingHazard::StartWarning()
 {
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
 	if (State != EGSFallingHazardState::Tracking)
 	{
 		return;
@@ -167,10 +252,17 @@ void AGS_FallingHazard::StartWarning()
 		WarningTime,
 		false
 	);
+
+	ForceNetUpdate();
 }
 
 void AGS_FallingHazard::StartFalling()
 {
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
 	if (State != EGSFallingHazardState::Warning)
 	{
 		return;
@@ -182,11 +274,23 @@ void AGS_FallingHazard::StartFalling()
 
 	HazardMesh->SetHiddenInGame(false);
 
+	if (WarningDecal)
+	{
+		WarningDecal->SetHiddenInGame(false);
+	}
+
 	DamageBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+
+	ForceNetUpdate();
 }
 
 void AGS_FallingHazard::FinishImpact()
 {
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
 	if (State == EGSFallingHazardState::Impact)
 	{
 		return;
@@ -197,6 +301,18 @@ void AGS_FallingHazard::FinishImpact()
 	DamageBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	SetActorLocation(GroundLocation + FVector(0.f, 0.f, GroundCheckDistance));
+
+	if (WarningDecal)
+	{
+		WarningDecal->SetHiddenInGame(false);
+		WarningDecal->SetWorldLocation(GroundLocation + FVector(0.f, 0.f, WarningDecalZOffset));
+		WarningDecal->SetWorldRotation(FRotator(-90.f, 0.f, 0.f));
+		WarningDecal->DecalSize = FVector(
+			WarningDecalProjectionDepth,
+			FallingDecalEndSize,
+			FallingDecalEndSize
+		);
+	}
 
 	UKismetSystemLibrary::PrintString(
 		this,
@@ -214,10 +330,17 @@ void AGS_FallingHazard::FinishImpact()
 		ImpactDestroyDelay,
 		false
 	);
+
+	ForceNetUpdate();
 }
 
 void AGS_FallingHazard::DestroySelf()
 {
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
 	Destroy();
 }
 
@@ -230,6 +353,12 @@ void AGS_FallingHazard::OnDamageBoxBeginOverlap(
 	const FHitResult& SweepResult
 )
 {
+
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
 	if (State != EGSFallingHazardState::Falling)
 	{
 		return;
@@ -252,6 +381,11 @@ void AGS_FallingHazard::OnDamageBoxBeginOverlap(
 
 void AGS_FallingHazard::OnHitTarget(AActor* HitActor)
 {
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
 	if (IsValid(HitActor) == false)
 	{
 		return;
@@ -265,7 +399,139 @@ void AGS_FallingHazard::OnHitTarget(AActor* HitActor)
 		FLinearColor::Yellow,
 		1.5f
 	);
+//GE
+}
 
-	// GAS 담당자가 나중에 이 함수 안에 GE 적용 로직을 연결하면 됨.
-	// 또는 인터페이스 방식으로 피격/음식 손실 처리를 연결해도 됨.
+void AGS_FallingHazard::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AGS_FallingHazard, State);
+	DOREPLIFETIME(AGS_FallingHazard, GroundLocation);
+	DOREPLIFETIME(AGS_FallingHazard, FixedDropLocation);
+	DOREPLIFETIME(AGS_FallingHazard, TrackingStartServerTime);
+}
+
+float AGS_FallingHazard::GetFallingAlpha() const
+{
+
+	if (State != EGSFallingHazardState::Falling && State != EGSFallingHazardState::Impact)
+	{
+		return 0.f;
+	}
+
+	const float StartZ = FixedDropLocation.Z;
+	const float EndZ = GroundLocation.Z + GroundCheckDistance;
+	const float CurrentZ = GetActorLocation().Z;
+
+	const float TotalDistance = StartZ - EndZ;
+
+	if (FMath::IsNearlyZero(TotalDistance))
+	{
+		return 1.f;
+	}
+
+	const float CurrentDistance = StartZ - CurrentZ;
+	const float Alpha = CurrentDistance / TotalDistance;
+
+	return FMath::Clamp(Alpha, 0.f, 1.f);
+}
+
+void AGS_FallingHazard::UpdateWarningDecalVisual(float DeltaTime)
+{
+	if (WarningDecal == nullptr)
+	{
+		return;
+	}
+
+	if (State == EGSFallingHazardState::Impact)
+	{
+		return;
+	}
+
+	const bool bShouldShowDecal =
+		State == EGSFallingHazardState::Tracking ||
+		State == EGSFallingHazardState::Warning ||
+		State == EGSFallingHazardState::Falling;
+
+	WarningDecal->SetHiddenInGame(!bShouldShowDecal);
+
+	if (bShouldShowDecal == false)
+	{
+		return;
+	}
+
+	FVector TargetDecalLocation = FVector::ZeroVector;
+
+	if (State == EGSFallingHazardState::Tracking)
+	{
+		
+		TargetDecalLocation = GetActorLocation() - FVector(0.f, 0.f, HeightOffset);
+		TargetDecalLocation.Z += WarningDecalZOffset;
+	}
+	else
+	{
+		
+		TargetDecalLocation = GroundLocation + FVector(0.f, 0.f, WarningDecalZOffset);
+	}
+
+	if (bHasInitializedDecalLocation == false)
+	{
+		CurrentDecalVisualLocation = TargetDecalLocation;
+		bHasInitializedDecalLocation = true;
+	}
+	else
+	{
+		
+		CurrentDecalVisualLocation = FMath::VInterpTo(
+			CurrentDecalVisualLocation,
+			TargetDecalLocation,
+			DeltaTime,
+			WarningDecalLocationInterpSpeed
+		);
+	}
+
+	WarningDecal->SetWorldLocation(CurrentDecalVisualLocation);
+	WarningDecal->SetWorldRotation(FRotator(-90.f, 0.f, 0.f));
+
+	float CurrentSize = TrackingDecalStartSize;
+
+	if (State == EGSFallingHazardState::Tracking)
+	{
+		
+		const float CurrentServerTime = GetServerWorldTime();
+		const float ElapsedTime = CurrentServerTime - TrackingStartServerTime;
+
+		const float TrackingAlpha = FMath::Clamp(
+			ElapsedTime / FMath::Max(TrackingTime, KINDA_SMALL_NUMBER),
+			0.f,
+			1.f
+		);
+
+		CurrentSize = FMath::Lerp(
+			TrackingDecalStartSize,
+			TrackingDecalEndSize,
+			TrackingAlpha
+		);
+	}
+	else if (State == EGSFallingHazardState::Warning)
+	{
+		CurrentSize = TrackingDecalEndSize;
+	}
+	else if (State == EGSFallingHazardState::Falling)
+	{
+		const float FallAlpha = GetFallingAlpha();
+
+		CurrentSize = FMath::Lerp(
+			TrackingDecalEndSize,
+			FallingDecalEndSize,
+			FallAlpha
+		);
+	}
+
+	WarningDecal->DecalSize = FVector(
+		WarningDecalProjectionDepth,
+		CurrentSize,
+		CurrentSize
+	);
 }
