@@ -127,7 +127,7 @@ bool UBTTask_Attack::TryActivateAttack(UBehaviorTreeComponent& OwnerComp)
 	const bool bHasDeadTag = ASC->HasMatchingGameplayTag(StateTag::TAG_State_Dead);
 	const bool bActivated = ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag::TAG_Ability_Attack));
 
-	UE_LOG(LogGAS, Warning, TEXT("[BTTask_Attack] TryActivateAttack - Enemy:%s, bHasDeadTag:%s, bActivated:%s"), *GetNameSafe(CachedEnemy), bHasDeadTag ? TEXT("true") : TEXT("false"), bActivated ? TEXT("true") : TEXT("false"));
+	// UE_LOG(LogGAS, Warning, TEXT("[BTTask_Attack] TryActivateAttack - Enemy:%s, bHasDeadTag:%s, bActivated:%s"), *GetNameSafe(CachedEnemy), bHasDeadTag ? TEXT("true") : TEXT("false"), bActivated ? TEXT("true") : TEXT("false"));
 
 	if (UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent())
 	{
