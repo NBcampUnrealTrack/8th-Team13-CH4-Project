@@ -4,6 +4,7 @@
 #include "Gang_Squirrel/GAS/GA/GA_AbilityBase.h"
 #include "GA_EnemyDeath.generated.h"
 
+
 UCLASS()
 class GANG_SQUIRREL_API UGA_EnemyDeath : public UGA_AbilityBase
 {
@@ -19,4 +20,8 @@ protected:
 protected:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Animation|Death")
 	TObjectPtr<UAnimMontage> AM_Death;
+	
+private:
+	UFUNCTION()
+	void HandleDeathBlendOut();
 };

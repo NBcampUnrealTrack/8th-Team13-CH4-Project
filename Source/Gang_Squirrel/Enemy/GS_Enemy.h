@@ -37,6 +37,9 @@ public:
 	
 	USphereComponent* GetCombatCollision(EHandCombatType HandType) const;
 	
+	UFUNCTION(NetMulticast,Reliable)
+	void NetMultiCast_FreezeDeathPose();
+	
 protected:
 	virtual void BeginPlay() override;
 	
@@ -65,3 +68,4 @@ private:
 	TObjectPtr<USphereComponent> SphereComp_RightHand;
 #pragma endregion 
 };
+

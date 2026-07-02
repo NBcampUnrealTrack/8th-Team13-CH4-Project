@@ -76,3 +76,8 @@ void AGS_Enemy::OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount)
 {
 	SetActorEnableCollision(NewCount <= 0);
 }
+
+void AGS_Enemy::NetMultiCast_FreezeDeathPose_Implementation()
+{
+	GetMesh()->bPauseAnims = true;
+}

@@ -33,6 +33,8 @@ void UGA_PlayerDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		
 		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
 		{
+			// AddReplicatedLooseGameplayTag만으로는 서버 자신의 GameplayTagCountContainer에 반영 안 됨(클라 복제용 별도 맵) - AddLooseGameplayTag로 즉시 반영 필요
+			ASC->AddLooseGameplayTag(StateTag::TAG_State_Dead);
 			ASC->AddReplicatedLooseGameplayTag(StateTag::TAG_State_Dead);
 		}
 		
@@ -89,6 +91,7 @@ void UGA_PlayerDeath::HandleRespawn()
 	
 	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
 	{
+		ASC->RemoveLooseGameplayTag(StateTag::TAG_State_Dead);
 		ASC->RemoveReplicatedLooseGameplayTag(StateTag::TAG_State_Dead);
 		
 		if (GE_Respawn)

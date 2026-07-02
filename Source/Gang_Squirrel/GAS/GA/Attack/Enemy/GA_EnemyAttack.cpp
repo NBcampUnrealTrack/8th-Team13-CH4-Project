@@ -64,7 +64,7 @@ void UGA_EnemyAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, const 
 void UGA_EnemyAttack::OnAttackOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[GA_EnemyAttack] OnAttackOverlap - Other:%s"),*GetNameSafe(OtherActor));
+	UE_LOG(LogGAS, Warning, TEXT("[GA_EnemyAttack] OnAttackOverlap - Attacker:%s, Other:%s"),*GetNameSafe(GetAvatarActorFromActorInfo()),*GetNameSafe(OtherActor));
 	
 	if (!OtherActor || OtherActor == GetAvatarActorFromActorInfo())
 	{
@@ -83,19 +83,19 @@ void UGA_EnemyAttack::OnAttackOverlap(UPrimitiveComponent* OverlappedComp, AActo
 
 void UGA_EnemyAttack::EnableAttackCollision(AGS_Enemy* OwnerEnemy, bool bEnable)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[GA_EnemyAttack] EnableAttackCollision - bEnable:%s"), bEnable ? TEXT("true") : TEXT("false"));
+	UE_LOG(LogGAS, Warning, TEXT("[GA_EnemyAttack] EnableAttackCollision - Enemy:%s, bEnable:%s"), *GetNameSafe(OwnerEnemy), bEnable ? TEXT("true") : TEXT("false"));
 	
 	auto OnCollision = [&](USphereComponent* HandCollision)
 	{
 		if (!HandCollision)
 		{
-			UE_LOG(LogTemp, Error, TEXT("[GA_EnemyAttack] HandCollision is null!"));
+			UE_LOG(LogGAS, Error, TEXT("[GA_EnemyAttack] HandCollision is null!"));
 			return;
 		}
 		
 		HandCollision->SetCollisionEnabled(bEnable ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
 		
-		UE_LOG(LogTemp, Warning, TEXT("[GA_EnemyAttack] %s CollisionEnabled set to %d"),*HandCollision->GetName(), (int32)HandCollision->GetCollisionEnabled())
+		UE_LOG(LogGAS, Warning, TEXT("[GA_EnemyAttack] %s CollisionEnabled set to %d"),*HandCollision->GetName(), (int32)HandCollision->GetCollisionEnabled())
 		
 		if (bEnable)
 		{
