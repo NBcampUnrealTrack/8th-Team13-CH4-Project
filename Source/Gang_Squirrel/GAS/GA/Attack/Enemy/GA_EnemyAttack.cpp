@@ -113,28 +113,34 @@ void UGA_EnemyAttack::EnableAttackCollision(AGS_Enemy* OwnerEnemy, bool bEnable)
 
 void UGA_EnemyAttack::ApplyDamageToTarget(AActor* TargetActor)
 {
+	UE_LOG(LogGAS, Warning, TEXT("[GA_EnemyAttack] ApplyDamageToTarget - Target:%s, GE_Damage:%s"), *GetNameSafe(TargetActor), GE_Damage ? *GE_Damage->GetName() : TEXT("NULL"));
+
 	if (!GE_Damage || !TargetActor)
 	{
 		return;
 	}
-	
+
 	UAbilitySystemComponent* SourceASC = GetAbilitySystemComponentFromActorInfo();
-	
+
 	FGameplayEffectContextHandle GEContextHandle = SourceASC->MakeEffectContext();
 	GEContextHandle.AddSourceObject(this);
-	
+
 	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(GE_Damage,1.f,GEContextHandle);
-	
+
+	UE_LOG(LogGAS, Warning, TEXT("[GA_EnemyAttack] ApplyDamageToTarget - SpecHandle.IsValid:%s"), SpecHandle.IsValid() ? TEXT("true") : TEXT("false"));
+
 	if (!SpecHandle.IsValid())
 	{
 		return;
 	}
-	
+
 	UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
+
+	UE_LOG(LogGAS, Warning, TEXT("[GA_EnemyAttack] ApplyDamageToTarget - TargetASC:%s"), TargetASC ? TEXT("valid") : TEXT("NULL"));
+
 	if (TargetActor && TargetASC)
 	{
-		SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(),TargetASC);
+		FActiveGameplayEffectHandle AppliedHandle = SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(),TargetASC);
+		UE_LOG(LogGAS, Warning, TEXT("[GA_EnemyAttack] ApplyDamageToTarget - AppliedHandle.WasSuccessfullyApplied:%s"), AppliedHandle.WasSuccessfullyApplied() ? TEXT("true") : TEXT("false"));
 	}
-	
-	
 }
