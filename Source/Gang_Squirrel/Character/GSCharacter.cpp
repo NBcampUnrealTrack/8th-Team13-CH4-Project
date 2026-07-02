@@ -66,6 +66,12 @@ void AGSCharacter::Tick(float DeltaTime)
 		return;
 	}
 
+	// 구르기 위치 이동은 서버에서만 처리
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
 	RollingElapsedTime += DeltaTime;
 
 	// GiDam - Character Scale(Z) * RollingDistance
@@ -103,8 +109,7 @@ void AGSCharacter::BeginPlay()
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (IsValid(PS))
 	{
-		PS->OnPlayerNameChanged.AddDynamic(this, &ThisClass::UpdateNameTag);
-
+		
 		if (PS->OnPlayerNameChanged.IsAlreadyBound(this, &ThisClass::UpdateNameTag) == false)
 		{
 			PS->OnPlayerNameChanged.AddDynamic(this, &ThisClass::UpdateNameTag);
@@ -221,7 +226,17 @@ void AGSCharacter::IARolling(const FInputActionValue& InValue)
 	{
 		return;
 	}
-	StartRolling();
+
+	const FVector RollDirection = GetRollingDirection();
+
+	if (HasAuthority())
+	{
+		StartRolling(RollDirection);
+	}
+	else
+	{
+		ServerStartRolling(RollDirection);
+	}
 }
 
 void AGSCharacter::SetSprinting(bool bNewSprinting)
@@ -246,26 +261,23 @@ void AGSCharacter::UpdateNameTag(const FString& Newname)
 	}
 }
 
-void AGSCharacter::StartRolling()
+void AGSCharacter::StartRolling(const FVector& InRollingDirection)
 {
+	if (bIsRolling)
+	{
+		return;
+	}
+
 	bIsRolling = true;
 	RollingElapsedTime = 0.f;
 
-	RollingDirection = GetLastMovementInputVector();
-
-	if (RollingDirection.IsNearlyZero())
-	{
-		RollingDirection = GetActorForwardVector();
-	}
-
+	RollingDirection = InRollingDirection;
 	RollingDirection.Z = 0.f;
 	RollingDirection.Normalize();
 
-	if (AM_Roll)
-	{
-		PlayAnimMontage(AM_Roll);
-	}
+	MulticastPlayRollMontage();
 
+	UE_LOG(LogTemp, Log, TEXT("Start Rolling"));
 }
 
 void AGSCharacter::FinishRolling()
@@ -274,6 +286,41 @@ void AGSCharacter::FinishRolling()
 	RollingElapsedTime = 0.f;
 	RollingDirection = FVector::ZeroVector;
 
+}
+
+FVector AGSCharacter::GetRollingDirection() const
+{
+	FVector Direction = GetLastMovementInputVector();
+
+	if (Direction.IsNearlyZero())
+	{
+		Direction = GetActorForwardVector();
+	}
+
+	Direction.Z = 0.f;
+	Direction.Normalize();
+
+	return Direction;
+}
+
+void AGSCharacter::MulticastPlayRollMontage_Implementation()
+{
+	if (AM_Roll == nullptr)
+	{
+		return;
+	}
+
+	PlayAnimMontage(AM_Roll);
+}
+
+void AGSCharacter::ServerStartRolling_Implementation(FVector_NetQuantizeNormal InRollingDirection)
+{
+	if (bIsRolling)
+	{
+		return;
+	}
+
+	StartRolling(InRollingDirection);
 }
 
 void AGSCharacter::PossessedBy(AController* NewController)

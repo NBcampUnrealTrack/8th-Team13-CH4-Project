@@ -138,8 +138,15 @@ protected:
 
 	float RollingElapsedTime = 0.f;
 
-	void StartRolling();
+	void StartRolling(const FVector& InRollingDirection);
 	void FinishRolling();
+	FVector GetRollingDirection() const;
+
+	UFUNCTION(Server, Reliable)
+	void ServerStartRolling(FVector_NetQuantizeNormal InRollingDirection);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastPlayRollMontage();
 #pragma endregion
 
 #pragma region Component
