@@ -1,5 +1,6 @@
 #include "BTTask_Attack.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
@@ -35,6 +36,11 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 		return EBTNodeResult::Failed;
 	}
 	
+	if (IsTargetDead(CachedTarget))
+	{
+		return EBTNodeResult::Failed;
+	}
+	
 	if (IsFacingTarget(CachedEnemy,CachedTarget))
 	{
 		if (!TryActivateAttack(OwnerComp))
@@ -42,6 +48,7 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 			return EBTNodeResult::Failed;
 		}
 	}
+	
 	
 	return EBTNodeResult::InProgress;
 }
@@ -51,6 +58,12 @@ void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 	Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
 	
 	if (!CachedEnemy || !CachedTarget)
+	{
+		FinishLatentTask(OwnerComp,EBTNodeResult::Failed);
+		return;
+	}
+	
+	if (IsTargetDead(CachedTarget))
 	{
 		FinishLatentTask(OwnerComp,EBTNodeResult::Failed);
 		return;
@@ -124,4 +137,16 @@ bool UBTTask_Attack::TryActivateAttack(UBehaviorTreeComponent& OwnerComp)
 	bAbilityActivated = bActivated;
 	
 	return bActivated;
+}
+
+bool UBTTask_Attack::IsTargetDead(AActor* TargetActor) const
+{
+	if (!TargetActor)
+	{
+		return false;
+	}
+	
+	UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
+	
+	return TargetASC && TargetASC->HasMatchingGameplayTag(StateTag::TAG_State_Dead);
 }
