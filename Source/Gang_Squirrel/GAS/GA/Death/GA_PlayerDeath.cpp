@@ -1,7 +1,10 @@
 #include "GA_PlayerDeath.h"
 
+#include "AbilitySystemComponent.h"
+#include "EngineUtils.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/PlayerStart.h"
 #include "Gang_Squirrel/Character/GSCharacter.h"
 #include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 
@@ -27,6 +30,14 @@ void UGA_PlayerDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	{
 		PlayerCharacter->GetCharacterMovement()->DisableMovement();
 		PlayerCharacter->SetActorEnableCollision(false);
+		
+		// TempLogic
+		for (TActorIterator<APlayerStart> It(GetWorld()); It; ++It)
+		{
+			CachedRespawnLocation = It->GetActorLocation();
+			CachedRespawnRotation = It->GetActorRotation();
+			break;
+		}
 	}
 	
 	if (AM_Death)
@@ -51,9 +62,39 @@ void UGA_PlayerDeath::EndAbility(const FGameplayAbilitySpecHandle Handle, const 
 	{
 		if (ActorInfo->IsNetAuthority())
 		{
-			
+			GetWorld()->GetTimerManager().SetTimer(RespawnTimerHandle,this,&UGA_PlayerDeath::HandleRespawn,RespawnDelay,false);
 		}
 	}
 	
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+// Temp Method
+void UGA_PlayerDeath::HandleRespawn()
+{
+	ACharacter* PlayerChar = Cast<ACharacter>(GetAvatarActorFromActorInfo());
+	if (!PlayerChar)
+	{
+		return;
+	}
+	
+	PlayerChar->SetActorLocation(CachedRespawnLocation);
+	PlayerChar->SetActorRotation(CachedRespawnRotation);
+	PlayerChar->SetActorEnableCollision(true);
+	PlayerChar->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+	
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+	{
+		if (GE_Respawn)
+		{
+			FGameplayEffectContextHandle ContextHandle = ASC->MakeEffectContext();
+			FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(GE_Respawn,1,ContextHandle);
+			
+			if (SpecHandle.IsValid())
+			{
+				ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+			}
+		}
+	}
+	
 }
