@@ -11,9 +11,9 @@ void UAnimNotifyState_AttackTrace::NotifyBegin(USkeletalMeshComponent* MeshComp,
 {
 	Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
 
-	UE_LOG(LogGAS, Warning, TEXT("[AttackTrace] NotifyBegin - MeshComp:%s, Owner:%s, HasAuthority:%s"),
-		*GetNameSafe(MeshComp), MeshComp ? *GetNameSafe(MeshComp->GetOwner()) : TEXT("N/A"),
-		(MeshComp && MeshComp->GetOwner()) ? (MeshComp->GetOwner()->HasAuthority() ? TEXT("true") : TEXT("false")) : TEXT("N/A"));
+	// UE_LOG(LogGAS, Warning, TEXT("[AttackTrace] NotifyBegin - MeshComp:%s, Owner:%s, HasAuthority:%s"),
+	// 	*GetNameSafe(MeshComp), MeshComp ? *GetNameSafe(MeshComp->GetOwner()) : TEXT("N/A"),
+	// 	(MeshComp && MeshComp->GetOwner()) ? (MeshComp->GetOwner()->HasAuthority() ? TEXT("true") : TEXT("false")) : TEXT("N/A"));
 
 	if (MeshComp)
 	{
@@ -26,12 +26,12 @@ void UAnimNotifyState_AttackTrace::NotifyTick(USkeletalMeshComponent* MeshComp, 
 {
 	Super::NotifyTick(MeshComp, Animation, FrameDeltaTime, EventReference);
 
-	UE_LOG(LogGAS, Warning, TEXT("[AttackTrace] NotifyTick - MeshComp:%s, TraceSocketName:%s"), *GetNameSafe(MeshComp), *TraceSocketName.ToString());
+	// UE_LOG(LogGAS, Warning, TEXT("[AttackTrace] NotifyTick - MeshComp:%s, TraceSocketName:%s"), *GetNameSafe(MeshComp), *TraceSocketName.ToString());
 
 	AActor* OwnerActor = MeshComp ? MeshComp->GetOwner() : nullptr;
 	if (!OwnerActor || !OwnerActor->HasAuthority())
 	{
-		UE_LOG(LogGAS, Warning, TEXT("[AttackTrace] NotifyTick - OwnerActor:%s, HasAuthority:%s (return)"), *GetNameSafe(OwnerActor), OwnerActor ? (OwnerActor->HasAuthority() ? TEXT("true") : TEXT("false")) : TEXT("N/A"));
+		// UE_LOG(LogGAS, Warning, TEXT("[AttackTrace] NotifyTick - OwnerActor:%s, HasAuthority:%s (return)"), *GetNameSafe(OwnerActor), OwnerActor ? (OwnerActor->HasAuthority() ? TEXT("true") : TEXT("false")) : TEXT("N/A"));
 		return;
 	}
 
@@ -46,8 +46,8 @@ void UAnimNotifyState_AttackTrace::NotifyTick(USkeletalMeshComponent* MeshComp, 
 	const bool bHit = MeshComp->GetWorld()->SweepMultiByChannel(
 		HitResult,PrevSocketLocation,CurrentSocketLocation,FQuat::Identity,ECC_Pawn,FCollisionShape::MakeSphere(TraceRadius),QueryParams);
 
-	UE_LOG(LogGAS, Warning, TEXT("[AttackTrace] NotifyTick - Prev:%s, Current:%s, Radius:%f, bHit:%s, NumHits:%d"),
-		*PrevSocketLocation.ToString(), *CurrentSocketLocation.ToString(), TraceRadius, bHit ? TEXT("true") : TEXT("false"), HitResult.Num());
+	// UE_LOG(LogGAS, Warning, TEXT("[AttackTrace] NotifyTick - Prev:%s, Current:%s, Radius:%f, bHit:%s, NumHits:%d"),
+	// 	*PrevSocketLocation.ToString(), *CurrentSocketLocation.ToString(), TraceRadius, bHit ? TEXT("true") : TEXT("false"), HitResult.Num());
 
 	if (bDrawDebug)
 	{
@@ -71,8 +71,8 @@ void UAnimNotifyState_AttackTrace::NotifyTick(USkeletalMeshComponent* MeshComp, 
 	UGameplayAbility* ActiveAttackAbility = nullptr;
 	for (FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities())
 	{
-		UE_LOG(LogGAS, Warning, TEXT("[AttackTrace] NotifyTick - Checking Spec Ability:%s, IsActive:%s"),
-			Spec.Ability ? *Spec.Ability->GetClass()->GetName() : TEXT("NULL"), Spec.IsActive() ? TEXT("true") : TEXT("false"));
+		// UE_LOG(LogGAS, Warning, TEXT("[AttackTrace] NotifyTick - Checking Spec Ability:%s, IsActive:%s"),
+		// 	Spec.Ability ? *Spec.Ability->GetClass()->GetName() : TEXT("NULL"), Spec.IsActive() ? TEXT("true") : TEXT("false"));
 
 		if (Spec.IsActive() && Spec.Ability && Spec.Ability->AbilityTags.HasTag(AbilityTag::TAG_Ability_Attack))
 		{
@@ -81,12 +81,12 @@ void UAnimNotifyState_AttackTrace::NotifyTick(USkeletalMeshComponent* MeshComp, 
 		}
 	}
 
-	UE_LOG(LogGAS, Warning, TEXT("[AttackTrace] NotifyTick - ActiveAttackAbility:%s"), *GetNameSafe(ActiveAttackAbility));
+	// UE_LOG(LogGAS, Warning, TEXT("[AttackTrace] NotifyTick - ActiveAttackAbility:%s"), *GetNameSafe(ActiveAttackAbility));
 
 	IGA_AttackTraceInterface* TraceInstigator = Cast<IGA_AttackTraceInterface>(ActiveAttackAbility);
 	if (!TraceInstigator)
 	{
-		UE_LOG(LogGAS, Error, TEXT("[AttackTrace] NotifyTick - Cast to IGA_AttackTraceInterface FAILED"));
+		// UE_LOG(LogGAS, Error, TEXT("[AttackTrace] NotifyTick - Cast to IGA_AttackTraceInterface FAILED"));
 		return;
 	}
 
@@ -94,7 +94,7 @@ void UAnimNotifyState_AttackTrace::NotifyTick(USkeletalMeshComponent* MeshComp, 
 	{
 		if (AActor* HitActor = Hit.GetActor())
 		{
-			UE_LOG(LogGAS, Warning, TEXT("[AttackTrace] NotifyTick - OnAttackTraceHit calling with HitActor:%s"), *GetNameSafe(HitActor));
+			// UE_LOG(LogGAS, Warning, TEXT("[AttackTrace] NotifyTick - OnAttackTraceHit calling with HitActor:%s"), *GetNameSafe(HitActor));
 			TraceInstigator->OnAttackTraceHit(HitActor);
 		}
 	}
