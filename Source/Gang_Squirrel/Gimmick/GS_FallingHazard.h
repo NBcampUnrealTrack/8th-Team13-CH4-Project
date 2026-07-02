@@ -101,6 +101,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Warning")
 	float WarningDecalLocationInterpSpeed = 18.f;
 
+	float TrackingVisualElapsedTime = 0.f;
+
 	uint8 bHasInitializedDecalLocation : 1 = false;
 
 	FVector CurrentDecalVisualLocation = FVector::ZeroVector;
