@@ -15,6 +15,7 @@
 #include "Components/WidgetComponent.h"
 #include "Gang_Squirrel/UI/GSPlayerNameTag.h"
 #include "Gang_Squirrel/Gang_Squirrel.h"
+#include "Gang_Squirrel/GAS/GA/Death/GA_PlayerDeath.h"
 #include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 
 AGSCharacter::AGSCharacter()
@@ -287,6 +288,13 @@ void AGSCharacter::PossessedBy(AController* NewController)
 		{
 			PS->GetAbilitySystemComponent()->GiveAbility(FGameplayAbilitySpec(GA_Attack,1));
 		}
+		if (!PS->GetAbilitySystemComponent()->FindAbilitySpecFromClass(UGA_PlayerDeath::StaticClass()))
+		{
+			PS->GetAbilitySystemComponent()->GiveAbility(FGameplayAbilitySpec(GA_Death,1));
+		}
+		
+		// When State.Dead Tag Was Attached or Detached Call to Func
+		PS->GetAbilitySystemComponent()->RegisterGameplayTagEvent(StateTag::TAG_State_Dead, EGameplayTagEventType::NewOrRemoved).AddUObject(this,&AGSCharacter::OnDeathStateTagChanged);
 	}
 }
 
@@ -310,6 +318,9 @@ void AGSCharacter::OnRep_PlayerState()
 		{
 			UpdateNameTag(PS->PlayerNickname);
 		}
+		
+		// When State.Dead Tag Was Attached or Detached Call to Func
+		PS->GetAbilitySystemComponent()->RegisterGameplayTagEvent(StateTag::TAG_State_Dead, EGameplayTagEventType::NewOrRemoved).AddUObject(this,&AGSCharacter::OnDeathStateTagChanged);
 	}
 }
 
@@ -317,5 +328,11 @@ UAbilitySystemComponent* AGSCharacter::GetAbilitySystemComponent() const
 {
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	return PS ? PS->GetAbilitySystemComponent() : nullptr;
+}
+
+// GA_Death Callback Func : Temp Logic
+void AGSCharacter::OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	SetActorEnableCollision(NewCount <= 0);
 }
 

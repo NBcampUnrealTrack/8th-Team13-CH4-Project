@@ -8,6 +8,8 @@
 #include "InputActionValue.h"
 #include "GSCharacter.generated.h"
 
+class UGA_PlayerDeath;
+struct FGameplayTag;
 class UGA_Attack;
 class UCameraComponent;
 class USpringArmComponent;
@@ -160,5 +162,11 @@ protected:
 protected:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="GameplayAbility")
 	TSubclassOf<UGA_Attack> GA_Attack;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="GameplayAbility")
+	TSubclassOf<UGA_PlayerDeath> GA_Death;
+	
+	// GA_Death CallBack Func
+private:
+	void OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount);
 #pragma endregion 
 };
