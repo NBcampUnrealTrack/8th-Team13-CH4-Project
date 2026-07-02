@@ -84,3 +84,32 @@ void AGSPlayerController::ServerSetNickname_Implementation(const FString& Nickna
 		GM->NotifyPlayerReady();
 	}
 }
+void AGSPlayerController::ClientShowGameEndUI_Implementation()
+{
+	if (IsLocalController() == false)
+	{
+		return;
+	}
+
+	if (GameEndWidgetClass == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GameEndWidgetClass is nullptr."));
+		return;
+	}
+
+	if (GameEndWidgetInstance == nullptr)
+	{
+		GameEndWidgetInstance = CreateWidget<UUserWidget>(this, GameEndWidgetClass);
+	}
+
+	if (IsValid(GameEndWidgetInstance))
+	{
+		GameEndWidgetInstance->AddToViewport(100);
+
+		SetShowMouseCursor(true);
+
+		FInputModeUIOnly InputMode;
+		InputMode.SetWidgetToFocus(GameEndWidgetInstance->TakeWidget());
+		SetInputMode(InputMode);
+	}
+}
