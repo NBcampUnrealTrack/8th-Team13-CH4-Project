@@ -29,10 +29,6 @@ void UGA_EnemyAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	
 	HitActors.Empty();
 	
-	if (ActorInfo->IsNetAuthority())
-	{
-		EnableAttackCollision(Enemy,true);
-	}
 	
 	if (AM_Attack)
 	{
@@ -51,64 +47,20 @@ void UGA_EnemyAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, const 
 {
 	AGS_Enemy* Enemy = Cast<AGS_Enemy>(GetAvatarActorFromActorInfo());
 	
-	if (Enemy && ActorInfo->IsNetAuthority())
-	{
-		EnableAttackCollision(Enemy,false);
-	}
-	
 	HitActors.Empty();
 	
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void UGA_EnemyAttack::OnAttackOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void UGA_EnemyAttack::OnAttackTraceHit(AActor* HitActor)
 {
-	UE_LOG(LogGAS, Warning, TEXT("[GA_EnemyAttack] OnAttackOverlap - Attacker:%s, Other:%s"),*GetNameSafe(GetAvatarActorFromActorInfo()),*GetNameSafe(OtherActor));
-	
-	if (!OtherActor || OtherActor == GetAvatarActorFromActorInfo())
+	if (!HitActor || HitActor == GetAvatarActorFromActorInfo() || HitActors.Contains(HitActor))
 	{
 		return;
 	}
 	
-	if (HitActors.Contains(OtherActor))
-	{
-		return;
-	}
-	
-	HitActors.Add(OtherActor);
-	
-	ApplyDamageToTarget(OtherActor);
-}
-
-void UGA_EnemyAttack::EnableAttackCollision(AGS_Enemy* OwnerEnemy, bool bEnable)
-{
-	UE_LOG(LogGAS, Warning, TEXT("[GA_EnemyAttack] EnableAttackCollision - Enemy:%s, bEnable:%s"), *GetNameSafe(OwnerEnemy), bEnable ? TEXT("true") : TEXT("false"));
-	
-	auto OnCollision = [&](USphereComponent* HandCollision)
-	{
-		if (!HandCollision)
-		{
-			UE_LOG(LogGAS, Error, TEXT("[GA_EnemyAttack] HandCollision is null!"));
-			return;
-		}
-		
-		HandCollision->SetCollisionEnabled(bEnable ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
-		
-		UE_LOG(LogGAS, Warning, TEXT("[GA_EnemyAttack] %s CollisionEnabled set to %d"),*HandCollision->GetName(), (int32)HandCollision->GetCollisionEnabled())
-		
-		if (bEnable)
-		{
-			HandCollision->OnComponentBeginOverlap.AddDynamic(this, &UGA_EnemyAttack::OnAttackOverlap);
-		}
-		else
-		{
-			HandCollision->OnComponentBeginOverlap.RemoveDynamic(this, &UGA_EnemyAttack::OnAttackOverlap);
-		}
-	};
-	
-	OnCollision(OwnerEnemy->GetCombatCollision(EHandCombatType::LeftCombatHand));
-	OnCollision(OwnerEnemy->GetCombatCollision(EHandCombatType::RightCombatHand));
+	HitActors.Add(HitActor);
+	ApplyDamageToTarget(HitActor);
 }
 
 void UGA_EnemyAttack::ApplyDamageToTarget(AActor* TargetActor)

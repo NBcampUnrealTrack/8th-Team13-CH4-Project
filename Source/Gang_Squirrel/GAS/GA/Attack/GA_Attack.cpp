@@ -35,12 +35,6 @@ void UGA_Attack::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 		GetAbilitySystemComponentFromActorInfo()->AbilityTargetDataSetDelegate(Handle,ActivationInfo.GetActivationPredictionKey()).AddUObject(this, &UGA_Attack::OnTargetDataReceived);
 	}
 	
-	// Client
-	if (Character->IsLocallyControlled())
-	{
-		EnableAttackCollision(Character,true);
-	}
-	
 	// AnimMontage Logic
 	if (AM_Attack)
 	{
@@ -59,10 +53,6 @@ void UGA_Attack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGame
 {
 	AGSCharacter* Character = Cast<AGSCharacter>(GetAvatarActorFromActorInfo());
 	
-	if (Character && Character->IsLocallyControlled())
-	{
-		EnableAttackCollision(Character,false);
-	}
 	// Server
 	if (ActorInfo->IsNetAuthority())
 	{
@@ -74,61 +64,27 @@ void UGA_Attack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGame
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-// When Attack Started
-void UGA_Attack::OnAttackOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void UGA_Attack::OnAttackTraceHit(AActor* HitActor)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[GA_Attack][Client] OnAttackOverlap: %s"), *GetNameSafe(OtherActor));
-	
-	if (!OtherActor || OtherActor == GetAvatarActorFromActorInfo())
+	if (!HitActor || HitActor == GetAvatarActorFromActorInfo() || HitActors.Contains(HitActor))
 	{
 		return;
 	}
 	
-	if (HitActors.Contains(OtherActor))
-	{
-		return;
-	}
-	
-	HitActors.Add(OtherActor);
+	HitActors.Add(HitActor);
 	
 	FGameplayAbilityTargetDataHandle TargetDataHandle;
 	FGameplayAbilityTargetData_ActorArray* TargetData = new FGameplayAbilityTargetData_ActorArray();
-	
-	TargetData->TargetActorArray.Add(OtherActor);
+	TargetData->TargetActorArray.Add(HitActor);
 	TargetDataHandle.Add(TargetData);
 	
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
-	ASC->CallServerSetReplicatedTargetData(GetCurrentAbilitySpecHandle(), GetCurrentActivationInfo().GetActivationPredictionKey()
-		,TargetDataHandle,FGameplayTag::EmptyTag,ASC->ScopedPredictionKey);
-	
-}
-
-void UGA_Attack::EnableAttackCollision(AGSCharacter* OwnerCharacter, bool bEnable)
-{
-	// Create Lamda
-	auto OnCollision = [&](USphereComponent* HandCollision)
+	if (!ASC)
 	{
-		if (!HandCollision)
-		{
-			return;
-		}
-		
-		HandCollision->SetCollisionEnabled(bEnable ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
-		
-		if (bEnable)
-		{
-			HandCollision->OnComponentBeginOverlap.AddDynamic(this, &UGA_Attack::OnAttackOverlap);
-		}
-		else
-		{
-			HandCollision->OnComponentBeginOverlap.RemoveDynamic(this, &UGA_Attack::OnAttackOverlap);
-		}
-	};
-	
-	// Enable AttackHand Collision
-	OnCollision(OwnerCharacter->GetLeftHandCollision());
-	OnCollision(OwnerCharacter->GetRightHandCollision());
+		return;
+	}
+	ASC->CallServerSetReplicatedTargetData(
+		GetCurrentAbilitySpecHandle(),GetCurrentActivationInfo().GetActivationPredictionKey(),TargetDataHandle,FGameplayTag::EmptyTag,ASC->ScopedPredictionKey);
 }
 
 // Server Outgoing to GE
