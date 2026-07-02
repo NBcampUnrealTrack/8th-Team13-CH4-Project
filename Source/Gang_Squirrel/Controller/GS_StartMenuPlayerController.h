@@ -18,4 +18,12 @@ protected:
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> StartMenuWidgetClass;
+
+public:
+	UFUNCTION(BlueprintCallable)
+	void RequestLobbyReady();
+
+private:
+	UFUNCTION(Server, Reliable)
+	void ServerRequestLobbyReady();
 };

@@ -11,10 +11,16 @@ void AGSPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
+	//UE_LOG(LogTemp, Warning, TEXT("[GSPlayerController] BeginPlay - IsLocal: %d"), IsLocalController());
+
 	if (IsLocalController() == false)
 	{
 		return;
 	}
+
+	//UE_LOG(LogTemp, Warning, TEXT("[GSPlayerController] HUDClass: %d / NicknameClass: %d"),
+	//	HUDWidgetClass != nullptr,
+	//	NicknameInputWidgetClass != nullptr);
 
 	FInputModeGameOnly IMGameOnly;
 	SetInputMode(IMGameOnly);
@@ -27,6 +33,8 @@ void AGSPlayerController::BeginPlay()
 			HUDWidget->AddToViewport();
 		}
 	}
+	//UE_LOG(LogTemp, Warning, TEXT("[GSPlayerController] HUD 생성 완료. IsLocal 재확인: %d"), IsLocalController());
+
 	//Skip Nickname 
 	if (bSkipNicknameInputForDev)
 	{
@@ -40,7 +48,7 @@ void AGSPlayerController::BeginPlay()
 		return;
 	}
 
-	if (NicknameInputWidgetClass)
+	if (IsLocalController() && NicknameInputWidgetClass)
 	{
 		UUserWidget* Widget = CreateWidget<UUserWidget>(this, NicknameInputWidgetClass);
 		if (IsValid(Widget))
@@ -48,7 +56,14 @@ void AGSPlayerController::BeginPlay()
 			Widget->AddToViewport();
 			SetShowMouseCursor(true);
 			SetInputMode(FInputModeUIOnly());
+
+			//UE_LOG(LogTemp, Warning, TEXT("[GSPlayerController] NicknameWidget 생성 완료. 마우스커서: %d"), bShowMouseCursor);
 		}
+
+		//else
+		//{
+		//	UE_LOG(LogTemp, Warning, TEXT("[GSPlayerController] Widget 생성 실패"));
+		//}
 	}
 }
 
@@ -65,6 +80,8 @@ void AGSPlayerController::SubmitNickname(const FString& Nickname)
 
 void AGSPlayerController::ServerSetNickname_Implementation(const FString& Nickname)
 {
+	//UE_LOG(LogTemp, Warning, TEXT("[ServerSetNickname] 호출됨. Nickname: '%s'"), *Nickname);
+
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (IsValid(PS) == false)
 	{
