@@ -11,6 +11,7 @@
 UGA_PlayerDeath::UGA_PlayerDeath()
 {
 	AbilityTags.AddTag(AbilityTag::TAG_Ability_Death);
+	ActivationBlockedTags.AddTag(StateTag::TAG_State_Dead);
 }
 
 void UGA_PlayerDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
@@ -29,7 +30,11 @@ void UGA_PlayerDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	if (ActorInfo->IsNetAuthority())
 	{
 		PlayerCharacter->GetCharacterMovement()->DisableMovement();
-		PlayerCharacter->SetActorEnableCollision(false);
+		
+		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+		{
+			ASC->AddReplicatedLooseGameplayTag(StateTag::TAG_State_Dead);
+		}
 		
 		// TempLogic
 		for (TActorIterator<APlayerStart> It(GetWorld()); It; ++It)
@@ -80,11 +85,12 @@ void UGA_PlayerDeath::HandleRespawn()
 	
 	PlayerChar->SetActorLocation(CachedRespawnLocation);
 	PlayerChar->SetActorRotation(CachedRespawnRotation);
-	PlayerChar->SetActorEnableCollision(true);
 	PlayerChar->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 	
 	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
 	{
+		ASC->RemoveReplicatedLooseGameplayTag(StateTag::TAG_State_Dead);
+		
 		if (GE_Respawn)
 		{
 			FGameplayEffectContextHandle ContextHandle = ASC->MakeEffectContext();

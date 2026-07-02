@@ -1,5 +1,6 @@
 #include "GA_EnemyDeath.h"
 
+#include "AbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Gang_Squirrel/Enemy/GS_Enemy.h"
@@ -8,6 +9,7 @@
 UGA_EnemyDeath::UGA_EnemyDeath()
 {
 	AbilityTags.AddTag(AbilityTag::TAG_Ability_Death);
+	ActivationBlockedTags.AddTag(StateTag::TAG_State_Dead);
 }
 
 void UGA_EnemyDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
@@ -26,7 +28,11 @@ void UGA_EnemyDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	if (ActorInfo->IsNetAuthority())
 	{
 		Enemy->GetCharacterMovement()->DisableMovement();
-		Enemy->SetActorEnableCollision(false);
+		
+		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+		{
+			ASC->AddReplicatedLooseGameplayTag(StateTag::TAG_State_Dead);
+		}
 	}
 	
 	if (AM_Death)
