@@ -27,8 +27,20 @@ void AGSPlayerController::BeginPlay()
 			HUDWidget->AddToViewport();
 		}
 	}
+	//Skip Nickname 
+	if (bSkipNicknameInputForDev)
+	{
+		const FString DevNickname = FString::Printf(TEXT("Player_%d"), GetLocalPlayer() ? GetLocalPlayer()->GetControllerId() : 0);
 
-	if (IsLocalController() && NicknameInputWidgetClass)
+		ServerSetNickname(DevNickname);
+
+		SetShowMouseCursor(false);
+		SetInputMode(FInputModeGameOnly());
+
+		return;
+	}
+
+	if (NicknameInputWidgetClass)
 	{
 		UUserWidget* Widget = CreateWidget<UUserWidget>(this, NicknameInputWidgetClass);
 		if (IsValid(Widget))
@@ -54,18 +66,18 @@ void AGSPlayerController::SubmitNickname(const FString& Nickname)
 void AGSPlayerController::ServerSetNickname_Implementation(const FString& Nickname)
 {
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (IsValid(PS) == false)
+	{
+		return;
+	}
 
 	if (PS->PlayerNickname.IsEmpty() == false)
 	{
 		return;
 	}
 
-	if (IsValid(PS))
-	{
-		PS->SetPlayerNickname(Nickname);
-	}
+	PS->SetPlayerNickname(Nickname);
 
-	//Cast to server GameMode
 	AGS_GameModeBase* GM = Cast<AGS_GameModeBase>(GetWorld()->GetAuthGameMode());
 	if (IsValid(GM))
 	{
