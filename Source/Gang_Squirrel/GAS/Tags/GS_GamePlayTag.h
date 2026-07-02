@@ -23,3 +23,9 @@ namespace StateTag
 {
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_State_Dead)
 }
+
+namespace TeamTag
+{
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Team_Player)
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Team_Enemy)
+}
