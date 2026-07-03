@@ -13,6 +13,7 @@
 #include "Components/SphereComponent.h"
 #include "Gang_Squirrel/GAS/GA/Attack/GA_Attack.h"
 #include "Components/WidgetComponent.h"
+#include "Gang_Squirrel/Food/GSFoodBase.h"
 #include "Gang_Squirrel/UI/GSPlayerNameTag.h"
 #include "Gang_Squirrel/Gang_Squirrel.h"
 #include "Gang_Squirrel/GAS/GA/Death/GA_PlayerDeath.h"
@@ -381,6 +382,16 @@ UAbilitySystemComponent* AGSCharacter::GetAbilitySystemComponent() const
 	return PS ? PS->GetAbilitySystemComponent() : nullptr;
 }
 
+void AGSCharacter::Server_NotifyFoodEaten_Implementation(AGSFoodBase* EatenFood)
+{
+	if (!EatenFood) return;
+	
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (PS)
+	{
+		PS->AddScore(EatenFood->Eaten());
+	}
+}
 
 // GA_Death Callback Func : Temp Logic
 void AGSCharacter::OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount)

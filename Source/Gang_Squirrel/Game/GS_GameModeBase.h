@@ -6,6 +6,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "GS_GameModeBase.generated.h"
 
+class AGSSpawnManager;
 /**
  * 
  */
@@ -53,4 +54,11 @@ private:
 	FTimerHandle MatchTimerHandle;
 
 	int32 ReadyPlayerCount = 0;
+public:
+	
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<AGSSpawnManager> SpawnManagerClass;
+	
+	void SpawnSpawnManager() const;
+
 };

@@ -5,6 +5,7 @@
 #include "Gang_Squirrel/Game/GS_GameState.h"
 #include "EngineUtils.h"
 #include "Gang_Squirrel/Gimmick/GS_FallingHazardManager.h"
+#include "Gang_Squirrel/SpawnSystem/GSSpawnManager.h"
 
 AGS_GameModeBase::AGS_GameModeBase()
 {
@@ -16,6 +17,8 @@ void AGS_GameModeBase::BeginPlay()
 	Super::BeginPlay();
 
 	//StartMatch();
+	
+	SpawnSpawnManager();
 }
 
 void AGS_GameModeBase::StartMatch()
@@ -95,4 +98,10 @@ void AGS_GameModeBase::OnMatchTimeExpired()
 void AGS_GameModeBase::MultiCastRPCPrintStatus_Implementation(int32 Ready, int32 Total)
 {
 	UE_LOG(LogTemp, Log, TEXT("%d / %d 준비완료!!"), Ready, Total)
+}
+
+void AGS_GameModeBase::SpawnSpawnManager() const
+{
+	if (!IsValid(SpawnManagerClass)) return;
+	AGSSpawnManager* SpawnManager = GetWorld()->SpawnActor<AGSSpawnManager>(SpawnManagerClass);
 }
