@@ -6,6 +6,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Blueprint/UserWidget.h"
 #include "Gang_Squirrel/Game/GS_GameModeBase.h"
+#include "Gang_Squirrel/Game/GS_GameState.h"
+#include "Gang_Squirrel/UI/GS_GameEndWidget.h"
 
 void AGSPlayerController::BeginPlay()
 {
@@ -17,6 +19,14 @@ void AGSPlayerController::BeginPlay()
 	{
 		return;
 	}
+
+	GetWorldTimerManager().SetTimer(
+		MatchEndCheckTimerHandle,
+		this,
+		&AGSPlayerController::CheckMatchEndByTime,
+		0.2f,
+		true
+	);
 
 	//UE_LOG(LogTemp, Warning, TEXT("[GSPlayerController] HUDClass: %d / NicknameClass: %d"),
 	//	HUDWidgetClass != nullptr,
@@ -103,6 +113,11 @@ void AGSPlayerController::ServerSetNickname_Implementation(const FString& Nickna
 }
 void AGSPlayerController::ClientShowGameEndUI_Implementation()
 {
+	ShowGameEndUILocal();
+}
+
+void AGSPlayerController::ShowGameEndUILocal()
+{
 	if (IsLocalController() == false)
 	{
 		return;
@@ -116,11 +131,17 @@ void AGSPlayerController::ClientShowGameEndUI_Implementation()
 
 	if (GameEndWidgetInstance == nullptr)
 	{
-		GameEndWidgetInstance = CreateWidget<UUserWidget>(this, GameEndWidgetClass);
+		GameEndWidgetInstance = CreateWidget<UGS_GameEndWidget>(
+			this,
+			GameEndWidgetClass
+		);
 	}
 
 	if (IsValid(GameEndWidgetInstance))
 	{
+		TArray<FGSLeaderboardEntry> EmptyLeaderboard;
+		GameEndWidgetInstance->SetGameEndResult(EmptyLeaderboard);
+
 		GameEndWidgetInstance->AddToViewport(100);
 
 		SetShowMouseCursor(true);
@@ -129,4 +150,34 @@ void AGSPlayerController::ClientShowGameEndUI_Implementation()
 		InputMode.SetWidgetToFocus(GameEndWidgetInstance->TakeWidget());
 		SetInputMode(InputMode);
 	}
+}
+
+void AGSPlayerController::CheckMatchEndByTime()
+{
+	if (bGameEndUIShown)
+	{
+		return;
+	}
+
+	AGS_GameState* GS = GetWorld() ? GetWorld()->GetGameState<AGS_GameState>() : nullptr;
+	if (IsValid(GS) == false)
+	{
+		return;
+	}
+
+	if (GS->MatchEndTime <= 0.f)
+	{
+		return;
+	}
+
+	if (GS->GetRemainingTime() > 0.f)
+	{
+		return;
+	}
+
+	bGameEndUIShown = true;
+
+	GetWorldTimerManager().ClearTimer(MatchEndCheckTimerHandle);
+
+	ShowGameEndUILocal();
 }
