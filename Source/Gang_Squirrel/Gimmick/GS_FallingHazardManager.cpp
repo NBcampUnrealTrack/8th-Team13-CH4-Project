@@ -80,7 +80,7 @@ void AGS_FallingHazardManager::SpawnFallingHazard()
 		return;
 	}
 
-	const FVector SpawnLocation = TargetActor->GetActorLocation() + FVector(0.f, 0.f, 1000.f);
+	const FVector SpawnLocation = TargetActor->GetActorLocation() + FVector(0.f, 0.f, 50.f);
 	const FRotator SpawnRotation = FRotator::ZeroRotator;
 
 	FActorSpawnParameters SpawnParams;

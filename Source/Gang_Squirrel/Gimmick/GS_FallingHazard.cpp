@@ -219,7 +219,7 @@ bool AGS_FallingHazard::FindGroundLocation(const FVector& InLocation, FVector& O
 		HitResult,
 		Start,
 		End,
-		ECC_Visibility,
+		GroundTraceChannel,
 		Params
 	);
 

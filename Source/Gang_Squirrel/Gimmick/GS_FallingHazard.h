@@ -49,7 +49,7 @@ protected:
 	float ForwardDistance = 500.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Tracking")
-	float HeightOffset = 1000.f;
+	float HeightOffset = 300.f;
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Time")
@@ -65,15 +65,17 @@ protected:
 	float ImpactDestroyDelay = 0.3f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Trace")
-	float GroundTraceUpOffset = 1000.f;
-
+	float GroundTraceUpOffset = 100.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Trace")
-	float GroundTraceDownOffset = 3000.f;
-
+	float GroundTraceDownOffset = 300.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Trace")
 	float GroundCheckDistance = 50.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Trace")
+	TEnumAsByte<ECollisionChannel> GroundTraceChannel = ECC_GameTraceChannel1;
+
 #pragma region Decal
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Warning")
