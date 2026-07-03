@@ -9,6 +9,7 @@
 
 class UGSFoodPrimaryDataAsset;
 class USphereComponent;
+class UGSFoodWidgetComponent;
 
 UCLASS()
 class GANG_SQUIRREL_API AGSFoodBase : public AActor
@@ -19,10 +20,16 @@ public:
 	// Sets default values for this actor's properties
 	AGSFoodBase();
 	
+	UPROPERTY(ReplicatedUsing=OnRep_Activate)
 	bool bIsActive = false;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY()
+	bool bIsFilling = false;
+	
+	UPROPERTY(ReplicatedUsing=OnRep_FoodData)
 	TObjectPtr<UGSFoodPrimaryDataAsset> FoodData;
+	
+	float CurrentEatenTime = 0.f;
 	
 	UPROPERTY()
 	TObjectPtr<UStaticMeshComponent> StaticMeshComponent;
@@ -30,8 +37,8 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<USphereComponent> SphereComponent;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TObjectPtr<USphereComponent> OverlapComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<UGSFoodWidgetComponent> FoodWidgetComponent;
 	
 	UPROPERTY()
 	TObjectPtr<AGSSpawnPoint> SpawnPoint;
@@ -39,6 +46,11 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	TSubclassOf<UUserWidget> FoodWidgetClassDefaults;
 
 public:	
 	// Called every frame
@@ -46,8 +58,28 @@ public:
 
 	void Init(UGSFoodPrimaryDataAsset* InData);
 	
-	void Activate();
+	UFUNCTION()
+	void OnRep_Activate();
+	
+	UFUNCTION()
+	void OnRep_FoodData() const;
+	
+	UFUNCTION()
+	void OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	
+	UFUNCTION()
+	void OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	
 	void Deactivate();
+	void Activate();
+	
+	void SetUIVisible(bool bShow);
+	
+	int32 Eaten();
+	
+protected:
+	
+	FTimerHandle UIDelayTimerHandle;
 	
 	
 };

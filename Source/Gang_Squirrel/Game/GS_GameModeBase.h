@@ -6,6 +6,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "GS_GameModeBase.generated.h"
 
+class AGSSpawnManager;
 /**
  * 
  */
@@ -14,4 +15,15 @@ class GANG_SQUIRREL_API AGS_GameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
 	
+public:
+	
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<AGSSpawnManager> SpawnManagerClass;
+	
+	void SpawnSpawnManager() const;
+	
+protected:
+	
+	virtual void BeginPlay() override;
+
 };

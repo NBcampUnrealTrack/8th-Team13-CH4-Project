@@ -92,6 +92,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> Rolling;
 
+public:
+	
+	UFUNCTION(Server, Reliable)
+	void Server_NotifyFoodEaten(AGSFoodBase* EatenFood);
+
 #pragma region Component
 
 protected:

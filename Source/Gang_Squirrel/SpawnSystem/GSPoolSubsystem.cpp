@@ -14,17 +14,20 @@ void UGSPoolSubsystem::InitializePool(TArray<FFoodSpawnInfo> DataAssets)
 	{
 		UGSFoodPrimaryDataAsset* CurrentDataAsset = SpawnInfo.FoodData;
 		int32 CurrentSpawnAmount = SpawnInfo.SpawnAmount;
-		if (!CurrentDataAsset && !CurrentSpawnAmount) return;
+		if (!CurrentDataAsset && !CurrentSpawnAmount) continue;
 		
 		for (int32 j = 0; j < CurrentSpawnAmount; ++j)
-			{
+		{
 			AGSFoodBase* Food = GetWorld()->SpawnActor<AGSFoodBase>();
+			if (!IsValid(Food)) continue;
 			
 			Food->Init(CurrentDataAsset);
+			
 			Food->Deactivate();
 			FoodPool.Add(Food);
 			UE_LOG(LogTemp, Warning, TEXT("Spawn Food!!Actor"));
-			}
+		}
+			
 	}
 }
 

@@ -13,6 +13,7 @@
 #include "Components/SphereComponent.h"
 #include "Gang_Squirrel/GAS/GA/Attack/GA_Attack.h"
 #include "Components/WidgetComponent.h"
+#include "Gang_Squirrel/Food/GSFoodBase.h"
 #include "Gang_Squirrel/UI/GSPlayerNameTag.h"
 
 AGSCharacter::AGSCharacter()
@@ -205,3 +206,10 @@ void AGSCharacter::OnRep_PlayerState()
 	}
 }
 
+void AGSCharacter::Server_NotifyFoodEaten_Implementation(AGSFoodBase* EatenFood)
+{
+	if (EatenFood)
+	{
+		EatenFood->Deactivate();
+	}
+}

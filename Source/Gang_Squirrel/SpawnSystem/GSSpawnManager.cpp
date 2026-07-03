@@ -11,6 +11,8 @@
 // Sets default values
 AGSSpawnManager::AGSSpawnManager()
 {
+	bReplicates = true;
+	
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -26,7 +28,10 @@ void AGSSpawnManager::BeginPlay()
 	PoolSubsystem = GetWorld()->GetSubsystem<UGSPoolSubsystem>();
 	if (!IsValid(PoolSubsystem)) return;
 	
-	PoolSubsystem->InitializePool(DataAssets);
+	if (HasAuthority())
+	{
+		PoolSubsystem->InitializePool(DataAssets);
+	}
 	
 	TArray<AActor*> FoundActors;
 	UGameplayStatics::GetAllActorsOfClass(
@@ -44,17 +49,19 @@ void AGSSpawnManager::BeginPlay()
 	}
 	
 	UE_LOG(LogTemp, Warning, TEXT("SPawnPoint Count : %d"), SpawnPoints.Num());
+	if (HasAuthority())
+	{
+		Spawn();
 	
-	Spawn();
-	
-	GetWorld()->GetTimerManager().SetTimer(
-		SpawnTimer,
-		this,
-		&AGSSpawnManager::Spawn,
-		60.f,
-		true,
-		60.f
-	);
+		GetWorld()->GetTimerManager().SetTimer(
+			SpawnTimer,
+			this,
+			&AGSSpawnManager::Spawn,
+			60.f,
+			true,
+			60.f
+		);
+	}
 }
 
 void AGSSpawnManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -73,6 +80,8 @@ void AGSSpawnManager::Tick(float DeltaTime)
 
 void AGSSpawnManager::Spawn()
 {
+	if (!HasAuthority()) return;
+	
 	int32 RetryCount = 0;
 	for (AGSSpawnPoint* SpawnPoint : SpawnPoints)
 	{
@@ -85,7 +94,7 @@ void AGSSpawnManager::Spawn()
 		{
 			if (RetryCount > 50)
 			{
-				return;
+				break;
 			}
 			if (SpawnPoint->MaxSpawnAmount > SpawnPoint->CurrentFoodCount)
 			{
@@ -112,7 +121,7 @@ void AGSSpawnManager::Spawn()
 			}
 			else
 			{
-				return;
+				continue;
 			}
 		}
 	}
