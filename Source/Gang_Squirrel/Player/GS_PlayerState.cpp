@@ -28,6 +28,7 @@ void AGS_PlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AGS_PlayerState, PlayerNickname);
+	DOREPLIFETIME(AGS_PlayerState, PlayerScore);
 }
 
 void AGS_PlayerState::SetPlayerNickname(const FString& NewName)
@@ -39,4 +40,16 @@ void AGS_PlayerState::SetPlayerNickname(const FString& NewName)
 void AGS_PlayerState::OnRep_PlayerNickname()
 {
 	OnPlayerNameChanged.Broadcast(PlayerNickname);
+}
+
+void AGS_PlayerState::AddScore(int32 Value)
+{
+	PlayerScore += Value;
+	
+	OnRep_PlayerScore();
+}
+
+void AGS_PlayerState::OnRep_PlayerScore() 
+{
+	UE_LOG(LogTemp, Warning, TEXT("PlayerScore: %d"), PlayerScore);
 }
