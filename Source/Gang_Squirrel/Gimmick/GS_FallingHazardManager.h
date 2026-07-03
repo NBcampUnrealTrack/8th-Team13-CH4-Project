@@ -16,6 +16,9 @@ public:
 
 	virtual void BeginPlay() override;
 
+	void StartSpawnFallingHazard();
+	void StopSpawnFallingHazard();
+
 protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Falling Hazard")

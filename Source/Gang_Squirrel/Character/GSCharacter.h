@@ -8,6 +8,8 @@
 #include "InputActionValue.h"
 #include "GSCharacter.generated.h"
 
+class UGA_PlayerDeath;
+struct FGameplayTag;
 class UGA_Attack;
 class UCameraComponent;
 class USpringArmComponent;
@@ -109,10 +111,10 @@ protected:
 protected:
 	//Feature
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Sprint")
-	float WalkSpeed = 600.f;
+	float WalkSpeed = 50.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Sprint")
-	float SprintSpeed = 900.f;
+	float SprintSpeed = 100.f;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement|Sprint")
 	uint8 bIsSprinting : 1 = false;
@@ -164,8 +166,18 @@ protected:
 #pragma endregion
 	
 #pragma region GA
+public:
+	UFUNCTION(NetMulticast,Reliable)
+	void NetMulticast_SetDeathPoseFrozen(bool bFrozen);
+	
 protected:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="GameplayAbility")
 	TSubclassOf<UGA_Attack> GA_Attack;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="GameplayAbility")
+	TSubclassOf<UGA_PlayerDeath> GA_Death;
+	
+	// GA_Death CallBack Func
+private:
+	void OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount);
 #pragma endregion 
 };

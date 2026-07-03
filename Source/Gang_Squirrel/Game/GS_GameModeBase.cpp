@@ -3,6 +3,8 @@
 
 #include "GS_GameModeBase.h"
 #include "Gang_Squirrel/Game/GS_GameState.h"
+#include "EngineUtils.h"
+#include "Gang_Squirrel/Gimmick/GS_FallingHazardManager.h"
 
 AGS_GameModeBase::AGS_GameModeBase()
 {
@@ -33,6 +35,15 @@ void AGS_GameModeBase::StartMatch()
 			MatchTimeLimit,
 			false
 		);
+
+		for (TActorIterator<AGS_FallingHazardManager> It(GetWorld()); It; ++It)
+		{
+			AGS_FallingHazardManager* HazardManager = *It;
+			if (IsValid(HazardManager))
+			{
+				HazardManager->StartSpawnFallingHazard();
+			}
+		}
 	
 	UE_LOG(LogTemp, Log, TEXT("[Server] Match Started. %.1f sec"), MatchTimeLimit)
 }
@@ -46,6 +57,16 @@ void AGS_GameModeBase::EndMatch()
 
 	bMatchEnd = true;
 	GetWorldTimerManager().ClearTimer(MatchTimerHandle);
+
+
+	for (TActorIterator<AGS_FallingHazardManager> It(GetWorld()); It; ++It)
+	{
+		AGS_FallingHazardManager* HazardManager = *It;
+		if (IsValid(HazardManager))
+		{
+			HazardManager->StopSpawnFallingHazard();
+		}
+	}
 
 	UE_LOG(LogTemp, Log, TEXT("[Server] Match Ended."))
 }
