@@ -20,6 +20,19 @@ void AGS_FallingHazardManager::BeginPlay()
 	{
 		return;
 	}
+}
+
+void AGS_FallingHazardManager::StartSpawnFallingHazard()
+{
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
+	if (GetWorldTimerManager().IsTimerActive(SpawnTimerHandle))
+	{
+		return;
+	}
 
 	GetWorldTimerManager().SetTimer(
 		SpawnTimerHandle,
@@ -29,6 +42,16 @@ void AGS_FallingHazardManager::BeginPlay()
 		true,
 		FirstSpawnDelay
 	);
+}
+
+void AGS_FallingHazardManager::StopSpawnFallingHazard()
+{
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
+	GetWorldTimerManager().ClearTimer(SpawnTimerHandle);
 }
 
 void AGS_FallingHazardManager::SpawnFallingHazard()
