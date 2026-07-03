@@ -28,6 +28,10 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UAISenseConfig_Sight> Sight_Config;
 private:
+	// Scale(Z) 1.0 기준 원본 Sight/LoseSight 반경. OnPossess에서 Pawn 스케일만큼 곱해서 Sight_Config에 적용됨.
+	float BaseSightRadius = 1500.f;
+	float BaseLoseSightRadius = 2000.f;
+
 	//Debugging Sight Radius Func
 	void DrawDebug_SightRadius();
 };

@@ -7,6 +7,7 @@ UBTTask_Chase::UBTTask_Chase()
 {
 	NodeName = TEXT("Chase_Target");
 	bCreateNodeInstance = true;
+	bNotifyTick = true;
 	TargetActorKey.AddObjectFilter(this,GET_MEMBER_NAME_CHECKED(UBTTask_Chase,TargetActorKey),AActor::StaticClass());
 }
 
@@ -26,8 +27,10 @@ EBTNodeResult::Type UBTTask_Chase::ExecuteTask(UBehaviorTreeComponent& OwnerComp
 		return EBTNodeResult::Failed;
 	}
 	
+	const float ScaleMultiplier = OwnerAIController->GetPawn() ? OwnerAIController->GetPawn()->GetActorScale3D().Z : 1.f;
+
 	FAIMoveRequest MoveRequest(Target);
-	MoveRequest.SetAcceptanceRadius(AcceptanceRadius);
+	MoveRequest.SetAcceptanceRadius(AcceptanceRadius * ScaleMultiplier);
 	
 	const FPathFollowingRequestResult RequestResult = OwnerAIController->MoveTo(MoveRequest);
 	
@@ -46,6 +49,35 @@ EBTNodeResult::Type UBTTask_Chase::ExecuteTask(UBehaviorTreeComponent& OwnerComp
 	CachedAIController->ReceiveMoveCompleted.AddDynamic(this,&UBTTask_Chase::OnMoveCompleted);
 	
 	return EBTNodeResult::InProgress;
+}
+
+void UBTTask_Chase::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
+{
+	Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
+	
+	if (!CachedAIController)
+	{
+		return;
+	}
+	
+	APawn* OwnerPawn = CachedAIController->GetPawn();
+	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
+	if (!OwnerPawn || !BB)
+	{
+		return;
+	}
+	
+	AActor* Target = Cast<AActor>(BB->GetValueAsObject(TargetActorKey.SelectedKeyName));
+	if (!Target)
+	{
+		return;
+	}
+	
+	const FVector ToTarget = (Target->GetActorLocation() - OwnerPawn->GetActorLocation()).GetSafeNormal2D();
+	const FRotator DesireRotation = ToTarget.Rotation();
+	const FRotator NewRotation = FMath::RInterpTo(OwnerPawn->GetActorRotation(), DesireRotation, DeltaSeconds, RotationInterpSpeed);
+	
+	OwnerPawn->SetActorRotation(NewRotation);
 }
 
 // When Task Wask Aborted
