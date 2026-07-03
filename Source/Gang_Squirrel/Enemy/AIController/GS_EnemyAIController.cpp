@@ -47,15 +47,6 @@ void AGS_EnemyAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 
-	// Pawn Scale(Z)만큼 Sight/LoseSight 반경을 다시 계산해서 적용 (생성자 시점엔 BP 스케일이 아직 최종 반영 전이라 여기서 재계산)
-	if (InPawn && Sight_Config)
-	{
-		const float ScaleMultiplier = InPawn->GetActorScale3D().Z;
-		Sight_Config->SightRadius = BaseSightRadius * ScaleMultiplier;
-		Sight_Config->LoseSightRadius = BaseLoseSightRadius * ScaleMultiplier;
-		PerceptionComp->ConfigureSense(*Sight_Config);
-	}
-
 	if (BT_Enemy)
 	{
 		RunBehaviorTree(BT_Enemy);
@@ -70,7 +61,15 @@ void AGS_EnemyAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus
 	{
 		return;
 	}
-	
+
+	const float Distance = GetPawn() ? FVector::Dist(GetPawn()->GetActorLocation(), Stimulus.StimulusLocation) : -1.f;
+	UE_LOG(LogTemp, Warning, TEXT("[Perception] Actor:%s, WasSuccessfullySensed:%s, Distance:%.1f, SightRadius:%.1f, LoseSightRadius:%.1f"),
+		*GetNameSafe(Actor),
+		Stimulus.WasSuccessfullySensed() ? TEXT("true") : TEXT("false"),
+		Distance,
+		Sight_Config ? Sight_Config->SightRadius : -1.f,
+		Sight_Config ? Sight_Config->LoseSightRadius : -1.f);
+
 	// Detection Success
 	if (Stimulus.WasSuccessfullySensed())
 	{
@@ -98,6 +97,6 @@ void AGS_EnemyAIController::DrawDebug_SightRadius()
 	// Lose Sense SightRadius
 	DrawDebugSphere(GetWorld(),OwnerPawn->GetActorLocation(),Sight_Config->LoseSightRadius,32,FColor::Red,false);
 	// AttackDistance
-	DrawDebugSphere(GetWorld(),OwnerPawn->GetActorLocation(),150.f,32,FColor::Red,false);
+	DrawDebugSphere(GetWorld(),OwnerPawn->GetActorLocation(),20.f,32,FColor::Red,false);
 }
 
