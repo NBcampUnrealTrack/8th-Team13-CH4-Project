@@ -17,18 +17,16 @@ UGSFoodWidgetComponent::UGSFoodWidgetComponent()
 	
 	SetWidgetSpace(EWidgetSpace::World);
 	SetDrawAtDesiredSize(false);
-	SetDrawSize(FVector2D(200.f, 200.f)); // 300 정도면 충분히 선명하고 큽니다!
+	SetDrawSize(FVector2D(30.f, 30.f));
 	SetTwoSided(true);
 	SetVisibility(false); 
     
-	// 🎯 위치 왜곡을 막기 위해 원점(0,0,0)에서 위로 딱 50유닛만 깔끔하게 올립니다.
-	SetRelativeLocation(FVector(0.f, 0.f, 120.f)); 
+
+	SetRelativeLocation(FVector(0.5f, 0.f, 10.f)); 
 	SetRelativeRotation(FRotator(0.f, 0.f, 0.f)); 
 	SetPivot(FVector2D(0.5f, 0.5f));
     
 	PrimaryComponentTick.bCanEverTick = true;
-	
-	//Tick
 	
 	PrimaryComponentTick.bCanEverTick = true;
 }

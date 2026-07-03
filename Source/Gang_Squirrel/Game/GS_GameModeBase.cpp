@@ -17,6 +17,8 @@ void AGS_GameModeBase::BeginPlay()
 	Super::BeginPlay();
 
 	//StartMatch();
+	
+	SpawnSpawnManager();
 }
 
 void AGS_GameModeBase::StartMatch()

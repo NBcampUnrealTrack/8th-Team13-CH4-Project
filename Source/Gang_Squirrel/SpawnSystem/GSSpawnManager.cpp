@@ -139,7 +139,7 @@ bool AGSSpawnManager::bCheckArround(const FVector& CheckLocation) const
 	bool bOverlap = UKismetSystemLibrary::SphereOverlapActors(
 		GetWorld(),
 		CheckLocation,
-		270.f,
+		50.f,
 		ObjectTypes,
 		AGSFoodBase::StaticClass(),
 		IgnoreActors,

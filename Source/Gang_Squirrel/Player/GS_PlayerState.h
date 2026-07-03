@@ -41,4 +41,19 @@ public:
 
 	UFUNCTION()
 	void OnRep_PlayerNickname();
+	
+private:
+	
+	//Score
+	UPROPERTY(ReplicatedUsing=OnRep_PlayerScore)
+	int32 PlayerScore = 0;
+	
+public:
+	
+	UFUNCTION()
+	void OnRep_PlayerScore();
+	
+	void AddScore(int32 Value);
+	
+	FORCEINLINE int32 GetPlayerScore() const { return PlayerScore; }
 };

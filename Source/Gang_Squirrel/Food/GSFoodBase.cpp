@@ -20,17 +20,15 @@ AGSFoodBase::AGSFoodBase()
 {
 	bReplicates = true;
 	SetReplicateMovement(true);
-    
-	// 🎯 1. 아무 스케일 값도 없는 순수한 SceneComponent를 최상위 루트로 삼습니다!
+	
 	USceneComponent* DummyRoot = CreateDefaultSubobject<USceneComponent>("DefaultSceneRoot");
 	RootComponent = DummyRoot;
-    
-	// 🎯 2. 크루아상 메쉬와 위젯, 콜리전은 전부 이 순수한 루트의 '동등한 자식'으로 붙입니다.
+	
 	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>("StaticMeshComponent");
 	StaticMeshComponent->SetupAttachment(RootComponent); 
     
 	FoodWidgetComponent = CreateDefaultSubobject<UGSFoodWidgetComponent>("FoodWidgetComponent");
-	FoodWidgetComponent->SetupAttachment(RootComponent); // 👈 이제 메쉬 스케일 5배 영향을 안 받습니다!
+	FoodWidgetComponent->SetupAttachment(RootComponent);
     
 	SphereComponent = CreateDefaultSubobject<USphereComponent>("OverlapCollision");
 	SphereComponent->SetupAttachment(RootComponent);
@@ -62,12 +60,8 @@ void AGSFoodBase::BeginPlay()
     
 	if (FoodWidgetComponent)
 	{
-		// 엔진 버그로 위젯 클래스가 None이라면, 경로를 통해 강제로 직접 로드합니다.
 		if (FoodWidgetComponent->GetWidgetClass() == nullptr)
 		{
-			// ⚠️ [주의] 콘텐츠 브라우저에서 WBP_FoodWidget 우클릭 -> '레퍼런스 복사' 한 뒤, 
-			// 아래 경로를 지우고 붙여넣으세요. 그리고 맨 끝에 꼭 '_C'를 붙여야 합니다!
-			// 예시: "/Game/UI/WBP_FoodWidget.WBP_FoodWidget_C"
 			FString WidgetPath = TEXT("/Game/YJW/Food/FoodUI/WBP_FoodWidget.WBP_FoodWidget_C"); 
             
 			UClass* LoadedClass = StaticLoadClass(UUserWidget::StaticClass(), nullptr, *WidgetPath);
@@ -82,7 +76,7 @@ void AGSFoodBase::BeginPlay()
 		if (SphereComponent)
 		{
 			SphereComponent->SetRelativeScale3D(FVector(5.3f, 5.3f, 5.3f));
-			SphereComponent->InitSphereRadius(180.f);
+			SphereComponent->InitSphereRadius(1.f);
 		}
 	}
 	
@@ -187,7 +181,8 @@ void AGSFoodBase::OnRep_FoodData() const
 	
 	if (StaticMeshComponent)
 	{
-		StaticMeshComponent->SetRelativeScale3D(FVector(5.f,5.f,5.f));
+		StaticMeshComponent->SetRelativeScale3D(FVector(1.f,1.f,1.f));
+		SphereComponent->SetSphereRadius(5.f);
 	}
 }
 

@@ -384,9 +384,12 @@ UAbilitySystemComponent* AGSCharacter::GetAbilitySystemComponent() const
 
 void AGSCharacter::Server_NotifyFoodEaten_Implementation(AGSFoodBase* EatenFood)
 {
-	if (EatenFood)
+	if (!EatenFood) return;
+	
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (PS)
 	{
-		EatenFood->Deactivate();
+		PS->AddScore(EatenFood->Eaten());
 	}
 }
 
