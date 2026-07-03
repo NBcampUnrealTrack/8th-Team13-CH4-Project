@@ -8,5 +8,22 @@ namespace DebuffTag
 
 namespace EventTag
 {
-	UE_DEFINE_GAMEPLAY_TAG(TAG_Event_Enemy_Hit, "Event.Enemy.Hit");
+	UE_DEFINE_GAMEPLAY_TAG(TAG_Event_Enemy_Hit, "Event.Enemy.Hit")
+}
+
+namespace AbilityTag
+{
+	UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Attack,"Ability.Attack")
+	UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Death,"Ability.Death")
+}
+
+namespace StateTag
+{
+	UE_DEFINE_GAMEPLAY_TAG(TAG_State_Dead,"State.Dead")
+}
+
+namespace TeamTag
+{
+	UE_DEFINE_GAMEPLAY_TAG(TAG_Team_Player,"Team.Player")
+	UE_DEFINE_GAMEPLAY_TAG(TAG_Team_Enemy,"Team.Enemy")
 }

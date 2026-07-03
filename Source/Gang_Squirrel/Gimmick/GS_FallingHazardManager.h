@@ -16,18 +16,24 @@ public:
 
 	virtual void BeginPlay() override;
 
+	void StartSpawnFallingHazard();
+	void StopSpawnFallingHazard();
+
 protected:
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Falling Hazard")
 	TSubclassOf<AGS_FallingHazard> FallingHazardClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Falling Hazard")
 	float SpawnInterval = 5.f;
 
-	UPROPERTY()
-	TObjectPtr<AActor> TargetActor;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Falling Hazard")
+	float FirstSpawnDelay = 1.f;
 
 	FTimerHandle SpawnTimerHandle;
 
 protected:
 	void SpawnFallingHazard();
+
+	AActor* FindTargetActor() const;
 };

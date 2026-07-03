@@ -15,10 +15,13 @@
 #include "Components/WidgetComponent.h"
 #include "Gang_Squirrel/Food/GSFoodBase.h"
 #include "Gang_Squirrel/UI/GSPlayerNameTag.h"
+#include "Gang_Squirrel/Gang_Squirrel.h"
+#include "Gang_Squirrel/GAS/GA/Death/GA_PlayerDeath.h"
+#include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 
 AGSCharacter::AGSCharacter()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
@@ -50,6 +53,41 @@ AGSCharacter::AGSCharacter()
 	PlayerNameTagWidget->SetupAttachment(GetMesh());
 	PlayerNameTagWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 120.0f)); // 머리 위
 	PlayerNameTagWidget->SetWidgetSpace(EWidgetSpace::Screen); // 항상 카메라를 향함
+	
+	// for AnimNotifyTick Func
+	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickMontagesAndRefreshBonesWhenPlayingMontages;
+}
+
+void AGSCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (bIsRolling == false)
+	{
+		return;
+	}
+
+	// 구르기 위치 이동은 서버에서만 처리
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
+	RollingElapsedTime += DeltaTime;
+
+	// GiDam - Character Scale(Z) * RollingDistance
+	const float CurrentScale = GetActorScale3D().Z;
+	const float ScaledDistance = RollingDistance * CurrentScale;
+
+	const float RollingSpeed = ScaledDistance / RollingDuration;
+	const FVector DeltaLocation = RollingDirection * RollingSpeed * DeltaTime;
+
+	AddActorWorldOffset(DeltaLocation, true);
+
+	if (RollingElapsedTime >= RollingDuration)
+	{
+		FinishRolling();
+	}
 }
 
 void AGSCharacter::BeginPlay()
@@ -72,7 +110,12 @@ void AGSCharacter::BeginPlay()
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (IsValid(PS))
 	{
-		PS->OnPlayerNameChanged.AddDynamic(this, &ThisClass::UpdateNameTag);
+		
+		if (PS->OnPlayerNameChanged.IsAlreadyBound(this, &ThisClass::UpdateNameTag) == false)
+		{
+			PS->OnPlayerNameChanged.AddDynamic(this, &ThisClass::UpdateNameTag);
+		}
+
 
 		//If controller already has nickname.
 		if (PS->PlayerNickname.IsEmpty() == false)
@@ -80,6 +123,8 @@ void AGSCharacter::BeginPlay()
 			UpdateNameTag(PS->PlayerNickname);
 		}
 	}
+
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 }
 
 void AGSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -146,23 +191,65 @@ void AGSCharacter::IAAttack(const FInputActionValue& InValue)
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (PS)
 	{
-		PS->GetAbilitySystemComponent()->TryActivateAbilityByClass(GA_Attack);
+		PS->GetAbilitySystemComponent()->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag::TAG_Ability_Attack));
 	}
 }
 
 void AGSCharacter::IAStartSprint(const FInputActionValue& InValue)
 {
 	UE_LOG(LogTemp, Log, TEXT("Start Sprint!"));
+
+	SetSprinting(true);
+
+	if (HasAuthority() == false)
+	{
+		ServerSetSprinting(true);
+	}
 }
 
 void AGSCharacter::IAEndSprint(const FInputActionValue& InValue)
 {
 	UE_LOG(LogTemp, Log, TEXT("Complite Sprint!"));
+
+	SetSprinting(false);
+
+	if (HasAuthority() == false)
+	{
+		ServerSetSprinting(false);
+	}
 }
 
 void AGSCharacter::IARolling(const FInputActionValue& InValue)
 {
 	UE_LOG(LogTemp, Log, TEXT("Rolling!"));
+
+	if (bIsRolling)
+	{
+		return;
+	}
+
+	const FVector RollDirection = GetRollingDirection();
+
+	if (HasAuthority())
+	{
+		StartRolling(RollDirection);
+	}
+	else
+	{
+		ServerStartRolling(RollDirection);
+	}
+}
+
+void AGSCharacter::SetSprinting(bool bNewSprinting)
+{
+	bIsSprinting = bNewSprinting;
+
+	GetCharacterMovement()->MaxWalkSpeed = bIsSprinting ? SprintSpeed : WalkSpeed;
+}
+
+void AGSCharacter::ServerSetSprinting_Implementation(bool bNewSprinting)
+{
+	SetSprinting(bNewSprinting);
 }
 
 void AGSCharacter::UpdateNameTag(const FString& Newname)
@@ -175,6 +262,68 @@ void AGSCharacter::UpdateNameTag(const FString& Newname)
 	}
 }
 
+void AGSCharacter::StartRolling(const FVector& InRollingDirection)
+{
+	if (bIsRolling)
+	{
+		return;
+	}
+
+	bIsRolling = true;
+	RollingElapsedTime = 0.f;
+
+	RollingDirection = InRollingDirection;
+	RollingDirection.Z = 0.f;
+	RollingDirection.Normalize();
+
+	MulticastPlayRollMontage();
+
+	UE_LOG(LogTemp, Log, TEXT("Start Rolling"));
+}
+
+void AGSCharacter::FinishRolling()
+{
+	bIsRolling = false;
+	RollingElapsedTime = 0.f;
+	RollingDirection = FVector::ZeroVector;
+
+}
+
+FVector AGSCharacter::GetRollingDirection() const
+{
+	FVector Direction = GetLastMovementInputVector();
+
+	if (Direction.IsNearlyZero())
+	{
+		Direction = GetActorForwardVector();
+	}
+
+	Direction.Z = 0.f;
+	Direction.Normalize();
+
+	return Direction;
+}
+
+void AGSCharacter::MulticastPlayRollMontage_Implementation()
+{
+	if (AM_Roll == nullptr)
+	{
+		return;
+	}
+
+	PlayAnimMontage(AM_Roll);
+}
+
+void AGSCharacter::ServerStartRolling_Implementation(FVector_NetQuantizeNormal InRollingDirection)
+{
+	if (bIsRolling)
+	{
+		return;
+	}
+
+	StartRolling(InRollingDirection);
+}
+
 void AGSCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
@@ -185,11 +334,19 @@ void AGSCharacter::PossessedBy(AController* NewController)
 	{
 		// Init ASC
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS,this);
+		PS->GetAbilitySystemComponent()->AddLooseGameplayTag(TeamTag::TAG_Team_Player);
 		//Give Ability
 		if (!PS->GetAbilitySystemComponent()->FindAbilitySpecFromClass(UGA_Attack::StaticClass()))
 		{
 			PS->GetAbilitySystemComponent()->GiveAbility(FGameplayAbilitySpec(GA_Attack,1));
 		}
+		if (!PS->GetAbilitySystemComponent()->FindAbilitySpecFromClass(UGA_PlayerDeath::StaticClass()))
+		{
+			PS->GetAbilitySystemComponent()->GiveAbility(FGameplayAbilitySpec(GA_Death,1));
+		}
+		
+		// When State.Dead Tag Was Attached or Detached Call to Func
+		PS->GetAbilitySystemComponent()->RegisterGameplayTagEvent(StateTag::TAG_State_Dead, EGameplayTagEventType::NewOrRemoved).AddUObject(this,&AGSCharacter::OnDeathStateTagChanged);
 	}
 }
 
@@ -203,7 +360,26 @@ void AGSCharacter::OnRep_PlayerState()
 	{
 		// Init ASC
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS,this);
+
+		if (PS->OnPlayerNameChanged.IsAlreadyBound(this, &ThisClass::UpdateNameTag) == false)
+		{
+			PS->OnPlayerNameChanged.AddDynamic(this, &ThisClass::UpdateNameTag);
+		}
+
+		if (PS->PlayerNickname.IsEmpty() == false)
+		{
+			UpdateNameTag(PS->PlayerNickname);
+		}
+		
+		// When State.Dead Tag Was Attached or Detached Call to Func
+		PS->GetAbilitySystemComponent()->RegisterGameplayTagEvent(StateTag::TAG_State_Dead, EGameplayTagEventType::NewOrRemoved).AddUObject(this,&AGSCharacter::OnDeathStateTagChanged);
 	}
+}
+
+UAbilitySystemComponent* AGSCharacter::GetAbilitySystemComponent() const
+{
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	return PS ? PS->GetAbilitySystemComponent() : nullptr;
 }
 
 void AGSCharacter::Server_NotifyFoodEaten_Implementation(AGSFoodBase* EatenFood)
@@ -212,4 +388,16 @@ void AGSCharacter::Server_NotifyFoodEaten_Implementation(AGSFoodBase* EatenFood)
 	{
 		EatenFood->Deactivate();
 	}
+}
+
+// GA_Death Callback Func : Temp Logic
+void AGSCharacter::OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	SetActorEnableCollision(NewCount <= 0);
+}
+
+// For After GA_Death Frozen Death Animation Func
+void AGSCharacter::NetMulticast_SetDeathPoseFrozen_Implementation(bool bFrozen)
+{
+	GetMesh()->bPauseAnims = bFrozen;
 }
