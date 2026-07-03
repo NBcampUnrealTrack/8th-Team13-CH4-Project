@@ -15,8 +15,8 @@ AGS_EnemyAIController::AGS_EnemyAIController()
 	
 #pragma region SightConfig_Settings
 	Sight_Config = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
-	Sight_Config->SightRadius = 1500.f;
-	Sight_Config->LoseSightRadius = 2000.f;
+	Sight_Config->SightRadius = BaseSightRadius;
+	Sight_Config->LoseSightRadius = BaseLoseSightRadius;
 	// *2 = SightDegrees is 360
 	Sight_Config->PeripheralVisionAngleDegrees = 180.f;
 	Sight_Config->SetMaxAge(5.f);
@@ -46,7 +46,16 @@ void AGS_EnemyAIController::Tick(float DeltaSeconds)
 void AGS_EnemyAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
-	
+
+	// Pawn Scale(Z)만큼 Sight/LoseSight 반경을 다시 계산해서 적용 (생성자 시점엔 BP 스케일이 아직 최종 반영 전이라 여기서 재계산)
+	if (InPawn && Sight_Config)
+	{
+		const float ScaleMultiplier = InPawn->GetActorScale3D().Z;
+		Sight_Config->SightRadius = BaseSightRadius * ScaleMultiplier;
+		Sight_Config->LoseSightRadius = BaseLoseSightRadius * ScaleMultiplier;
+		PerceptionComp->ConfigureSense(*Sight_Config);
+	}
+
 	if (BT_Enemy)
 	{
 		RunBehaviorTree(BT_Enemy);

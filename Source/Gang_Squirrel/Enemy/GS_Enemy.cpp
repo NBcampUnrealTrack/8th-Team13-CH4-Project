@@ -2,6 +2,7 @@
 
 #include "AbilitySystemComponent.h"
 #include "Components/SphereComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Gang_Squirrel/GAS/GA/Attack/Enemy/GA_EnemyAttack.h"
 #include "Gang_Squirrel/GAS/GA/Death/GA_EnemyDeath.h"
 #include "Gang_Squirrel/GAS/AttributeSet/GS_PlayerAttributeSet.h"
@@ -33,6 +34,8 @@ AGS_Enemy::AGS_Enemy()
 	
 	// for AnimNotifyTick Func
 	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickMontagesAndRefreshBonesWhenPlayingMontages;
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+	GetCharacterMovement()->bUseControllerDesiredRotation = false;
 }
 
 void AGS_Enemy::BeginPlay()
