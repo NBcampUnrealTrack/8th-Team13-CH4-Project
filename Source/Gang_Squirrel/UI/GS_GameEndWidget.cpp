@@ -4,6 +4,7 @@
 #include "Components/VerticalBox.h"
 #include "Components/Button.h"
 #include "GS_LeaderboardRowWidget.h"
+#include "Gang_Squirrel/Player/GS_PlayerState.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 
@@ -27,6 +28,17 @@ void UGS_GameEndWidget::SetGameEndResult(const TArray<FGSLeaderboardEntry>& InLe
 	if (IsValid(TXT_Title))
 	{
 		TXT_Title->SetText(FText::FromString(TEXT("Result")));
+	}
+	
+	APlayerController* PC = GetOwningPlayer();
+	if (PC)
+	{
+		AGS_PlayerState* PS = PC->GetPlayerState<AGS_PlayerState>();
+		
+		if (PS && TXT_MyScore)
+		{
+			TXT_MyScore->SetText(FText::FromString(FString::Printf(TEXT("내 점수 : %d"), PS->GetPlayerScore())));
+		}
 	}
 
 	if (IsValid(VB_Leaderboard))
