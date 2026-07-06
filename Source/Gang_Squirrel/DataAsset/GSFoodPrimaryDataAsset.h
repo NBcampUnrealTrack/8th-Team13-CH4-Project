@@ -31,4 +31,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float SquirrelScale = 0.1f;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float MeshSize = 0.5f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float MeshZ = 0.1f;
+	
 };

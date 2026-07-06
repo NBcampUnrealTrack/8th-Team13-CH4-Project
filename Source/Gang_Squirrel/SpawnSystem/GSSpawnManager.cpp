@@ -4,6 +4,7 @@
 #include "GSSpawnManager.h"
 
 #include "GSSpawnPoint.h"
+#include "Gang_Squirrel/DataAsset/GSFoodPrimaryDataAsset.h"
 #include "Gang_Squirrel/SpawnSystem/GSPoolSubsystem.h"
 #include "Gang_Squirrel/Food/GSFoodBase.h"
 #include "Kismet/GameplayStatics.h"
@@ -112,6 +113,8 @@ void AGSSpawnManager::Spawn()
 					return;
 				}
 			
+				UGSFoodPrimaryDataAsset* CurrentFoodData = Food->FoodData;
+				CurrentLocation.Z += CurrentFoodData->MeshZ;
 				Food->SetActorLocation(CurrentLocation);
 				Food->Activate();
 			
@@ -139,7 +142,7 @@ bool AGSSpawnManager::bCheckArround(const FVector& CheckLocation) const
 	bool bOverlap = UKismetSystemLibrary::SphereOverlapActors(
 		GetWorld(),
 		CheckLocation,
-		50.f,
+		30.f,
 		ObjectTypes,
 		AGSFoodBase::StaticClass(),
 		IgnoreActors,
