@@ -21,7 +21,6 @@ enum class EHandCombatType : uint8
 
 
 
-//TODO::Attach AIController, BB,BT
 UCLASS()
 class GANG_SQUIRREL_API AGS_Enemy : public ACharacter, public IAbilitySystemInterface
 {
@@ -30,18 +29,28 @@ class GANG_SQUIRREL_API AGS_Enemy : public ACharacter, public IAbilitySystemInte
 public:
 	AGS_Enemy();
 	
+#pragma region Virtual Func
 	virtual void Tick(float DeltaTime) override;
+	virtual void BeginPlay() override;
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+#pragma endregion 
 	
+#pragma region Getter
 	FORCEINLINE TSubclassOf<UGA_EnemyAttack> GetGA_Attack() const { return GA_Attack; }
-	
 	USphereComponent* GetCombatCollision(EHandCombatType HandType) const;
+#pragma endregion 
 	
+#pragma region Setter
+	void SetRotationTarget(AActor* NewTarget, float NewInterpSpeed);
+#pragma endregion 
+	
+#pragma region AnimationSettingFunc
 	UFUNCTION(NetMulticast,Reliable)
 	void NetMultiCast_FreezeDeathPose();
+#pragma endregion 
 	
 protected:
-	virtual void BeginPlay() override;
 	
 #pragma region GAS
 	//ASC,AttributeSet
@@ -66,6 +75,14 @@ private:
 	TObjectPtr<USphereComponent> SphereComp_LeftHand;
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USphereComponent> SphereComp_RightHand;
+#pragma endregion 
+	
+private:
+#pragma region RotationValue
+	UPROPERTY(Replicated)
+	TObjectPtr<AActor> RotationTarget;
+	UPROPERTY(Replicated)
+	float RotationInterpSpeed = 30.f;
 #pragma endregion 
 };
 

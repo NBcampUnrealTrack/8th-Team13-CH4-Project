@@ -1,6 +1,8 @@
 #include "GA_EnemyDeath.h"
 
 #include "AbilitySystemComponent.h"
+#include "AIController.h"
+#include "BrainComponent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Gang_Squirrel/Enemy/GS_Enemy.h"
@@ -33,6 +35,15 @@ void UGA_EnemyDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	if (ActorInfo->IsNetAuthority())
 	{
 		Enemy->GetCharacterMovement()->DisableMovement();
+		Enemy->SetRotationTarget(nullptr,0.f);
+		
+		if (AAIController* AIController = Cast<AAIController>(Enemy->GetController()))
+		{
+			if (UBrainComponent* BrainComp = AIController->GetBrainComponent())
+			{
+				BrainComp->StopLogic(TEXT("Enemy Died"));
+			}
+		}
 
 		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
 		{

@@ -2,6 +2,7 @@
 
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Gang_Squirrel/Enemy/GS_Enemy.h"
 
 UBTTask_Chase::UBTTask_Chase()
 {
@@ -73,11 +74,10 @@ void UBTTask_Chase::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemor
 		return;
 	}
 	
-	const FVector ToTarget = (Target->GetActorLocation() - OwnerPawn->GetActorLocation()).GetSafeNormal2D();
-	const FRotator DesireRotation = ToTarget.Rotation();
-	const FRotator NewRotation = FMath::RInterpTo(OwnerPawn->GetActorRotation(), DesireRotation, DeltaSeconds, RotationInterpSpeed);
-	
-	OwnerPawn->SetActorRotation(NewRotation);
+	if (AGS_Enemy* Enemy = Cast<AGS_Enemy>(OwnerPawn))
+	{
+		Enemy->SetRotationTarget(Target,RotationInterpSpeed);
+	}
 }
 
 // When Task Wask Aborted
@@ -85,6 +85,10 @@ EBTNodeResult::Type UBTTask_Chase::AbortTask(UBehaviorTreeComponent& OwnerComp, 
 {
 	if (CachedAIController)
 	{
+		if (AGS_Enemy* Enemy = Cast<AGS_Enemy>(CachedAIController->GetPawn()))
+		{
+			Enemy->SetRotationTarget(nullptr,RotationInterpSpeed);
+		}
 		CachedAIController->ReceiveMoveCompleted.RemoveDynamic(this, &UBTTask_Chase::OnMoveCompleted);
 		CachedAIController->StopMovement();
 		CachedAIController = nullptr;
@@ -97,6 +101,10 @@ void UBTTask_Chase::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 {
 	if (CachedAIController)
 	{
+		if (AGS_Enemy* Enemy = Cast<AGS_Enemy>(CachedAIController->GetPawn()))
+		{
+			Enemy->SetRotationTarget(nullptr,RotationInterpSpeed);
+		}
 		CachedAIController->ReceiveMoveCompleted.RemoveDynamic(this,&UBTTask_Chase::OnMoveCompleted);
 		CachedAIController = nullptr;
 	}
