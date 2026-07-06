@@ -8,6 +8,8 @@
 #include "Gang_Squirrel/Game/GS_GameModeBase.h"
 #include "Gang_Squirrel/Game/GS_GameState.h"
 #include "Gang_Squirrel/UI/GS_GameEndWidget.h"
+#include "Gang_Squirrel/UI/GS_NicknameInputWidget.h"
+#include "GameFramework/GameStateBase.h"
 
 void AGSPlayerController::BeginPlay()
 {
@@ -60,10 +62,10 @@ void AGSPlayerController::BeginPlay()
 
 	if (IsLocalController() && NicknameInputWidgetClass)
 	{
-		UUserWidget* Widget = CreateWidget<UUserWidget>(this, NicknameInputWidgetClass);
-		if (IsValid(Widget))
+		NicknameWidgetInstance = CreateWidget<UGS_NicknameInputWidget>(this, NicknameInputWidgetClass);
+		if (IsValid(NicknameWidgetInstance))
 		{
-			Widget->AddToViewport();
+			NicknameWidgetInstance->AddToViewport();
 			SetShowMouseCursor(true);
 			SetInputMode(FInputModeUIOnly());
 
@@ -82,10 +84,19 @@ void AGSPlayerController::SubmitNickname(const FString& Nickname)
 	//Temp Code
 	UE_LOG(LogTemp, Log, TEXT("Nickname: %s"), *Nickname);
 	
-	ServerSetNickname(Nickname);
+	//ServerSetNickname(Nickname);
+	//SetShowMouseCursor(false);
+	//SetInputMode(FInputModeGameOnly());
+	if (Nickname.TrimStartAndEnd().IsEmpty())
+	{
+		if (IsValid(NicknameWidgetInstance))
+		{
+			NicknameWidgetInstance->ShowError(TEXT("닉네임을 입력해주세요."));
+		}
+		return;
+	}
 
-	SetShowMouseCursor(false);
-	SetInputMode(FInputModeGameOnly());
+	ServerSetNickname(Nickname);
 }
 
 void AGSPlayerController::ServerSetNickname_Implementation(const FString& Nickname)
@@ -103,7 +114,22 @@ void AGSPlayerController::ServerSetNickname_Implementation(const FString& Nickna
 		return;
 	}
 
+	AGameStateBase* GS = GetWorld()->GetGameState<AGameStateBase>();
+	if (IsValid(GS))
+	{
+		for (APlayerState* OtherPS : GS->PlayerArray)
+		{
+			AGS_PlayerState* OtherGSPS = Cast<AGS_PlayerState>(OtherPS);
+			if (IsValid(OtherGSPS) && OtherGSPS != PS && OtherGSPS->PlayerNickname == Nickname)
+			{
+				ClientOnNicknameRejected(TEXT("이미 사용중인 닉네임입니다."));
+				return;
+			}
+		}
+	}
+
 	PS->SetPlayerNickname(Nickname);
+	ClientOnNicknameAccepted();
 
 	AGS_GameModeBase* GM = Cast<AGS_GameModeBase>(GetWorld()->GetAuthGameMode());
 	if (IsValid(GM))
@@ -111,6 +137,7 @@ void AGSPlayerController::ServerSetNickname_Implementation(const FString& Nickna
 		GM->NotifyPlayerReady();
 	}
 }
+
 void AGSPlayerController::ClientShowGameEndUI_Implementation()
 {
 	ShowGameEndUILocal();
@@ -151,6 +178,26 @@ void AGSPlayerController::ShowGameEndUILocal()
 		SetInputMode(InputMode);
 	}
 }
+void AGSPlayerController::ClientOnNicknameAccepted_Implementation()
+{
+	if (IsValid(NicknameWidgetInstance))
+	{
+		NicknameWidgetInstance->RemoveFromParent();
+		NicknameWidgetInstance = nullptr;
+	}
+	SetShowMouseCursor(false);
+	SetInputMode(FInputModeGameOnly());
+}
+
+void AGSPlayerController::ClientOnNicknameRejected_Implementation(const FString& ErrorMessage)
+{
+	if (IsValid(NicknameWidgetInstance))
+	{
+		NicknameWidgetInstance->ShowError(ErrorMessage);
+	}
+}
+
+
 
 void AGSPlayerController::CheckMatchEndByTime()
 {
