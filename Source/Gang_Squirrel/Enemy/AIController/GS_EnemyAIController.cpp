@@ -81,12 +81,16 @@ void AGS_EnemyAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus
 	// Detection Success
 	if (Stimulus.WasSuccessfullySensed())
 	{
+		if (BB->GetValueAsObject(FName("TargetActor")) != Actor)
+		{
+			BB->SetValueAsBool(FName("bCanAttack"),false);
+		}
 		BB->SetValueAsObject(FName("TargetActor"),Actor);
 	}
-	// Detection Failed
-	else
+	else if (BB->GetValueAsObject(FName("TargetActor")) == Actor)
 	{
 		BB->ClearValue(FName("TargetActor"));
+		BB->SetValueAsBool(FName("bCanAttack"),false);
 	}
 }
 
