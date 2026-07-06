@@ -41,6 +41,8 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 		return EBTNodeResult::Failed;
 	}
 	
+	CachedEnemy->SetRotationTarget(CachedTarget,RotationInterpSpeed);
+	
 	if (IsFacingTarget(CachedEnemy,CachedTarget))
 	{
 		if (!TryActivateAttack(OwnerComp))
@@ -81,12 +83,6 @@ void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 		return;
 	}
 	
-	const FVector ToTarget = (CachedTarget->GetActorLocation() - CachedEnemy->GetActorLocation()).GetSafeNormal2D();
-	const FRotator DesiredRotation = ToTarget.Rotation();
-	const FRotator NewRotation = FMath::RInterpTo(CachedEnemy->GetActorRotation(),DesiredRotation,DeltaSeconds,RotationInterpSpeed);
-	
-	CachedEnemy->SetActorRotation(NewRotation);
-	
 	if (IsFacingTarget(CachedEnemy,CachedTarget))
 	{
 		if (!TryActivateAttack(OwnerComp))
@@ -99,6 +95,11 @@ void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 
 EBTNodeResult::Type UBTTask_Attack::AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
+	if (CachedEnemy)
+	{
+		CachedEnemy->SetRotationTarget(nullptr,RotationInterpSpeed);
+	}
+	
 	CachedEnemy = nullptr;
 	CachedTarget = nullptr;
 	bAbilityActivated = false;
@@ -135,6 +136,11 @@ bool UBTTask_Attack::TryActivateAttack(UBehaviorTreeComponent& OwnerComp)
 	}
 	
 	bAbilityActivated = bActivated;
+	
+	if (bAbilityActivated)
+	{
+		CachedEnemy->SetRotationTarget(nullptr,RotationInterpSpeed);
+	}
 	
 	return bActivated;
 }
