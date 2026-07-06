@@ -53,12 +53,30 @@ void AGS_Enemy::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	if (const FGS_EnemyDataTable* Row = EnemyDataRow.GetRow<FGS_EnemyDataTable>(TEXT("GS_Enemy:BeginPlay")))
+	{
+		CachedEnemyData = *Row;
+	}
+	
 	if (HasAuthority())
 	{
 		EnemyAbilitySystemComp->InitAbilityActorInfo(this,this);
 		EnemyAbilitySystemComp->AddLooseGameplayTag(TeamTag::TAG_Team_Enemy);
+		
+		EnemyAttributeSet->InitHealth(CachedEnemyData.Health);
+		EnemyAttributeSet->InitMaxHealth(CachedEnemyData.MaxHealth);
+		EnemyAttributeSet->InitMoveSpeed(CachedEnemyData.MoveSpeed);
+		
 		EnemyAbilitySystemComp->GiveAbility(FGameplayAbilitySpec(GA_Attack,1));
 		EnemyAbilitySystemComp->GiveAbility(FGameplayAbilitySpec(GA_Death,1));
+		
+		for (const TSubclassOf<UGameplayAbility>& ExtraAbility : CachedEnemyData.GrantedAbilities)
+		{
+			if (ExtraAbility)
+			{
+				EnemyAbilitySystemComp->GiveAbility(FGameplayAbilitySpec(ExtraAbility,1));
+			}
+		}
 	}
 	
 	EnemyAbilitySystemComp->RegisterGameplayTagEvent(StateTag::TAG_State_Dead,EGameplayTagEventType::NewOrRemoved).AddUObject(this,&AGS_Enemy::OnDeathStateTagChanged);

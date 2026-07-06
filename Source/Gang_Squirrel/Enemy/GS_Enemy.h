@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
 #include "GameFramework/Character.h"
+#include "Gang_Squirrel/DataBase/DataTable/DT_Enemy.h"
 #include "GS_Enemy.generated.h"
 
 struct FGameplayTag;
@@ -39,6 +40,7 @@ public:
 #pragma region Getter
 	FORCEINLINE TSubclassOf<UGA_EnemyAttack> GetGA_Attack() const { return GA_Attack; }
 	USphereComponent* GetCombatCollision(EHandCombatType HandType) const;
+	FORCEINLINE const FGS_EnemyDataTable& GetEnemyData() const {return CachedEnemyData;}
 #pragma endregion 
 	
 #pragma region Setter
@@ -77,12 +79,21 @@ private:
 	TObjectPtr<USphereComponent> SphereComp_RightHand;
 #pragma endregion 
 	
+#pragma region DataTable
+	UPROPERTY(EditDefaultsOnly,Category="Data")
+	FDataTableRowHandle EnemyDataRow;
+#pragma endregion 
+	
 private:
 #pragma region RotationValue
 	UPROPERTY(Replicated)
 	TObjectPtr<AActor> RotationTarget;
 	UPROPERTY(Replicated)
 	float RotationInterpSpeed = 30.f;
+#pragma endregion 
+	
+#pragma region DataTable
+	FGS_EnemyDataTable CachedEnemyData;
 #pragma endregion 
 };
 
