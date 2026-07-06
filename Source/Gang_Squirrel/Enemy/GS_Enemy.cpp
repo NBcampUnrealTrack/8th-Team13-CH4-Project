@@ -33,12 +33,20 @@ AGS_Enemy::AGS_Enemy()
 	SphereComp_RightHand->SetupAttachment(GetMesh(), FName("R_Hand"));
 #pragma endregion
 	
+#pragma region AnimNotify
 	// for AnimNotifyTick Func
 	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickMontagesAndRefreshBonesWhenPlayingMontages;
+#pragma endregion 
+	
+#pragma region MovementSettings
 	// Rotation Settings
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	GetCharacterMovement()->bUseControllerDesiredRotation = false;
 	bUseControllerRotationYaw = false;
+#pragma endregion 
+	
+	BaseEyeHeight = 64.f * GetActorScale3D().Z;
+	CrouchedEyeHeight = 64.f * GetActorScale3D().Z;
 }
 
 void AGS_Enemy::BeginPlay()
