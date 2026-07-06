@@ -20,7 +20,6 @@ public:
 	void StopSpawnFallingHazard();
 
 protected:
-	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Falling Hazard")
 	TSubclassOf<AGS_FallingHazard> FallingHazardClass;
 
