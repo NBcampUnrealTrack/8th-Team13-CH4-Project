@@ -36,6 +36,9 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 		return EBTNodeResult::Failed;
 	}
 	
+	FacingToleranceDegrees = CachedEnemy->GetEnemyData().FacingToleranceDegrees;
+	RotationInterpSpeed = CachedEnemy->GetEnemyData().AttackRotationInterpSpeed;
+	
 	if (IsTargetDead(CachedTarget))
 	{
 		return EBTNodeResult::Failed;

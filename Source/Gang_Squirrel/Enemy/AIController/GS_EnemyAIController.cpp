@@ -1,6 +1,7 @@
 #include "GS_EnemyAIController.h"
 
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Gang_Squirrel/Enemy/GS_Enemy.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AIPerceptionTypes.h"
 #include "Perception/AISenseConfig_Sight.h"
@@ -46,6 +47,13 @@ void AGS_EnemyAIController::Tick(float DeltaSeconds)
 void AGS_EnemyAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
+	
+	if (const AGS_Enemy* Enemy = Cast<AGS_Enemy>(InPawn))
+	{
+		Sight_Config->SightRadius = Enemy->GetEnemyData().SightRadius;
+		Sight_Config->LoseSightRadius = Enemy->GetEnemyData().LoseSightRadius;
+		PerceptionComp->ConfigureSense(*Sight_Config);
+	}
 
 	if (BT_Enemy)
 	{
@@ -92,11 +100,17 @@ void AGS_EnemyAIController::DrawDebug_SightRadius()
 		return;
 	}
 	
+	AGS_Enemy* Enemy = Cast<AGS_Enemy>(OwnerPawn);
+	if (!Enemy)
+	{
+		return;
+	}
+	
 	// Accept Sense SightRadius
 	DrawDebugSphere(GetWorld(),OwnerPawn->GetActorLocation(),Sight_Config->SightRadius,32,FColor::Green,false);
 	// Lose Sense SightRadius
 	DrawDebugSphere(GetWorld(),OwnerPawn->GetActorLocation(),Sight_Config->LoseSightRadius,32,FColor::Red,false);
 	// AttackDistance
-	DrawDebugSphere(GetWorld(),OwnerPawn->GetActorLocation(),20.f,32,FColor::Red,false);
+	DrawDebugSphere(GetWorld(),OwnerPawn->GetActorLocation(),Enemy->GetEnemyData().AcceptanceRadius,32,FColor::Red,false);
 }
 

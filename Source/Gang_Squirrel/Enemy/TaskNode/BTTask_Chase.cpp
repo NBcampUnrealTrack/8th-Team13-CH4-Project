@@ -27,11 +27,14 @@ EBTNodeResult::Type UBTTask_Chase::ExecuteTask(UBehaviorTreeComponent& OwnerComp
 	{
 		return EBTNodeResult::Failed;
 	}
+	if (AGS_Enemy* Enemy = Cast<AGS_Enemy>(OwnerAIController->GetPawn()))
+	{
+		AcceptanceRadius = Enemy->GetEnemyData().AcceptanceRadius;
+		RotationInterpSpeed = Enemy->GetEnemyData().ChaseRotationInterpSpeed;
+	}
 	
-	const float ScaleMultiplier = OwnerAIController->GetPawn() ? OwnerAIController->GetPawn()->GetActorScale3D().Z : 1.f;
-
 	FAIMoveRequest MoveRequest(Target);
-	MoveRequest.SetAcceptanceRadius(AcceptanceRadius * ScaleMultiplier);
+	MoveRequest.SetAcceptanceRadius(AcceptanceRadius);
 	
 	const FPathFollowingRequestResult RequestResult = OwnerAIController->MoveTo(MoveRequest);
 	
