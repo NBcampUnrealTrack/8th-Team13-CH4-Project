@@ -1,8 +1,8 @@
 #include "GS_FallingHazardManager.h"
 
 #include "GS_FallingHazard.h"
-#include "GameFramework/Character.h"
-#include "Kismet/GameplayStatics.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
 #include "TimerManager.h"
 
 AGS_FallingHazardManager::AGS_FallingHazardManager()
@@ -80,11 +80,13 @@ void AGS_FallingHazardManager::SpawnFallingHazard()
 		return;
 	}
 
-	const FVector SpawnLocation = TargetActor->GetActorLocation() + FVector(0.f, 0.f, 50.f);
+	const FVector SpawnLocation = TargetActor->GetActorLocation() + FVector(0.f, 0.f, 120.f);
 	const FRotator SpawnRotation = FRotator::ZeroRotator;
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride =
+		ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	AGS_FallingHazard* FallingHazard = World->SpawnActor<AGS_FallingHazard>(
 		FallingHazardClass,
@@ -93,7 +95,7 @@ void AGS_FallingHazardManager::SpawnFallingHazard()
 		SpawnParams
 	);
 
-	if (IsValid(FallingHazard) == true)
+	if (IsValid(FallingHazard))
 	{
 		FallingHazard->SetTargetActor(TargetActor);
 	}
@@ -109,11 +111,22 @@ AActor* AGS_FallingHazardManager::FindTargetActor() const
 
 	TArray<AActor*> PlayerCharacters;
 
-	UGameplayStatics::GetAllActorsOfClass(
-		World,
-		ACharacter::StaticClass(),
-		PlayerCharacters
-	);
+	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+	{
+		APlayerController* PlayerController = It->Get();
+		if (IsValid(PlayerController) == false)
+		{
+			continue;
+		}
+
+		APawn* PlayerPawn = PlayerController->GetPawn();
+		if (IsValid(PlayerPawn) == false)
+		{
+			continue;
+		}
+
+		PlayerCharacters.Add(PlayerPawn);
+	}
 
 	if (PlayerCharacters.Num() <= 0)
 	{

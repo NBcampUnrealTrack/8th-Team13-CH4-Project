@@ -1,9 +1,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
+#include "GameFramework/Actor.h"
+#include "GS_FallingHazardDataAsset.h"
 #include "GS_FallingHazard.generated.h"
 
+class USceneComponent;
 class UBoxComponent;
 class UStaticMeshComponent;
 class UDecalComponent;
@@ -17,9 +19,8 @@ enum class EGSFallingHazardState : uint8
 	Impact
 };
 
-
 UCLASS()
-class GANG_SQUIRREL_API AGS_FallingHazard : public ACharacter
+class GANG_SQUIRREL_API AGS_FallingHazard : public AActor
 {
 	GENERATED_BODY()
 
@@ -32,7 +33,9 @@ public:
 	void SetTargetActor(AActor* InTargetActor);
 
 protected:
-	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
+	TObjectPtr<USceneComponent> RootScene;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
 	TObjectPtr<UStaticMeshComponent> HazardMesh;
 
@@ -42,63 +45,59 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
 	TObjectPtr<UDecalComponent> WarningDecal;
 
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Falling Hazard|Data")
+	TObjectPtr<UGS_FallingHazardDataAsset> FallingHazardDataAsset;
+
+	UPROPERTY(ReplicatedUsing = OnRep_SelectedHazardIndex)
+	int32 SelectedHazardIndex = INDEX_NONE;
 
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Tracking")
+	float ForwardDistance = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Tracking")
-	float ForwardDistance = 500.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Tracking")
-	float HeightOffset = 300.f;
-
+	float HeightOffset = 120.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Time")
 	float TrackingTime = 3.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Time")
-	float WarningTime = 2.f;
+	float WarningTime = 1.5f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Falling")
-	float FallSpeed = 1500.f;
+	float FallSpeed = 450.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Falling")
 	float ImpactDestroyDelay = 0.3f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Trace")
-	float GroundTraceUpOffset = 100.f;
+	float GroundTraceUpOffset = 150.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Trace")
-	float GroundTraceDownOffset = 300.f;
+	float GroundTraceDownOffset = 500.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Trace")
-	float GroundCheckDistance = 50.f;
+	float GroundCheckDistance = 5.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Trace")
 	TEnumAsByte<ECollisionChannel> GroundTraceChannel = ECC_GameTraceChannel1;
 
-#pragma region Decal
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Warning")
-	FVector WarningDecalSize = FVector(128.f, 300.f, 300.f);
-
+protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Warning")
 	float WarningDecalZOffset = 5.f;
-
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Warning")
 	float WarningDecalProjectionDepth = 300.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Warning")
-	float TrackingDecalStartSize = 120.f;
+	float TrackingDecalStartSize = 40.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Warning")
-	float TrackingDecalEndSize = 420.f;
+	float TrackingDecalEndSize = 110.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Warning")
-	float FallingDecalEndSize = 450.f;
-
-	UPROPERTY(Replicated)
-	float TrackingStartServerTime = 0.f;
+	float FallingDecalEndSize = 120.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Warning")
 	float WarningDecalLocationInterpSpeed = 18.f;
@@ -108,13 +107,10 @@ protected:
 	uint8 bHasInitializedDecalLocation : 1 = false;
 
 	FVector CurrentDecalVisualLocation = FVector::ZeroVector;
-#pragma endregion
-	
+
 protected:
-	
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Falling Hazard")
 	EGSFallingHazardState State = EGSFallingHazardState::Tracking;
-
 
 	UPROPERTY()
 	TObjectPtr<AActor> TargetActor;
@@ -124,6 +120,12 @@ protected:
 
 	UPROPERTY(Replicated)
 	FVector FixedDropLocation = FVector::ZeroVector;
+
+	UPROPERTY(Replicated)
+	float FallingStartServerTime = 0.f;
+
+	bool bHasValidGroundLocation = false;
+	bool bIsFallingVisualReady = false;
 
 	UPROPERTY()
 	TSet<TObjectPtr<AActor>> HitActors;
@@ -136,6 +138,8 @@ protected:
 	float GetServerWorldTime() const;
 
 	void UpdateTrackingLocation();
+	void UpdateFallingLocationByServerTime();
+
 	bool FindGroundLocation(const FVector& InLocation, FVector& OutGroundLocation) const;
 
 	void StartWarning();
@@ -146,8 +150,26 @@ protected:
 	void OnHitTarget(AActor* HitActor);
 
 	void UpdateWarningDecalVisual(float DeltaTime);
-
 	float GetFallingAlpha() const;
+
+	void ChooseRandomHazardData();
+	void ApplyHazardDataByIndex(int32 InIndex);
+
+	UFUNCTION()
+	void OnRep_SelectedHazardIndex();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastStartWarningVisual(FVector InFixedDropLocation, FVector InGroundLocation);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastStartFallingVisual(
+		FVector InFixedDropLocation,
+		FVector InGroundLocation,
+		float InFallingStartServerTime
+	);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastFinishImpactVisual(FVector InGroundLocation);
 
 	UFUNCTION()
 	void OnDamageBoxBeginOverlap(
