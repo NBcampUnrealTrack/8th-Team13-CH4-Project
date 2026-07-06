@@ -7,6 +7,7 @@
 #include "Gang_Squirrel/GAS/GA/Death/GA_EnemyDeath.h"
 #include "Gang_Squirrel/GAS/AttributeSet/GS_PlayerAttributeSet.h"
 #include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
+#include "Net/UnrealNetwork.h"
 
 
 AGS_Enemy::AGS_Enemy()
@@ -32,10 +33,20 @@ AGS_Enemy::AGS_Enemy()
 	SphereComp_RightHand->SetupAttachment(GetMesh(), FName("R_Hand"));
 #pragma endregion
 	
+#pragma region AnimNotify
 	// for AnimNotifyTick Func
 	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickMontagesAndRefreshBonesWhenPlayingMontages;
+#pragma endregion 
+	
+#pragma region MovementSettings
+	// Rotation Settings
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	GetCharacterMovement()->bUseControllerDesiredRotation = false;
+	bUseControllerRotationYaw = false;
+#pragma endregion 
+	
+	BaseEyeHeight = 64.f * GetActorScale3D().Z;
+	CrouchedEyeHeight = 64.f * GetActorScale3D().Z;
 }
 
 void AGS_Enemy::BeginPlay()
@@ -56,11 +67,27 @@ void AGS_Enemy::BeginPlay()
 void AGS_Enemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	
+	if (RotationTarget)
+	{
+		const FVector ToTarget = (RotationTarget->GetActorLocation() - GetActorLocation()).GetSafeNormal2D();
+		const FRotator DesiredRotation = ToTarget.Rotation();
+
+		SetActorRotation(FMath::RInterpTo(GetActorRotation(), DesiredRotation, DeltaTime, RotationInterpSpeed));
+	}
 }
 
 UAbilitySystemComponent* AGS_Enemy::GetAbilitySystemComponent() const
 {
 	return EnemyAbilitySystemComp;
+}
+
+void AGS_Enemy::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	DOREPLIFETIME(AGS_Enemy,RotationTarget);
+	DOREPLIFETIME(AGS_Enemy,RotationInterpSpeed);
 }
 
 USphereComponent* AGS_Enemy::GetCombatCollision(EHandCombatType HandType) const
@@ -77,6 +104,12 @@ USphereComponent* AGS_Enemy::GetCombatCollision(EHandCombatType HandType) const
 	}
 	
 	return CombatHandComp;
+}
+
+void AGS_Enemy::SetRotationTarget(AActor* NewTarget, float NewInterpSpeed)
+{
+	RotationTarget = NewTarget;
+	RotationInterpSpeed = NewInterpSpeed;
 }
 
 void AGS_Enemy::OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount)
