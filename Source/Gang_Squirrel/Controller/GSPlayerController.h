@@ -5,6 +5,7 @@
 #include "GSPlayerController.generated.h"
 
 class UGS_GameEndWidget;
+class UGS_NicknameInputWidget;
 
 UCLASS()
 class GANG_SQUIRREL_API AGSPlayerController : public APlayerController
@@ -21,6 +22,12 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientShowGameEndUI();
 
+	UFUNCTION(Client, Reliable)
+	void ClientOnNicknameAccepted();
+
+	UFUNCTION(Client, Reliable)
+	void ClientOnNicknameRejected(const FString& ErrorMessage);
+
 private:
 	UFUNCTION(Server, Reliable)
 	void ServerSetNickname(const FString& Nickname);
@@ -33,9 +40,13 @@ private:
 
 	void ShowGameEndUILocal();
 
+
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<UUserWidget> NicknameInputWidgetClass;
+	TSubclassOf<UGS_NicknameInputWidget> NicknameInputWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UGS_NicknameInputWidget> NicknameWidgetInstance;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> HUDWidgetClass;

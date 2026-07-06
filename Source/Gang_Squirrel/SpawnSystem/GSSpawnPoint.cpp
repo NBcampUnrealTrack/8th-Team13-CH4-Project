@@ -40,8 +40,8 @@ FVector AGSSpawnPoint::GetRandomLocation() const
 	const FVector Extent = SpawnArea->GetScaledBoxExtent();
 	
 	FVector ResultLocation = UKismetMathLibrary::RandomPointInBoundingBox(Origin, Extent);
-	FVector Start = ResultLocation + FVector(0.f,0.f,1000.f);
-	FVector End = ResultLocation - FVector(0.f, 0.f, 5000.f);
+	FVector Start = ResultLocation + FVector(0.f,0.f,1.f);
+	FVector End = ResultLocation - FVector(0.f, 0.f, 100.f);
 	
 	FHitResult Hit;
 	

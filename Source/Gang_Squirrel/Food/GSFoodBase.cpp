@@ -89,8 +89,13 @@ void AGSFoodBase::BeginPlay()
 void AGSFoodBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if (!IsValid(CurrentCharacter))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("REturn"))
+		return;
+	}
 	
-	if (bIsFilling && FoodWidgetComponent)
+	if (bIsFilling && FoodWidgetComponent && CurrentCharacter->bIsEating && FoodData)
 	{
 		CurrentEatenTime += DeltaTime;
 		
@@ -106,7 +111,7 @@ void AGSFoodBase::Tick(float DeltaTime)
 			UserWidget->CallFunctionByNameWithArguments(*Cmd, ar, nullptr, true);
 		}
 		
-		if (Alpha >= 0.188f)
+		if (Alpha >= 0.190f)
 		{
 			bIsFilling = false;
 			SetActorTickEnabled(false);
@@ -169,6 +174,7 @@ void AGSFoodBase::Deactivate()
 		return;
 	}
 	UE_LOG(LogTemp, Warning, TEXT("Deactivate GSFoodBase"));
+	SetActorTickEnabled(false);
 	bIsActive = false;
 	OnRep_Activate();
 }
@@ -181,7 +187,8 @@ void AGSFoodBase::OnRep_FoodData() const
 	
 	if (StaticMeshComponent)
 	{
-		StaticMeshComponent->SetRelativeScale3D(FVector(1.f,1.f,1.f));
+		float CurrentMeshSize = FoodData->MeshSize;
+		StaticMeshComponent->SetRelativeScale3D(FVector(CurrentMeshSize,CurrentMeshSize,CurrentMeshSize));
 		SphereComponent->SetSphereRadius(5.f);
 	}
 }
@@ -195,9 +202,9 @@ int32 AGSFoodBase::Eaten()
 
 void AGSFoodBase::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	AGSCharacter* Character = Cast<AGSCharacter>(OtherActor);
-	if (!Character) return;
-	if (Character->IsLocallyControlled())
+	CurrentCharacter  = Cast<AGSCharacter>(OtherActor);
+	if (!CurrentCharacter) return;
+	if (CurrentCharacter->IsLocallyControlled())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Local Player Overlap Begin!"));
 		

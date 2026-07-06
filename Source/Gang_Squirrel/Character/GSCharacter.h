@@ -50,6 +50,8 @@ private:
 	void IALook(const FInputActionValue& InValue);
 
 	void IAInteract(const FInputActionValue& InValue);
+	
+	void IAStopInteract(const FInputActionValue& InValue);
 
 	void IAAttack(const FInputActionValue& InValue);
 
@@ -111,6 +113,11 @@ public:
 	
 	UFUNCTION(Server, Reliable)
 	void Server_NotifyFoodEaten(AGSFoodBase* EatenFood);
+	
+	UFUNCTION(Server, Reliable)
+	void Server_SetEating(bool bEating);
+	
+	bool bIsEating = false;
 
 
 protected:
