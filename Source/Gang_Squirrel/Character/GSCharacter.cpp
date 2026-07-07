@@ -23,6 +23,8 @@ AGSCharacter::AGSCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	GetCharacterMovement()->NetworkSmoothingMode = ENetworkSmoothingMode::Exponential;//smooth
+
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
 	bUseControllerRotationYaw = false;
@@ -62,31 +64,9 @@ void AGSCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (bIsRolling == false)
+	if (bIsRolling)
 	{
-		return;
-	}
-
-	// 구르기 위치 이동은 서버에서만 처리
-	if (HasAuthority() == false)
-	{
-		return;
-	}
-
-	RollingElapsedTime += DeltaTime;
-
-	// GiDam - Character Scale(Z) * RollingDistance
-	const float CurrentScale = GetActorScale3D().Z;
-	const float ScaledDistance = RollingDistance * CurrentScale;
-
-	const float RollingSpeed = ScaledDistance / RollingDuration;
-	const FVector DeltaLocation = RollingDirection * RollingSpeed * DeltaTime;
-
-	AddActorWorldOffset(DeltaLocation, true);
-
-	if (RollingElapsedTime >= RollingDuration)
-	{
-		FinishRolling();
+		AddMovementInput(RollingDirection, 1.0f);
 	}
 }
 
@@ -237,26 +217,6 @@ void AGSCharacter::IAEndSprint(const FInputActionValue& InValue)
 	}
 }
 
-void AGSCharacter::IARolling(const FInputActionValue& InValue)
-{
-	UE_LOG(LogTemp, Log, TEXT("Rolling!"));
-
-	if (bIsRolling)
-	{
-		return;
-	}
-
-	const FVector RollDirection = GetRollingDirection();
-
-	if (HasAuthority())
-	{
-		StartRolling(RollDirection);
-	}
-	else
-	{
-		ServerStartRolling(RollDirection);
-	}
-}
 
 void AGSCharacter::SetSprinting(bool bNewSprinting)
 {
@@ -280,6 +240,29 @@ void AGSCharacter::UpdateNameTag(const FString& Newname)
 	}
 }
 
+void AGSCharacter::IARolling(const FInputActionValue& InValue)
+{
+	UE_LOG(LogTemp, Log, TEXT("Rolling!"));
+
+	if (bIsRolling)
+	{
+		return;
+	}
+
+	const FVector RollDirection = GetRollingDirection();
+
+	StartRollingLocal(RollDirection);
+
+	if (HasAuthority() == false)
+	{
+		ServerStartRolling(RollDirection);
+	}
+	else
+	{
+		MulticastPlayRollMontage();
+	}
+}
+
 void AGSCharacter::StartRolling(const FVector& InRollingDirection)
 {
 	if (bIsRolling)
@@ -288,23 +271,63 @@ void AGSCharacter::StartRolling(const FVector& InRollingDirection)
 	}
 
 	bIsRolling = true;
-	RollingElapsedTime = 0.f;
 
 	RollingDirection = InRollingDirection;
 	RollingDirection.Z = 0.f;
 	RollingDirection.Normalize();
+
+	GetCharacterMovement()->MaxWalkSpeed = RollSpeed;
+
+	GetWorldTimerManager().ClearTimer(RollingTimerHandle);
+	GetWorldTimerManager().SetTimer(
+		RollingTimerHandle,
+		this,
+		&AGSCharacter::FinishRolling,
+		RollingDuration,
+		false
+	);
 
 	MulticastPlayRollMontage();
 
 	UE_LOG(LogTemp, Log, TEXT("Start Rolling"));
 }
 
+void AGSCharacter::StartRollingLocal(const FVector& InRollingDirection)
+{
+	if (bIsRolling)
+	{
+		return;
+	}
+
+	bIsRolling = true;
+
+	RollingDirection = InRollingDirection;
+	RollingDirection.Z = 0.f;
+	RollingDirection.Normalize();
+
+	GetCharacterMovement()->MaxWalkSpeed = RollSpeed;
+
+	if (AM_Roll)
+	{
+		PlayAnimMontage(AM_Roll);
+	}
+
+	GetWorldTimerManager().ClearTimer(RollingTimerHandle);
+	GetWorldTimerManager().SetTimer(
+		RollingTimerHandle,
+		this,
+		&AGSCharacter::FinishRolling,
+		RollingDuration,
+		false
+	);
+}
+
 void AGSCharacter::FinishRolling()
 {
 	bIsRolling = false;
-	RollingElapsedTime = 0.f;
 	RollingDirection = FVector::ZeroVector;
 
+	GetCharacterMovement()->MaxWalkSpeed = bIsSprinting ? SprintSpeed : WalkSpeed;
 }
 
 FVector AGSCharacter::GetRollingDirection() const
@@ -324,6 +347,11 @@ FVector AGSCharacter::GetRollingDirection() const
 
 void AGSCharacter::MulticastPlayRollMontage_Implementation()
 {
+	if(IsLocallyControlled())
+	{
+		return;
+	}
+
 	if (AM_Roll == nullptr)
 	{
 		return;
