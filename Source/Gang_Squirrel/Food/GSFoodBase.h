@@ -10,6 +10,7 @@
 class UGSFoodPrimaryDataAsset;
 class USphereComponent;
 class UGSFoodWidgetComponent;
+class AGSCharacter;
 
 UCLASS()
 class GANG_SQUIRREL_API AGSFoodBase : public AActor
@@ -80,6 +81,11 @@ public:
 protected:
 	
 	FTimerHandle UIDelayTimerHandle;
+	
+private:
+	
+	UPROPERTY()
+	AGSCharacter* CurrentCharacter = nullptr;
 	
 	
 };

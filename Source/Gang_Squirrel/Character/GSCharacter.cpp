@@ -139,6 +139,8 @@ void AGSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EIC->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
 		EIC->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 		EIC->BindAction(Interact, ETriggerEvent::Started, this, &ThisClass::IAInteract);
+		EIC->BindAction(Interact, ETriggerEvent::Canceled, this, &ThisClass::IAStopInteract);
+		EIC->BindAction(Interact, ETriggerEvent::Completed, this, &ThisClass::IAStopInteract);
 		EIC->BindAction(Attack, ETriggerEvent::Started, this, &ThisClass::IAAttack);
 		EIC->BindAction(Sprint, ETriggerEvent::Started, this, &ThisClass::IAStartSprint);
 		EIC->BindAction(Sprint, ETriggerEvent::Completed, this, &ThisClass::IAEndSprint);
@@ -182,6 +184,22 @@ void AGSCharacter::IALook(const FInputActionValue& InValue)
 void AGSCharacter::IAInteract(const FInputActionValue& InValue)
 {
 	UE_LOG(LogTemp, Log, TEXT("Interact!"));
+	
+	Server_SetEating_Implementation(true);
+}
+
+void AGSCharacter::IAStopInteract(const FInputActionValue& InValue)
+{
+	UE_LOG(LogTemp, Log, TEXT("StopInteract!"));
+	
+	Server_SetEating_Implementation(false);
+}
+
+void AGSCharacter::Server_SetEating_Implementation(bool bEating)
+{
+	UE_LOG(LogTemp, Log, TEXT("SetEating!"));
+	
+	bIsEating = bEating;
 }
 
 void AGSCharacter::IAAttack(const FInputActionValue& InValue)
