@@ -131,26 +131,25 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Movement|Sprint")
 	uint8 bIsSprinting : 1 = false;
 
-#pragma region Animation
-protected:
+#pragma region Roll
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Roll")
 	TObjectPtr<UAnimMontage> AM_Roll;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Roll")
-	float RollingDistance = 450.f;
+	float RollSpeed = 600.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Roll")
-	float RollingDuration = 0.6f;
+	float RollingDuration = 0.4f;
+
+	FTimerHandle RollingTimerHandle;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Animation|Roll")
 	uint8 bIsRolling : 1 = false;
 
-	UPROPERTY()
 	FVector RollingDirection = FVector::ZeroVector;
 
-	float RollingElapsedTime = 0.f;
-
 	void StartRolling(const FVector& InRollingDirection);
+	void StartRollingLocal(const FVector& InRollingDirection);
 	void FinishRolling();
 	FVector GetRollingDirection() const;
 
