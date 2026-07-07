@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTService.h"
+#include "Gang_Squirrel/Enemy/GS_Enemy.h"
 #include "BTService_CheckTargetDeath.generated.h"
 
 UCLASS()
@@ -20,5 +21,9 @@ protected:
 	
 private:
 	bool IsActorDead(AActor* Actor) const;
-	AActor* FindAliveTarget(AAIController* AIController, AActor* SelfActor) const;
+	bool IsEnemyAttacking(AGS_Enemy* Enemy) const;
+	AActor* FindNearestTarget(AAIController* AIController, AActor* SelfActor) const;
+	
+	UPROPERTY(EditAnywhere,Category="AI")
+	float SwitchDistance = 50.f;
 };

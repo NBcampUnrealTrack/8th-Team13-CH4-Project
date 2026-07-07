@@ -8,6 +8,7 @@
 #include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISense_Sight.h"
+#include "Gang_Squirrel/GAS/GA/Attack/Enemy/GA_EnemyAttack.h"
 
 UBTService_CheckTargetDeath::UBTService_CheckTargetDeath()
 {
@@ -28,26 +29,55 @@ void UBTService_CheckTargetDeath::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 		return;
 	}
 	
-	AActor* CurrentTarget = Cast<AActor>(BB->GetValueAsObject(TargetActorKey.SelectedKeyName));
-	if (!CurrentTarget || !IsActorDead(CurrentTarget))
+	AGS_Enemy* Enemy = Cast<AGS_Enemy>(AIControllerOwner->GetPawn());
+	if (!Enemy)
 	{
 		return;
 	}
 	
-	BB->ClearValue(TargetActorKey.SelectedKeyName);
+	AActor* CurrentTarget = Cast<AActor>(BB->GetValueAsObject(TargetActorKey.SelectedKeyName));
+	
+	if (CurrentTarget && IsActorDead(CurrentTarget))
+	{
+		BB->ClearValue(TargetActorKey.SelectedKeyName);
+		BB->SetValueAsBool(FName("bCanAttack"),false);
+		Enemy->SetRotationTarget(nullptr, 0.f);
+		CurrentTarget = nullptr;
+	}
+	
+	const bool bAttacking = IsEnemyAttacking(Enemy);
+	if (bAttacking)
+	{
+		// UE_LOG(LogTemp, Warning, TEXT("[CheckTargetDeath] Skip - Enemy:%s is Attacking"), *GetNameSafe(Enemy));
+		return;
+	}
+
+	AActor* NearestTarget = FindNearestTarget(AIControllerOwner, Enemy);
+	if (!NearestTarget || NearestTarget == CurrentTarget)
+	{
+		// UE_LOG(LogTemp, Warning, TEXT("[CheckTargetDeath] Enemy:%s, Current:%s, Nearest:%s (no change)"),
+		// 	*GetNameSafe(Enemy), *GetNameSafe(CurrentTarget), *GetNameSafe(NearestTarget));
+		return;
+	}
+
+	if (CurrentTarget)
+	{
+		const float CurrentDist = FVector::Dist(Enemy->GetActorLocation(), CurrentTarget->GetActorLocation());
+		const float NearestDist = FVector::Dist(Enemy->GetActorLocation(), NearestTarget->GetActorLocation());
+
+		// UE_LOG(LogTemp, Warning, TEXT("[CheckTargetDeath] Enemy:%s, Current:%s(%.1f), Nearest:%s(%.1f), Diff:%.1f, Threshold:%.1f"),
+		// 	*GetNameSafe(Enemy), *GetNameSafe(CurrentTarget), CurrentDist, *GetNameSafe(NearestTarget), NearestDist, CurrentDist - NearestDist, SwitchDistance);
+
+		if (CurrentDist - NearestDist < SwitchDistance)
+		{
+			return;
+		}
+	}
+
+	// UE_LOG(LogTemp, Warning, TEXT("[CheckTargetDeath] SWITCH! Enemy:%s -> NewTarget:%s"), *GetNameSafe(Enemy), *GetNameSafe(NearestTarget));
+
+	BB->SetValueAsObject(TargetActorKey.SelectedKeyName, NearestTarget);
 	BB->SetValueAsBool(FName("bCanAttack"),false);
-	
-	if (AGS_Enemy* Enemy = Cast<AGS_Enemy>(AIControllerOwner->GetPawn()))
-	{
-		Enemy->SetRotationTarget(nullptr,0.f);
-	}
-	
-	if (AActor* NewTarget = FindAliveTarget(AIControllerOwner, AIControllerOwner->GetPawn()))
-	{
-		BB->SetValueAsObject(TargetActorKey.SelectedKeyName,NewTarget);
-	}
-		
-	
 }
 
 bool UBTService_CheckTargetDeath::IsActorDead(AActor* Actor) const
@@ -57,7 +87,15 @@ bool UBTService_CheckTargetDeath::IsActorDead(AActor* Actor) const
 	return ASC && ASC->HasMatchingGameplayTag(StateTag::TAG_State_Dead);
 }
 
-AActor* UBTService_CheckTargetDeath::FindAliveTarget(AAIController* AIController, AActor* SelfActor) const
+bool UBTService_CheckTargetDeath::IsEnemyAttacking(AGS_Enemy* Enemy) const
+{
+	UAbilitySystemComponent* ASC = Enemy->GetAbilitySystemComponent();
+	const FGameplayAbilitySpec* Spec = ASC ? ASC->FindAbilitySpecFromClass(Enemy->GetGA_Attack()) : nullptr;
+	
+	return Spec && Spec->IsActive();
+}
+
+AActor* UBTService_CheckTargetDeath::FindNearestTarget(AAIController* AIController, AActor* SelfActor) const
 {
 	UAIPerceptionComponent* PerceptionComp = AIController->GetPerceptionComponent();
 	
@@ -69,6 +107,9 @@ AActor* UBTService_CheckTargetDeath::FindAliveTarget(AAIController* AIController
 	TArray<AActor*> PerceivedActors;
 	PerceptionComp->GetCurrentlyPerceivedActors(UAISense_Sight::StaticClass(), PerceivedActors);
 	
+	AActor* NearestActor = nullptr;
+	float NearestDistSq = TNumericLimits<float>::Max();
+	
 	for (AActor* Candidate : PerceivedActors)
 	{
 		if (!Candidate || Candidate == SelfActor || IsActorDead(Candidate))
@@ -77,11 +118,18 @@ AActor* UBTService_CheckTargetDeath::FindAliveTarget(AAIController* AIController
 		}
 		
 		UAbilitySystemComponent* CandidateASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Candidate);
-		if (CandidateASC && CandidateASC->HasMatchingGameplayTag(TeamTag::TAG_Team_Player))
+		if (!CandidateASC || !CandidateASC->HasMatchingGameplayTag(TeamTag::TAG_Team_Player))
 		{
-			return Candidate;
+			continue;
+		}
+		
+		const float Distsq = FVector::DistSquared(SelfActor->GetActorLocation(), Candidate->GetActorLocation());
+		if (Distsq < NearestDistSq)
+		{
+			NearestDistSq = Distsq;
+			NearestActor = Candidate;
 		}
 	}
 	
-	return nullptr;
+	return NearestActor;
 }
