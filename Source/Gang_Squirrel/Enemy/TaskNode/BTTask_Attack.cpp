@@ -68,12 +68,6 @@ void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 		return;
 	}
 	
-	if (IsTargetDead(CachedTarget))
-	{
-		FinishLatentTask(OwnerComp,EBTNodeResult::Failed);
-		return;
-	}
-	
 	if (bAbilityActivated)
 	{
 		UAbilitySystemComponent* ASC = CachedEnemy->GetAbilitySystemComponent();
@@ -83,6 +77,12 @@ void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 		{
 			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		}
+		return;
+	}
+	
+	if (IsTargetDead(CachedTarget))
+	{
+		FinishLatentTask(OwnerComp,EBTNodeResult::Failed);
 		return;
 	}
 	

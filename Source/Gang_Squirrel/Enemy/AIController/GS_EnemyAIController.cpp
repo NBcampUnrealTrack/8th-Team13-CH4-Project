@@ -70,22 +70,22 @@ void AGS_EnemyAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus
 		return;
 	}
 
-	const float Distance = GetPawn() ? FVector::Dist(GetPawn()->GetActorLocation(), Stimulus.StimulusLocation) : -1.f;
+	/*const float Distance = GetPawn() ? FVector::Dist(GetPawn()->GetActorLocation(), Stimulus.StimulusLocation) : -1.f;
 	UE_LOG(LogTemp, Warning, TEXT("[Perception] Actor:%s, WasSuccessfullySensed:%s, Distance:%.1f, SightRadius:%.1f, LoseSightRadius:%.1f"),
 		*GetNameSafe(Actor),
 		Stimulus.WasSuccessfullySensed() ? TEXT("true") : TEXT("false"),
 		Distance,
 		Sight_Config ? Sight_Config->SightRadius : -1.f,
-		Sight_Config ? Sight_Config->LoseSightRadius : -1.f);
+		Sight_Config ? Sight_Config->LoseSightRadius : -1.f);*/
 
 	// Detection Success
 	if (Stimulus.WasSuccessfullySensed())
 	{
-		if (BB->GetValueAsObject(FName("TargetActor")) != Actor)
+		if (!BB->GetValueAsObject(FName("TargetActor")))
 		{
+			BB->SetValueAsObject(FName("TargetActor"),Actor);
 			BB->SetValueAsBool(FName("bCanAttack"),false);
 		}
-		BB->SetValueAsObject(FName("TargetActor"),Actor);
 	}
 	else if (BB->GetValueAsObject(FName("TargetActor")) == Actor)
 	{
