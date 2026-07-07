@@ -26,6 +26,9 @@ AGSCharacter::AGSCharacter()
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
 	bUseControllerRotationYaw = false;
+	
+	bReplicates = true;
+	SetReplicatingMovement(true);
 
 	GetCharacterMovement()->bUseControllerDesiredRotation = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -138,7 +141,7 @@ void AGSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EIC->BindAction(Look, ETriggerEvent::Triggered, this, &ThisClass::IALook);
 		EIC->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
 		EIC->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-		EIC->BindAction(Interact, ETriggerEvent::Started, this, &ThisClass::IAInteract);
+		EIC->BindAction(Interact, ETriggerEvent::Triggered, this, &ThisClass::IAInteract);
 		EIC->BindAction(Interact, ETriggerEvent::Canceled, this, &ThisClass::IAStopInteract);
 		EIC->BindAction(Interact, ETriggerEvent::Completed, this, &ThisClass::IAStopInteract);
 		EIC->BindAction(Attack, ETriggerEvent::Started, this, &ThisClass::IAAttack);
@@ -186,6 +189,12 @@ void AGSCharacter::IAInteract(const FInputActionValue& InValue)
 	UE_LOG(LogTemp, Log, TEXT("Interact!"));
 	
 	Server_SetEating_Implementation(true);
+	
+	/*if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		MeshComp->SetMorphTarget(FName("CheeksSize"), 1.f);
+		UE_LOG(LogTemp, Log, TEXT("SetEating!"));
+	}*/
 }
 
 void AGSCharacter::IAStopInteract(const FInputActionValue& InValue)
@@ -200,6 +209,24 @@ void AGSCharacter::Server_SetEating_Implementation(bool bEating)
 	UE_LOG(LogTemp, Log, TEXT("SetEating!"));
 	
 	bIsEating = bEating;
+}
+
+void AGSCharacter::InflateCheeks(float Value)
+{
+	if (HasAuthority())
+	{
+		Multicast_InflateCheeks(Value);
+	}
+}
+
+void AGSCharacter::Multicast_InflateCheeks_Implementation(float Value)
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	
+	if (MeshComp)
+	{
+		MeshComp->SetMorphTarget(FName("CheeksSize"), Value);
+	}
 }
 
 void AGSCharacter::IAAttack(const FInputActionValue& InValue)
