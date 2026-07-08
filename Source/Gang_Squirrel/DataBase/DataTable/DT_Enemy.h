@@ -41,6 +41,16 @@ struct FGS_EnemyDataTable : public FTableRowBase
 	// Ability
 	UPROPERTY(EditAnywhere,Category="Ability")
 	TArray<TSubclassOf<UGameplayAbility>> GrantedAbilities;
+	
+	// Patrol
+	UPROPERTY(EditAnywhere,Category="Patrol")
+	float PatrolRadius = 500.f;
+	UPROPERTY(EditAnywhere,Category="Patrol")
+	float PatrolAcceptanceRadius = 30.f;
+	UPROPERTY(EditAnywhere,Category="Patrol")
+	float PatrolRotationInterpSpeed = 20.f;
+	UPROPERTY(EditAnywhere,Category="Patrol")
+	float PatrolWaitTime = 2.f;
 };
 
 

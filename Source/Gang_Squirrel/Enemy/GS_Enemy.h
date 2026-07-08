@@ -13,14 +13,6 @@ class USphereComponent;
 class UGameplayAbility;
 class UGS_PlayerAttributeSet;
 
-UENUM()
-enum class EHandCombatType : uint8
-{
-	RightCombatHand,
-	LeftCombatHand
-};
-
-
 
 UCLASS()
 class GANG_SQUIRREL_API AGS_Enemy : public ACharacter, public IAbilitySystemInterface
@@ -36,25 +28,39 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 #pragma endregion 
-	
-#pragma region Getter
-	FORCEINLINE TSubclassOf<UGA_EnemyAttack> GetGA_Attack() const { return GA_Attack; }
-	USphereComponent* GetCombatCollision(EHandCombatType HandType) const;
-	FORCEINLINE const FGS_EnemyDataTable& GetEnemyData() const {return CachedEnemyData;}
+
+#pragma region RotationSettings
+public:
+	void SetRotationTarget(AActor* NewTarget, float NewInterpSpeed);
+	// for Patrol TaskNode
+	void SetRotationTarget(const FVector& NewLocation, float NewInterpSpeed);
+	FORCEINLINE FVector GetHomeLocation() const {return HomeLocation;}
+private:
+	UPROPERTY(Replicated)
+	TObjectPtr<AActor> RotationTarget;
+	UPROPERTY(Replicated)
+	float RotationInterpSpeed = 30.f;
+	// For Patrol TaskNode
+	UPROPERTY(Replicated)
+	bool bRotationTargetIsLocation = false;
+	UPROPERTY(Replicated)
+	FVector RotationTargetLocation = FVector::ZeroVector;
 #pragma endregion 
 	
-#pragma region Setter
-	void SetRotationTarget(AActor* NewTarget, float NewInterpSpeed);
+#pragma region Patrol
+private:
+	UPROPERTY()
+	FVector HomeLocation = FVector::ZeroVector;
 #pragma endregion 
 	
 #pragma region AnimationSettingFunc
+public:
 	UFUNCTION(NetMulticast,Reliable)
 	void NetMultiCast_FreezeDeathPose();
 #pragma endregion 
-	
-protected:
-	
+
 #pragma region GAS
+protected:
 	//ASC,AttributeSet
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly)
 	TObjectPtr<UAbilitySystemComponent> EnemyAbilitySystemComp;
@@ -65,7 +71,8 @@ protected:
 	TSubclassOf<UGA_EnemyAttack> GA_Attack;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="GAS|GameplayAbility")
 	TSubclassOf<UGA_EnemyDeath> GA_Death;
-	
+public:
+	FORCEINLINE TSubclassOf<UGA_EnemyAttack> GetGA_Attack() const { return GA_Attack; }
 private:
 	// GA_Death Callback Func
 	void OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount);
@@ -80,20 +87,14 @@ private:
 #pragma endregion 
 	
 #pragma region DataTable
+protected:
 	UPROPERTY(EditDefaultsOnly,Category="Data")
 	FDataTableRowHandle EnemyDataRow;
-#pragma endregion 
-	
+public:
+	FORCEINLINE const FGS_EnemyDataTable& GetEnemyData() const {return CachedEnemyData;}
 private:
-#pragma region RotationValue
-	UPROPERTY(Replicated)
-	TObjectPtr<AActor> RotationTarget;
-	UPROPERTY(Replicated)
-	float RotationInterpSpeed = 30.f;
-#pragma endregion 
-	
-#pragma region DataTable
 	FGS_EnemyDataTable CachedEnemyData;
 #pragma endregion 
+	
 };
 
