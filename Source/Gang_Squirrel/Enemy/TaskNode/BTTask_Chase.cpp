@@ -27,13 +27,17 @@ EBTNodeResult::Type UBTTask_Chase::ExecuteTask(UBehaviorTreeComponent& OwnerComp
 	{
 		return EBTNodeResult::Failed;
 	}
+	if (AGS_Enemy* Enemy = Cast<AGS_Enemy>(OwnerAIController->GetPawn()))
+	{
+		AcceptanceRadius = Enemy->GetEnemyData().AcceptanceRadius;
+		RotationInterpSpeed = Enemy->GetEnemyData().ChaseRotationInterpSpeed;
+	}
 	
-	const float ScaleMultiplier = OwnerAIController->GetPawn() ? OwnerAIController->GetPawn()->GetActorScale3D().Z : 1.f;
-
 	FAIMoveRequest MoveRequest(Target);
-	MoveRequest.SetAcceptanceRadius(AcceptanceRadius * ScaleMultiplier);
+	MoveRequest.SetAcceptanceRadius(AcceptanceRadius);
 	
 	const FPathFollowingRequestResult RequestResult = OwnerAIController->MoveTo(MoveRequest);
+	CachedMoveTarget = Target;
 	
 	if (RequestResult.Code == EPathFollowingRequestResult::AlreadyAtGoal)
 	{
@@ -74,6 +78,14 @@ void UBTTask_Chase::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemor
 		return;
 	}
 	
+	if (Target != CachedMoveTarget)
+	{
+		FAIMoveRequest MoveRequest(Target);
+		MoveRequest.SetAcceptanceRadius(AcceptanceRadius);
+		CachedAIController->MoveTo(MoveRequest);
+		CachedMoveTarget = Target;
+	}
+	
 	if (AGS_Enemy* Enemy = Cast<AGS_Enemy>(OwnerPawn))
 	{
 		Enemy->SetRotationTarget(Target,RotationInterpSpeed);
@@ -92,6 +104,7 @@ EBTNodeResult::Type UBTTask_Chase::AbortTask(UBehaviorTreeComponent& OwnerComp, 
 		CachedAIController->ReceiveMoveCompleted.RemoveDynamic(this, &UBTTask_Chase::OnMoveCompleted);
 		CachedAIController->StopMovement();
 		CachedAIController = nullptr;
+		CachedMoveTarget = nullptr;
 	}
 	
 	return Super::AbortTask(OwnerComp, NodeMemory);
@@ -107,6 +120,7 @@ void UBTTask_Chase::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 		}
 		CachedAIController->ReceiveMoveCompleted.RemoveDynamic(this,&UBTTask_Chase::OnMoveCompleted);
 		CachedAIController = nullptr;
+		CachedMoveTarget = nullptr;
 	}
 	
 	

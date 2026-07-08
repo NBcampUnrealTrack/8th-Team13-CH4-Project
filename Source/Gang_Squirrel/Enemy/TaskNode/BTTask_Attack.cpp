@@ -36,6 +36,9 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 		return EBTNodeResult::Failed;
 	}
 	
+	FacingToleranceDegrees = CachedEnemy->GetEnemyData().FacingToleranceDegrees;
+	RotationInterpSpeed = CachedEnemy->GetEnemyData().AttackRotationInterpSpeed;
+	
 	if (IsTargetDead(CachedTarget))
 	{
 		return EBTNodeResult::Failed;
@@ -65,12 +68,6 @@ void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 		return;
 	}
 	
-	if (IsTargetDead(CachedTarget))
-	{
-		FinishLatentTask(OwnerComp,EBTNodeResult::Failed);
-		return;
-	}
-	
 	if (bAbilityActivated)
 	{
 		UAbilitySystemComponent* ASC = CachedEnemy->GetAbilitySystemComponent();
@@ -80,6 +77,12 @@ void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 		{
 			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		}
+		return;
+	}
+	
+	if (IsTargetDead(CachedTarget))
+	{
+		FinishLatentTask(OwnerComp,EBTNodeResult::Failed);
 		return;
 	}
 	

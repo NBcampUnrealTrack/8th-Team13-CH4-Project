@@ -6,11 +6,14 @@
 #include "AbilitySystemInterface.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
+#include "GameplayEffectTypes.h"
 #include "GSCharacter.generated.h"
 
 class UGA_PlayerDeath;
 struct FGameplayTag;
 class UGA_Attack;
+class UGA_Roll;
+class UGA_Sprint;
 class UCameraComponent;
 class USpringArmComponent;
 class UInputMappingContext;
@@ -18,6 +21,7 @@ class UInputAction;
 class USphereComponent;
 class UWidgetComponent;
 class UAnimMontage;
+class UGS_StaminaBarWidget;
 
 UCLASS()
 class GANG_SQUIRREL_API AGSCharacter : public ACharacter ,public IAbilitySystemInterface
@@ -66,9 +70,10 @@ private:
 	//Sprint Function
 	void SetSprinting(bool bNewSprinting);
 
-	UFUNCTION(Server, Reliable)
-	void ServerSetSprinting(bool bNewSprinting);
-
+public:
+	void StartSprintFromAbility();
+	void StopSprintFromAbility();
+	void RollFromAbility();
 
 public:
 	UFUNCTION()
@@ -111,54 +116,87 @@ protected:
 
 public:
 	
+	//Food
 	UFUNCTION(Server, Reliable)
 	void Server_NotifyFoodEaten(AGSFoodBase* EatenFood);
 	
 	UFUNCTION(Server, Reliable)
 	void Server_SetEating(bool bEating);
 	
+	void ResetCheekSize();
+	
+	void AddMaxCheekSize(float Value);
+	
+	void InflateCheeks(float Value);
+	
 	bool bIsEating = false;
+	
+protected:
+	
+	//Food
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_InflateCheeks(float Value);
+	
+private:
+	
+	//Food
+	UPROPERTY()
+	float CurrentCheekSize = 0.f;
+	
+	UPROPERTY()
+	float MaxCheekSize = 1.f;
+	
+	UPROPERTY()
+	float IncreasingPercent = 1.f;
 
+public:
+	UFUNCTION(BlueprintPure, Category = "Movement|Sprint")
+	bool IsSprinting() const { return bIsSprinting; }
+
+	UFUNCTION(BlueprintPure, Category = "Movement|Roll")
+	bool IsRolling() const { return bIsRolling; }
 
 protected:
-	//Feature
+	// The Value for CharacterMovementComponent. 
+	// Not yet connected to AttributeSet.Need to be integrated into GAS.
+	// Don't trust this Values. Go to AttributeSet
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Sprint")
 	float WalkSpeed = 50.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Sprint")
 	float SprintSpeed = 100.f;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Movement|Sprint")
-	uint8 bIsSprinting : 1 = false;
-
-#pragma region Roll
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Roll")
-	TObjectPtr<UAnimMontage> AM_Roll;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Roll")
-	float RollSpeed = 600.f;
+	float RollSpeed = 50.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Roll")
 	float RollingDuration = 0.4f;
 
-	FTimerHandle RollingTimerHandle;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Animation|Roll")
-	uint8 bIsRolling : 1 = false;
-
-	FVector RollingDirection = FVector::ZeroVector;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Roll")
+	TObjectPtr<UAnimMontage> AM_Roll;
 
 	void StartRolling(const FVector& InRollingDirection);
-	void StartRollingLocal(const FVector& InRollingDirection);
-	void FinishRolling();
-	FVector GetRollingDirection() const;
 
 	UFUNCTION(Server, Reliable)
 	void ServerStartRolling(FVector_NetQuantizeNormal InRollingDirection);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastPlayRollMontage();
-#pragma endregion
+
+private:
+	UPROPERTY(BlueprintReadOnly, Category = "Movement|Sprint", meta = (AllowPrivateAccess = "true"))
+	uint8 bIsSprinting : 1 = false;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Animation|Roll", meta = (AllowPrivateAccess = "true"))
+	uint8 bIsRolling : 1 = false;
+
+	FTimerHandle RollingTimerHandle;
+
+	FVector RollingDirection = FVector::ZeroVector;
+	
+	void StartRollingLocal(const FVector& InRollingDirection);
+	void FinishRolling();
+	FVector GetRollingDirection() const;
 
 #pragma region Component
 
@@ -174,8 +212,29 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Component")
 	TObjectPtr<UWidgetComponent> PlayerNameTagWidget;
 
+	//Side Widget
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Component")
+	TObjectPtr<UWidgetComponent> StaminaBarWidget;
+
 #pragma endregion
-	
+
+#pragma region StaminaWidget
+
+	protected:
+		void BindStaminaDelegates();
+		void UpdateStaminaBar(float CurrentStamina, float MaxStamina);
+		void RefreshStaminaBarVisibility(float CurrentStamina, float MaxStamina);
+
+		void OnStaminaChanged(const FOnAttributeChangeData& Data);
+		void OnMaxStaminaChanged(const FOnAttributeChangeData& Data);
+
+		float CachedMaxStamina = 100.f;
+
+		FTimerHandle StaminaBarHideTimerHandle;
+		void HideStaminaBar();
+
+#pragma endregion
+
 #pragma region GA
 public:
 	UFUNCTION(NetMulticast,Reliable)
@@ -184,11 +243,15 @@ public:
 protected:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="GameplayAbility")
 	TSubclassOf<UGA_Attack> GA_Attack;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameplayAbility")
+	TSubclassOf<UGA_Roll> GA_Roll;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="GameplayAbility")
 	TSubclassOf<UGA_PlayerDeath> GA_Death;
-	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameplayAbility")
+	TSubclassOf<UGA_Sprint> GA_Sprint;
 	// GA_Death CallBack Func
 private:
 	void OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount);
+
 #pragma endregion 
 };

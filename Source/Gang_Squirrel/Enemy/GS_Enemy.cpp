@@ -53,12 +53,32 @@ void AGS_Enemy::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	HomeLocation = GetActorLocation();
+	
+	if (const FGS_EnemyDataTable* Row = EnemyDataRow.GetRow<FGS_EnemyDataTable>(TEXT("GS_Enemy:BeginPlay")))
+	{
+		CachedEnemyData = *Row;
+	}
+	
 	if (HasAuthority())
 	{
 		EnemyAbilitySystemComp->InitAbilityActorInfo(this,this);
 		EnemyAbilitySystemComp->AddLooseGameplayTag(TeamTag::TAG_Team_Enemy);
+		
+		EnemyAttributeSet->InitHealth(CachedEnemyData.Health);
+		EnemyAttributeSet->InitMaxHealth(CachedEnemyData.MaxHealth);
+		EnemyAttributeSet->InitMoveSpeed(CachedEnemyData.MoveSpeed);
+		
 		EnemyAbilitySystemComp->GiveAbility(FGameplayAbilitySpec(GA_Attack,1));
 		EnemyAbilitySystemComp->GiveAbility(FGameplayAbilitySpec(GA_Death,1));
+		
+		for (const TSubclassOf<UGameplayAbility>& ExtraAbility : CachedEnemyData.GrantedAbilities)
+		{
+			if (ExtraAbility)
+			{
+				EnemyAbilitySystemComp->GiveAbility(FGameplayAbilitySpec(ExtraAbility,1));
+			}
+		}
 	}
 	
 	EnemyAbilitySystemComp->RegisterGameplayTagEvent(StateTag::TAG_State_Dead,EGameplayTagEventType::NewOrRemoved).AddUObject(this,&AGS_Enemy::OnDeathStateTagChanged);
@@ -68,12 +88,25 @@ void AGS_Enemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
+	FVector FaceLocation;
+	bool bHasFaceTarget = false;
+	
 	if (RotationTarget)
 	{
-		const FVector ToTarget = (RotationTarget->GetActorLocation() - GetActorLocation()).GetSafeNormal2D();
-		const FRotator DesiredRotation = ToTarget.Rotation();
-
-		SetActorRotation(FMath::RInterpTo(GetActorRotation(), DesiredRotation, DeltaTime, RotationInterpSpeed));
+		FaceLocation = RotationTarget->GetActorLocation();
+		bHasFaceTarget = true;
+	}
+	else if (bRotationTargetIsLocation)
+	{
+		FaceLocation = RotationTargetLocation;
+		bHasFaceTarget = true;
+	}
+	
+	if (bHasFaceTarget)
+	{
+		const FVector ToTarget = (FaceLocation - GetActorLocation()).GetSafeNormal2D();
+		const FRotator DesireRotation = ToTarget.Rotation();
+		SetActorRotation(FMath::RInterpTo(GetActorRotation(), DesireRotation, DeltaTime, RotationInterpSpeed));
 	}
 }
 
@@ -88,27 +121,22 @@ void AGS_Enemy::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutL
 	
 	DOREPLIFETIME(AGS_Enemy,RotationTarget);
 	DOREPLIFETIME(AGS_Enemy,RotationInterpSpeed);
-}
-
-USphereComponent* AGS_Enemy::GetCombatCollision(EHandCombatType HandType) const
-{
-	USphereComponent* CombatHandComp = nullptr;
-	
-	if (HandType == EHandCombatType::RightCombatHand)
-	{
-		CombatHandComp = SphereComp_RightHand;
-	}
-	else
-	{
-		CombatHandComp = SphereComp_LeftHand;
-	}
-	
-	return CombatHandComp;
+	DOREPLIFETIME(AGS_Enemy,bRotationTargetIsLocation);
+	DOREPLIFETIME(AGS_Enemy,RotationTargetLocation);
 }
 
 void AGS_Enemy::SetRotationTarget(AActor* NewTarget, float NewInterpSpeed)
 {
 	RotationTarget = NewTarget;
+	bRotationTargetIsLocation = false;
+	RotationInterpSpeed = NewInterpSpeed;
+}
+
+void AGS_Enemy::SetRotationTarget(const FVector& NewLocation, float NewInterpSpeed)
+{
+	RotationTarget = nullptr;
+	bRotationTargetIsLocation = true;
+	RotationTargetLocation = NewLocation;
 	RotationInterpSpeed = NewInterpSpeed;
 }
 
