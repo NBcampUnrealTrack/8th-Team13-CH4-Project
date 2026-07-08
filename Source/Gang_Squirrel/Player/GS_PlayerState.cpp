@@ -32,6 +32,7 @@ void AGS_PlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 
 	DOREPLIFETIME(AGS_PlayerState, PlayerNickname);
 	DOREPLIFETIME(AGS_PlayerState, PlayerScore);
+	DOREPLIFETIME(AGS_PlayerState, KillCount);
 }
 
 void AGS_PlayerState::BeginPlay()
@@ -60,6 +61,17 @@ void AGS_PlayerState::AddScore(int32 Value)
 	PlayerScore += Value;
 	
 	OnRep_PlayerScore();
+}
+
+void AGS_PlayerState::OnRep_KillCount()
+{
+	UE_LOG(LogTemp, Warning, TEXT("KillCount: %d"), KillCount);
+}
+
+void AGS_PlayerState::AddKillCount()
+{
+	KillCount++;
+	OnRep_KillCount();
 }
 
 void AGS_PlayerState::OnRep_PlayerScore() 

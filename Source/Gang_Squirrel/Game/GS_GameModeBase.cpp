@@ -6,6 +6,8 @@
 #include "EngineUtils.h"
 #include "Gang_Squirrel/Gimmick/GS_FallingHazardManager.h"
 #include "Gang_Squirrel/SpawnSystem/GSSpawnManager.h"
+#include "Gang_Squirrel/Player/GS_PlayerState.h"
+#include "Gang_Squirrel/DataAsset/GSFoodPrimaryDataAsset.h"
 
 AGS_GameModeBase::AGS_GameModeBase()
 {
@@ -90,6 +92,26 @@ void AGS_GameModeBase::NotifyPlayerReady()
 	}
 }
 
+void AGS_GameModeBase::GiveRandomReward(AGS_PlayerState* KillerPS)
+{
+	if (!HasAuthority() || !IsValid(KillerPS)) return;
+
+	const ERewardType RewardType = static_cast<ERewardType>(FMath::RandRange(0, 2));
+
+	switch (RewardType)
+	{
+	case ERewardType::Food:
+		GiveFoodReward(KillerPS);
+		break;
+	case ERewardType::Capacity:
+		GiveCapacityReward(KillerPS);
+		break;
+	case ERewardType::SpeedBoost:
+		GiveSpeedBoostReward(KillerPS);
+		break;
+	}
+}
+
 void AGS_GameModeBase::OnMatchTimeExpired()
 {
 	EndMatch();
@@ -104,4 +126,23 @@ void AGS_GameModeBase::SpawnSpawnManager() const
 {
 	if (!IsValid(SpawnManagerClass)) return;
 	AGSSpawnManager* SpawnManager = GetWorld()->SpawnActor<AGSSpawnManager>(SpawnManagerClass);
+}
+
+void AGS_GameModeBase::GiveFoodReward(AGS_PlayerState* PS)
+{
+	if (!IsValid(RewardFoodData)) return;
+
+	PS->AddScore(RewardFoodData->ScoreAmount);
+
+	UE_LOG(LogTemp, Log, TEXT("[Reward] Food Reward: +%d"), RewardFoodData->ScoreAmount);
+}
+
+void AGS_GameModeBase::GiveCapacityReward(AGS_PlayerState* PS)
+{
+	UE_LOG(LogTemp, Log, TEXT("[Reward] Capacity Reward (TODO)"));
+}
+
+void AGS_GameModeBase::GiveSpeedBoostReward(AGS_PlayerState* PS)
+{
+	UE_LOG(LogTemp, Log, TEXT("[Reward] SpeedBoost Reward (TODO)"));
 }

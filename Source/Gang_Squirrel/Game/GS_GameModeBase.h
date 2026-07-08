@@ -7,9 +7,20 @@
 #include "GS_GameModeBase.generated.h"
 
 class AGSSpawnManager;
+class AGS_PlayerState;
+class UGSFoodPrimaryDataAsset;   
 /**
  * 
  */
+
+UENUM(BlueprintType)
+enum class ERewardType : uint8
+{
+	Food,
+	Capacity,
+	SpeedBoost
+};
+
 UCLASS()
 class GANG_SQUIRREL_API AGS_GameModeBase : public AGameModeBase
 {
@@ -31,6 +42,9 @@ public:
 
 	//Notify completed Player nickname
 	void NotifyPlayerReady();
+
+	UFUNCTION(BlueprintCallable, Category = "Reward")
+	void GiveRandomReward(AGS_PlayerState* KillerPS);
 
 protected:
 	//Call when timer == 0.f
@@ -61,4 +75,14 @@ public:
 	
 	void SpawnSpawnManager() const;
 
+private:
+	void GiveFoodReward(AGS_PlayerState* PS);
+
+	void GiveCapacityReward(AGS_PlayerState* PS);
+
+	void GiveSpeedBoostReward(AGS_PlayerState* PS);
+
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Reward|Food")
+	TObjectPtr<UGSFoodPrimaryDataAsset> RewardFoodData;
 };

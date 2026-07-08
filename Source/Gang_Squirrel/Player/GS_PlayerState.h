@@ -50,6 +50,8 @@ private:
 	UPROPERTY(ReplicatedUsing=OnRep_PlayerScore)
 	int32 PlayerScore = 0;
 
+	UPROPERTY(ReplicatedUsing = OnRep_KillCount)
+	int32 KillCount = 0;
 public:
 	UFUNCTION()
 	void OnRep_PlayerScore();
@@ -57,6 +59,14 @@ public:
 	void AddScore(int32 Value);
 	
 	FORCEINLINE int32 GetPlayerScore() const { return PlayerScore; }
+
+	// AI KillCount
+	UFUNCTION()
+	void OnRep_KillCount();
+
+	void AddKillCount();
+
+	FORCEINLINE int32 GetKillCount() const { return KillCount; }
 
 protected:
 	//Stamina
