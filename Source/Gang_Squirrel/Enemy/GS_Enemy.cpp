@@ -2,11 +2,13 @@
 
 #include "AbilitySystemComponent.h"
 #include "Components/SphereComponent.h"
+#include "Components/WidgetComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Gang_Squirrel/GAS/GA/Attack/Enemy/GA_EnemyAttack.h"
 #include "Gang_Squirrel/GAS/GA/Death/GA_EnemyDeath.h"
 #include "Gang_Squirrel/GAS/AttributeSet/GS_PlayerAttributeSet.h"
 #include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
+#include "Gang_Squirrel/UI/Stat_Widget/GS_HPCountWidget.h"
 #include "Net/UnrealNetwork.h"
 
 
@@ -45,8 +47,17 @@ AGS_Enemy::AGS_Enemy()
 	bUseControllerRotationYaw = false;
 #pragma endregion 
 	
+#pragma region EyeHeightSettings
 	BaseEyeHeight = 64.f * GetActorScale3D().Z;
 	CrouchedEyeHeight = 64.f * GetActorScale3D().Z;
+#pragma endregion 
+	
+#pragma region HPBarWidget
+	HPBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HPBarWidget"));
+	HPBarWidget->SetupAttachment(GetMesh());
+	HPBarWidget->SetRelativeLocation(FVector(0.f,0.f,120.f));
+	HPBarWidget->SetWidgetSpace(EWidgetSpace::World);
+#pragma endregion 
 }
 
 void AGS_Enemy::BeginPlay()
@@ -82,6 +93,12 @@ void AGS_Enemy::BeginPlay()
 	}
 	
 	EnemyAbilitySystemComp->RegisterGameplayTagEvent(StateTag::TAG_State_Dead,EGameplayTagEventType::NewOrRemoved).AddUObject(this,&AGS_Enemy::OnDeathStateTagChanged);
+	
+	// HPBar Settings
+	EnemyAbilitySystemComp->GetGameplayAttributeValueChangeDelegate(UGS_PlayerAttributeSet::GetHealthAttribute()).AddUObject(this,&AGS_Enemy::OnHealthAttributeChanged);
+	EnemyAbilitySystemComp->GetGameplayAttributeValueChangeDelegate(UGS_PlayerAttributeSet::GetMaxHealthAttribute()).AddUObject(this,&AGS_Enemy::OnHealthAttributeChanged);
+	
+	RefreshHPBar();
 }
 
 void AGS_Enemy::Tick(float DeltaTime)
@@ -107,6 +124,21 @@ void AGS_Enemy::Tick(float DeltaTime)
 		const FVector ToTarget = (FaceLocation - GetActorLocation()).GetSafeNormal2D();
 		const FRotator DesireRotation = ToTarget.Rotation();
 		SetActorRotation(FMath::RInterpTo(GetActorRotation(), DesireRotation, DeltaTime, RotationInterpSpeed));
+	}
+	
+	if (HPBarWidget)
+	{
+		if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+		{
+			FVector CameraLocation;
+			FRotator CameraRotation;
+			PC->GetPlayerViewPoint(CameraLocation,CameraRotation);
+			
+			FRotator LookAtRotation = (CameraLocation - HPBarWidget->GetComponentLocation()).Rotation();
+			LookAtRotation.Pitch = 0.f;
+			LookAtRotation.Roll = 0.f;
+			HPBarWidget->SetWorldRotation(LookAtRotation);
+		}
 	}
 }
 
@@ -153,4 +185,17 @@ void AGS_Enemy::SetKillerPlayerState(AGS_PlayerState* InKiller)
 void AGS_Enemy::NetMultiCast_FreezeDeathPose_Implementation()
 {
 	GetMesh()->bPauseAnims = true;
+}
+
+void AGS_Enemy::RefreshHPBar()
+{
+	if (UGS_HPCountWidget* HPWidget = Cast<UGS_HPCountWidget>(HPBarWidget->GetWidget()))
+	{
+		HPWidget->SetHealth(FMath::RoundToInt(EnemyAttributeSet->GetHealth()),FMath::RoundToInt(EnemyAttributeSet->GetMaxHealth()));
+	}
+}
+
+void AGS_Enemy::OnHealthAttributeChanged(const FOnAttributeChangeData& Data)
+{
+	RefreshHPBar();
 }
