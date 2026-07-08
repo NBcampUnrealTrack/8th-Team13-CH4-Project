@@ -11,6 +11,7 @@
 #include "EnhancedInputComponent.h"
 #include "Gang_Squirrel/Player/GS_PlayerState.h"
 #include "Components/SphereComponent.h"
+#include "Gang_Squirrel/GAS/AttributeSet/GS_PlayerAttributeSet.h"
 #include "Gang_Squirrel/GAS/GA/Attack/GA_Attack.h"
 #include "Gang_Squirrel/GAS/GA/Roll/GA_Roll.h"
 #include "Gang_Squirrel/GAS/GA/Sprint/GA_Sprint.h"
@@ -18,6 +19,7 @@
 #include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 #include "Components/WidgetComponent.h"
 #include "Gang_Squirrel/Food/GSFoodBase.h"
+#include "Gang_Squirrel/UI/GS_StaminaBarWidget.h"
 #include "Gang_Squirrel/UI/GSPlayerNameTag.h"
 #include "Gang_Squirrel/Gang_Squirrel.h"
 
@@ -61,6 +63,14 @@ AGSCharacter::AGSCharacter()
 	PlayerNameTagWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 120.0f)); // 머리 위
 	PlayerNameTagWidget->SetWidgetSpace(EWidgetSpace::Screen); // 항상 카메라를 향함
 	
+	//Stamina Widget Component
+	StaminaBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("StaminaBarWidget"));
+	StaminaBarWidget->SetupAttachment(GetRootComponent());
+	StaminaBarWidget->SetRelativeLocation(FVector(0.f, 50.f, 90.f));
+	StaminaBarWidget->SetWidgetSpace(EWidgetSpace::Screen);
+	StaminaBarWidget->SetDrawSize(FVector2D(32.f, 160.f));
+	StaminaBarWidget->SetVisibility(false);
+
 	// for AnimNotifyTick Func
 	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickMontagesAndRefreshBonesWhenPlayingMontages;
 }
@@ -110,6 +120,8 @@ void AGSCharacter::BeginPlay()
 	}
 
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+
+	BindStaminaDelegates();
 }
 
 void AGSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -170,13 +182,9 @@ void AGSCharacter::IAInteract(const FInputActionValue& InValue)
 {
 	UE_LOG(LogTemp, Log, TEXT("Interact!"));
 	
-	Server_SetEating_Implementation(true);
+	if (CurrentCheekSize >= MaxCheekSize) return;
 	
-	/*if (USkeletalMeshComponent* MeshComp = GetMesh())
-	{
-		MeshComp->SetMorphTarget(FName("CheeksSize"), 1.f);
-		UE_LOG(LogTemp, Log, TEXT("SetEating!"));
-	}*/
+	Server_SetEating_Implementation(true);
 }
 
 void AGSCharacter::IAStopInteract(const FInputActionValue& InValue)
@@ -205,10 +213,38 @@ void AGSCharacter::Multicast_InflateCheeks_Implementation(float Value)
 {
 	USkeletalMeshComponent* MeshComp = GetMesh();
 	
+	float TempValue = CurrentCheekSize + Value;
+	if (MaxCheekSize < TempValue)
+	{
+		CurrentCheekSize = MaxCheekSize;
+		MeshComp->SetMorphTarget(FName("CheeksSize"), CurrentCheekSize);
+		return;
+	}
+	
+	CurrentCheekSize += Value;
+	
+	float ResultValue = CurrentCheekSize / MaxCheekSize;
+	
 	if (MeshComp)
 	{
-		MeshComp->SetMorphTarget(FName("CheeksSize"), Value);
+		MeshComp->SetMorphTarget(FName("CheeksSize"), ResultValue);
 	}
+}
+
+void AGSCharacter::ResetCheekSize()
+{
+	CurrentCheekSize = 0.f;
+	
+	Multicast_InflateCheeks(0.f);
+	
+	UE_LOG(LogTemp, Error, TEXT("ResetCheekSize!"));
+}
+
+void AGSCharacter::AddMaxCheekSize(float Value)
+{
+	MaxCheekSize += Value;
+	
+	Multicast_InflateCheeks(0.f);
 }
 
 void AGSCharacter::IAAttack(const FInputActionValue& InValue)
@@ -470,6 +506,8 @@ void AGSCharacter::OnRep_PlayerState()
 		
 		// When State.Dead Tag Was Attached or Detached Call to Func
 		PS->GetAbilitySystemComponent()->RegisterGameplayTagEvent(StateTag::TAG_State_Dead, EGameplayTagEventType::NewOrRemoved).AddUObject(this,&AGSCharacter::OnDeathStateTagChanged);
+	
+		BindStaminaDelegates();
 	}
 }
 
@@ -501,3 +539,113 @@ void AGSCharacter::NetMulticast_SetDeathPoseFrozen_Implementation(bool bFrozen)
 {
 	GetMesh()->bPauseAnims = bFrozen;
 }
+
+//Stamina
+void AGSCharacter::BindStaminaDelegates()
+{
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (PS == nullptr)
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent();
+	if (ASC == nullptr)
+	{
+		return;
+	}
+
+	ASC->GetGameplayAttributeValueChangeDelegate(UGS_PlayerAttributeSet::GetStaminaAttribute())
+		.AddUObject(this, &AGSCharacter::OnStaminaChanged);
+
+	ASC->GetGameplayAttributeValueChangeDelegate(UGS_PlayerAttributeSet::GetMaxStaminaAttribute())
+		.AddUObject(this, &AGSCharacter::OnMaxStaminaChanged);
+
+	const float CurrentStamina = ASC->GetNumericAttribute(UGS_PlayerAttributeSet::GetStaminaAttribute());
+	const float MaxStamina = ASC->GetNumericAttribute(UGS_PlayerAttributeSet::GetMaxStaminaAttribute());
+
+	CachedMaxStamina = MaxStamina;
+	UpdateStaminaBar(CurrentStamina, MaxStamina);
+	RefreshStaminaBarVisibility(CurrentStamina, MaxStamina);
+}
+
+void AGSCharacter::UpdateStaminaBar(float CurrentStamina, float MaxStamina)
+{
+	if (MaxStamina <= 0.f)
+	{
+		return;
+	}
+
+	UGS_StaminaBarWidget* StaminaWidget = Cast<UGS_StaminaBarWidget>(StaminaBarWidget->GetUserWidgetObject());
+	if (StaminaWidget == nullptr)
+	{
+		return;
+	}
+
+	const float Percent = CurrentStamina / MaxStamina;
+	StaminaWidget->SetStaminaPercent(Percent);
+}
+
+void AGSCharacter::RefreshStaminaBarVisibility(float CurrentStamina, float MaxStamina)
+{
+	if (StaminaBarWidget == nullptr)
+	{
+		return;
+	}
+
+	GetWorldTimerManager().ClearTimer(StaminaBarHideTimerHandle);
+
+	const bool bShouldShow = CurrentStamina < MaxStamina;
+
+	if (bShouldShow)
+	{
+		StaminaBarWidget->SetVisibility(true);
+	}
+	else
+	{
+		GetWorldTimerManager().SetTimer(
+			StaminaBarHideTimerHandle,
+			this,
+			&AGSCharacter::HideStaminaBar,
+			0.75f,
+			false
+		);
+	}
+}
+
+void AGSCharacter::HideStaminaBar()
+{
+	if (StaminaBarWidget)
+	{
+		StaminaBarWidget->SetVisibility(false);
+	}
+}
+
+void AGSCharacter::OnStaminaChanged(const FOnAttributeChangeData& Data)
+{
+	UpdateStaminaBar(Data.NewValue, CachedMaxStamina);
+	RefreshStaminaBarVisibility(Data.NewValue, CachedMaxStamina);
+}
+
+void AGSCharacter::OnMaxStaminaChanged(const FOnAttributeChangeData& Data)
+{
+	CachedMaxStamina = Data.NewValue;
+
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (PS == nullptr)
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent();
+	if (ASC == nullptr)
+	{
+		return;
+	}
+
+	const float CurrentStamina = ASC->GetNumericAttribute(UGS_PlayerAttributeSet::GetStaminaAttribute());
+
+	UpdateStaminaBar(CurrentStamina, CachedMaxStamina);
+	RefreshStaminaBarVisibility(CurrentStamina, CachedMaxStamina);
+}
+

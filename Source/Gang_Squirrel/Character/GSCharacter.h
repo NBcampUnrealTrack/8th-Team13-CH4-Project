@@ -6,6 +6,7 @@
 #include "AbilitySystemInterface.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
+#include "GameplayEffectTypes.h"
 #include "GSCharacter.generated.h"
 
 class UGA_PlayerDeath;
@@ -20,6 +21,7 @@ class UInputAction;
 class USphereComponent;
 class UWidgetComponent;
 class UAnimMontage;
+class UGS_StaminaBarWidget;
 
 UCLASS()
 class GANG_SQUIRREL_API AGSCharacter : public ACharacter ,public IAbilitySystemInterface
@@ -121,6 +123,10 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_SetEating(bool bEating);
 	
+	void ResetCheekSize();
+	
+	void AddMaxCheekSize(float Value);
+	
 	void InflateCheeks(float Value);
 	
 	bool bIsEating = false;
@@ -130,6 +136,18 @@ protected:
 	//Food
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_InflateCheeks(float Value);
+	
+private:
+	
+	//Food
+	UPROPERTY()
+	float CurrentCheekSize = 0.f;
+	
+	UPROPERTY()
+	float MaxCheekSize = 1.f;
+	
+	UPROPERTY()
+	float IncreasingPercent = 1.f;
 
 public:
 	UFUNCTION(BlueprintPure, Category = "Movement|Sprint")
@@ -148,7 +166,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Sprint")
 	float SprintSpeed = 100.f;
 
-	//Roll
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Roll")
 	float RollSpeed = 50.f;
 
@@ -195,8 +212,29 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Component")
 	TObjectPtr<UWidgetComponent> PlayerNameTagWidget;
 
+	//Side Widget
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Component")
+	TObjectPtr<UWidgetComponent> StaminaBarWidget;
+
 #pragma endregion
-	
+
+#pragma region StaminaWidget
+
+	protected:
+		void BindStaminaDelegates();
+		void UpdateStaminaBar(float CurrentStamina, float MaxStamina);
+		void RefreshStaminaBarVisibility(float CurrentStamina, float MaxStamina);
+
+		void OnStaminaChanged(const FOnAttributeChangeData& Data);
+		void OnMaxStaminaChanged(const FOnAttributeChangeData& Data);
+
+		float CachedMaxStamina = 100.f;
+
+		FTimerHandle StaminaBarHideTimerHandle;
+		void HideStaminaBar();
+
+#pragma endregion
+
 #pragma region GA
 public:
 	UFUNCTION(NetMulticast,Reliable)
