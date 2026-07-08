@@ -8,6 +8,8 @@
 #include "Gang_Squirrel/Enemy/GS_Enemy.h"
 #include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 #include "Gang_Squirrel/Gang_Squirrel.h"
+#include "Gang_Squirrel/Game/GS_GameModeBase.h"
+#include "Gang_Squirrel/Player/GS_PlayerState.h"
 
 UGA_EnemyDeath::UGA_EnemyDeath()
 {
@@ -85,6 +87,16 @@ void UGA_EnemyDeath::EndAbility(const FGameplayAbilitySpecHandle Handle, const F
 		{
 			Enemy->SetLifeSpan(2.f);
 			UE_LOG(LogGAS, Warning, TEXT("[GA_EnemyDeath] SetLifeSpan(2.f) called on %s"), *GetNameSafe(Enemy));
+		}
+
+		if (AGS_PlayerState* KillerPS = Enemy->GetKillerPlayerState())
+		{
+			KillerPS->AddKillCount();   // 추가: 서버에서 KillCount 증가
+
+			if (AGS_GameModeBase* GM = Cast<AGS_GameModeBase>(Enemy->GetWorld()->GetAuthGameMode()))
+			{
+				GM->GiveRandomReward(KillerPS);
+			}
 		}
 	}
 

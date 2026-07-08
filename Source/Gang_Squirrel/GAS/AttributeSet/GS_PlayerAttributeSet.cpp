@@ -3,7 +3,8 @@
 #include "GameplayEffectExtension.h"
 #include "Net/UnrealNetwork.h"
 #include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
-
+#include "Gang_Squirrel/Enemy/GS_Enemy.h"
+#include "Gang_Squirrel/Player/GS_PlayerState.h"
 
 UGS_PlayerAttributeSet::UGS_PlayerAttributeSet()
 {
@@ -67,6 +68,12 @@ void UGS_PlayerAttributeSet::PostGameplayEffectExecute(const struct FGameplayEff
 	{
 		if (AActor* OwnerActor = GetOwningActor())
 		{
+			if (AGS_Enemy* Enemy = Cast<AGS_Enemy>(OwnerActor))
+			{
+				AActor* Instigator = Data.EffectSpec.GetEffectContext().GetOriginalInstigator();
+				Enemy->SetKillerPlayerState(Cast<AGS_PlayerState>(Instigator));
+			}
+
 			if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
 			{
 				ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag::TAG_Ability_Death));
