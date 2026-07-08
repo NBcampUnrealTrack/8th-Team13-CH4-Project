@@ -19,7 +19,6 @@ protected:
 	
 	UPROPERTY(EditAnywhere,Category="BlackBoard|ObjectKey")
 	FBlackboardKeySelector TargetActorKey;
-	// TODO::Refac to DataTable
 	UPROPERTY(EditAnywhere,Category="AI")
 	float AcceptanceRadius = 150.f;
 	UPROPERTY(EditAnywhere,Category="AI")
@@ -30,4 +29,6 @@ private:
 	
 	UPROPERTY()
 	TObjectPtr<AAIController> CachedAIController;
+	UPROPERTY()
+	TObjectPtr<AActor> CachedMoveTarget;
 };

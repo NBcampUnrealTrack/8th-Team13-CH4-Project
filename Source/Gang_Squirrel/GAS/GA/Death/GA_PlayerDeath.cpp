@@ -142,6 +142,14 @@ void UGA_PlayerDeath::HandleRespawn()
 
 void UGA_PlayerDeath::HandleDeathBlendOut()
 {
+	UE_LOG(LogGAS, Warning, TEXT("[GA_PlayerDeath] HandleDeathBlendOut called - IsNetAuthority:%s"),               
+		CurrentActorInfo && CurrentActorInfo->IsNetAuthority() ? TEXT("true") : TEXT("false"));
+	
+	if (!CurrentActorInfo || !CurrentActorInfo->IsNetAuthority())
+	{
+		return;
+	}
+	
 	if (AGSCharacter* OwnerChar = Cast<AGSCharacter>(GetAvatarActorFromActorInfo()))
 	{
 		OwnerChar->NetMulticast_SetDeathPoseFrozen(true);

@@ -175,6 +175,10 @@ void AGSFoodBase::Deactivate()
 	}
 	UE_LOG(LogTemp, Warning, TEXT("Deactivate GSFoodBase"));
 	SetActorTickEnabled(false);
+	if (CurrentCharacter)
+	{
+		CurrentCharacter->InflateCheeks(FoodData->SquirrelScale);
+	}
 	bIsActive = false;
 	OnRep_Activate();
 }
