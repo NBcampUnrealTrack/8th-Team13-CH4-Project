@@ -6,6 +6,8 @@
 #include "Gang_Squirrel/DataBase/DataTable/DT_Enemy.h"
 #include "GS_Enemy.generated.h"
 
+struct FOnAttributeChangeData;
+class UWidgetComponent;
 struct FGameplayTag;
 class UGA_EnemyDeath;
 class UGA_EnemyAttack;
@@ -94,6 +96,15 @@ public:
 	FORCEINLINE const FGS_EnemyDataTable& GetEnemyData() const {return CachedEnemyData;}
 private:
 	FGS_EnemyDataTable CachedEnemyData;
+#pragma endregion 
+	
+#pragma region HPBar
+private:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UWidgetComponent> HPBarWidget;
+	
+	void RefreshHPBar();
+	void OnHealthAttributeChanged(const FOnAttributeChangeData& Data);
 #pragma endregion 
 	
 };
