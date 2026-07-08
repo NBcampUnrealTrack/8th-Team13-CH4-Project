@@ -12,12 +12,14 @@
 #include "Gang_Squirrel/Player/GS_PlayerState.h"
 #include "Components/SphereComponent.h"
 #include "Gang_Squirrel/GAS/GA/Attack/GA_Attack.h"
+#include "Gang_Squirrel/GAS/GA/Roll/GA_Roll.h"
+#include "Gang_Squirrel/GAS/GA/Sprint/GA_Sprint.h"
+#include "Gang_Squirrel/GAS/GA/Death/GA_PlayerDeath.h"
+#include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 #include "Components/WidgetComponent.h"
 #include "Gang_Squirrel/Food/GSFoodBase.h"
 #include "Gang_Squirrel/UI/GSPlayerNameTag.h"
 #include "Gang_Squirrel/Gang_Squirrel.h"
-#include "Gang_Squirrel/GAS/GA/Death/GA_PlayerDeath.h"
-#include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 
 AGSCharacter::AGSCharacter()
 {
@@ -224,26 +226,38 @@ void AGSCharacter::IAStartSprint(const FInputActionValue& InValue)
 {
 	UE_LOG(LogTemp, Log, TEXT("Start Sprint!"));
 
-	SetSprinting(true);
-
-	if (HasAuthority() == false)
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (PS)
 	{
-		ServerSetSprinting(true);
+		PS->GetAbilitySystemComponent()->TryActivateAbilitiesByTag(
+			FGameplayTagContainer(AbilityTag::TAG_Ability_Sprint)
+		);
 	}
 }
-
 void AGSCharacter::IAEndSprint(const FInputActionValue& InValue)
 {
-	UE_LOG(LogTemp, Log, TEXT("Complite Sprint!"));
+	UE_LOG(LogTemp, Log, TEXT("Complete Sprint!"));
 
-	SetSprinting(false);
-
-	if (HasAuthority() == false)
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (PS)
 	{
-		ServerSetSprinting(false);
+		FGameplayTagContainer SprintTagContainer;
+		SprintTagContainer.AddTag(AbilityTag::TAG_Ability_Sprint);
+
+		PS->GetAbilitySystemComponent()->CancelAbilities(&SprintTagContainer);
 	}
 }
 
+void AGSCharacter::IARolling(const FInputActionValue& InValue)
+{
+	UE_LOG(LogTemp, Log, TEXT("Rolling!"));
+
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (PS)
+	{
+		PS->GetAbilitySystemComponent()->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag::TAG_Ability_Roll));
+	}
+}
 
 void AGSCharacter::SetSprinting(bool bNewSprinting)
 {
@@ -252,9 +266,14 @@ void AGSCharacter::SetSprinting(bool bNewSprinting)
 	GetCharacterMovement()->MaxWalkSpeed = bIsSprinting ? SprintSpeed : WalkSpeed;
 }
 
-void AGSCharacter::ServerSetSprinting_Implementation(bool bNewSprinting)
+void AGSCharacter::StartSprintFromAbility()
 {
-	SetSprinting(bNewSprinting);
+	SetSprinting(true);
+}
+
+void AGSCharacter::StopSprintFromAbility()
+{
+	SetSprinting(false);
 }
 
 void AGSCharacter::UpdateNameTag(const FString& Newname)
@@ -267,10 +286,8 @@ void AGSCharacter::UpdateNameTag(const FString& Newname)
 	}
 }
 
-void AGSCharacter::IARolling(const FInputActionValue& InValue)
+void AGSCharacter::RollFromAbility()
 {
-	UE_LOG(LogTemp, Log, TEXT("Rolling!"));
-
 	if (bIsRolling)
 	{
 		return;
@@ -278,15 +295,14 @@ void AGSCharacter::IARolling(const FInputActionValue& InValue)
 
 	const FVector RollDirection = GetRollingDirection();
 
-	StartRollingLocal(RollDirection);
-
-	if (HasAuthority() == false)
+	if (HasAuthority())
 	{
-		ServerStartRolling(RollDirection);
+		StartRolling(RollDirection);
 	}
 	else
 	{
-		MulticastPlayRollMontage();
+		StartRollingLocal(RollDirection);
+		ServerStartRolling(RollDirection);
 	}
 }
 
@@ -416,6 +432,14 @@ void AGSCharacter::PossessedBy(AController* NewController)
 		if (!PS->GetAbilitySystemComponent()->FindAbilitySpecFromClass(UGA_PlayerDeath::StaticClass()))
 		{
 			PS->GetAbilitySystemComponent()->GiveAbility(FGameplayAbilitySpec(GA_Death,1));
+		}
+		if (!PS->GetAbilitySystemComponent()->FindAbilitySpecFromClass(UGA_Roll::StaticClass()))
+		{
+			PS->GetAbilitySystemComponent()->GiveAbility(FGameplayAbilitySpec(GA_Roll, 1));
+		}
+		if (!PS->GetAbilitySystemComponent()->FindAbilitySpecFromClass(UGA_Sprint::StaticClass()))
+		{
+			PS->GetAbilitySystemComponent()->GiveAbility(FGameplayAbilitySpec(GA_Sprint, 1));
 		}
 		
 		// When State.Dead Tag Was Attached or Detached Call to Func

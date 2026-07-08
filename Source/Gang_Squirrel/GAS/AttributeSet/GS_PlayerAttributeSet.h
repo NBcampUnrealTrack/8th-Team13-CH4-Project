@@ -43,6 +43,15 @@ public:
 	UPROPERTY(BlueprintReadOnly,Category="Attributes|Combat")
 	FGameplayAttributeData Damage;
 	ATTRIBUTE_ACCESSORS(ThisClass,Damage);
+	// Stamina Data
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes|Stamina", ReplicatedUsing = OnRep_Stamina)
+	FGameplayAttributeData Stamina;
+	ATTRIBUTE_ACCESSORS(ThisClass, Stamina)
+
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes|Stamina", ReplicatedUsing = OnRep_MaxStamina)
+	FGameplayAttributeData MaxStamina;
+	ATTRIBUTE_ACCESSORS(ThisClass, MaxStamina)
+
 #pragma endregion 
 	
 protected:
@@ -55,6 +64,10 @@ protected:
 	void OnRep_MoveSpeed(const FGameplayAttributeData& OldMoveSpeed);
 	UFUNCTION()
 	void OnRep_SlowSpeedMultiplier(const FGameplayAttributeData& OldSlowSpeedMultiplier);
+	UFUNCTION()
+	void OnRep_Stamina(const FGameplayAttributeData& OldStamina);
+	UFUNCTION()
+	void OnRep_MaxStamina(const FGameplayAttributeData& OldMaxStamina);
 #pragma endregion
 	
 	
