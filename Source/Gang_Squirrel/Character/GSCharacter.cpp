@@ -168,13 +168,9 @@ void AGSCharacter::IAInteract(const FInputActionValue& InValue)
 {
 	UE_LOG(LogTemp, Log, TEXT("Interact!"));
 	
-	Server_SetEating_Implementation(true);
+	if (CurrentCheekSize >= MaxCheekSize) return;
 	
-	/*if (USkeletalMeshComponent* MeshComp = GetMesh())
-	{
-		MeshComp->SetMorphTarget(FName("CheeksSize"), 1.f);
-		UE_LOG(LogTemp, Log, TEXT("SetEating!"));
-	}*/
+	Server_SetEating_Implementation(true);
 }
 
 void AGSCharacter::IAStopInteract(const FInputActionValue& InValue)
@@ -203,10 +199,38 @@ void AGSCharacter::Multicast_InflateCheeks_Implementation(float Value)
 {
 	USkeletalMeshComponent* MeshComp = GetMesh();
 	
+	float TempValue = CurrentCheekSize + Value;
+	if (MaxCheekSize < TempValue)
+	{
+		CurrentCheekSize = MaxCheekSize;
+		MeshComp->SetMorphTarget(FName("CheeksSize"), CurrentCheekSize);
+		return;
+	}
+	
+	CurrentCheekSize += Value;
+	
+	float ResultValue = CurrentCheekSize / MaxCheekSize;
+	
 	if (MeshComp)
 	{
-		MeshComp->SetMorphTarget(FName("CheeksSize"), Value);
+		MeshComp->SetMorphTarget(FName("CheeksSize"), ResultValue);
 	}
+}
+
+void AGSCharacter::ResetCheekSize()
+{
+	CurrentCheekSize = 0.f;
+	
+	Multicast_InflateCheeks(0.f);
+	
+	UE_LOG(LogTemp, Error, TEXT("ResetCheekSize!"));
+}
+
+void AGSCharacter::AddMaxCheekSize(float Value)
+{
+	MaxCheekSize += Value;
+	
+	Multicast_InflateCheeks(0.f);
 }
 
 void AGSCharacter::IAAttack(const FInputActionValue& InValue)

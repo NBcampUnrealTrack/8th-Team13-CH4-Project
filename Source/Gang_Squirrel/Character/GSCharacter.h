@@ -118,6 +118,10 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_SetEating(bool bEating);
 	
+	void ResetCheekSize();
+	
+	void AddMaxCheekSize(float Value);
+	
 	void InflateCheeks(float Value);
 	
 	bool bIsEating = false;
@@ -127,6 +131,18 @@ protected:
 	//Food
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_InflateCheeks(float Value);
+	
+private:
+	
+	//Food
+	UPROPERTY()
+	float CurrentCheekSize = 0.f;
+	
+	UPROPERTY()
+	float MaxCheekSize = 1.f;
+	
+	UPROPERTY()
+	float IncreasingPercent = 1.f;
 
 
 protected:
