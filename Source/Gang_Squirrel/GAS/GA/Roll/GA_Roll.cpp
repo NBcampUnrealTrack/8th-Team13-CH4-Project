@@ -47,12 +47,12 @@ void UGA_Roll::ActivateAbility(
 		return;
 	}
 
-	if (GE_RollStamina)
+	if (GE_RollStaminaCost)
 	{
 		FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
 		Context.AddSourceObject(this);
 
-		FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(GE_RollStamina, 1.f, Context);
+		FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(GE_RollStaminaCost, 1.f, Context);
 
 		if (SpecHandle.IsValid())
 		{
