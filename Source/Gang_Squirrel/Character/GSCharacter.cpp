@@ -374,12 +374,14 @@ void AGSCharacter::BindMovementSpeedDelegates()
 	UpdateMaxWalkSpeedFromAttribute();
 }
 
+//Caching MoveSpeed
 void AGSCharacter::OnMoveSpeedChanged(const FOnAttributeChangeData& Data)
 {
 	CachedMoveSpeed = Data.NewValue;
 	UpdateMaxWalkSpeedFromAttribute();
 }
 
+//Caching SlowSpeedMultiplier
 void AGSCharacter::OnSlowSpeedMultiplierChanged(const FOnAttributeChangeData& Data)
 {
 	CachedSlowSpeedMultiplier = Data.NewValue;
@@ -401,6 +403,7 @@ float AGSCharacter::GetFinalMoveSpeedMultiplier() const
 	return 1.f;
 }
 
+//MaxWalkSpeed
 void AGSCharacter::UpdateMaxWalkSpeedFromAttribute()
 {
 	const float SafeMoveSpeed = FMath::Max(CachedMoveSpeed, 0.f);
