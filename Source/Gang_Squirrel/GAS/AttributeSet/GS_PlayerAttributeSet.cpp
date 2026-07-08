@@ -12,6 +12,8 @@ UGS_PlayerAttributeSet::UGS_PlayerAttributeSet()
 	InitMaxHealth(3.f);
 	InitMoveSpeed(600.f);
 	InitSlowSpeedMultiplier(1.f);
+	InitStamina(100.f);
+	InitMaxStamina(100.f);
 }
 
 void UGS_PlayerAttributeSet::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -22,6 +24,8 @@ void UGS_PlayerAttributeSet::GetLifetimeReplicatedProps(TArray<class FLifetimePr
 	DOREPLIFETIME(ThisClass, MaxHealth)
 	DOREPLIFETIME(ThisClass, MoveSpeed)
 	DOREPLIFETIME(ThisClass, SlowSpeedMultiplier)
+	DOREPLIFETIME(ThisClass, Stamina)
+	DOREPLIFETIME(ThisClass, MaxStamina)
 }
 
 void UGS_PlayerAttributeSet::PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data)
@@ -42,6 +46,11 @@ void UGS_PlayerAttributeSet::PostGameplayEffectExecute(const struct FGameplayEff
 	{
 		// TODO:: Test Value Change to DataStruct
 		SetSlowSpeedMultiplier(FMath::Clamp(GetSlowSpeedMultiplier(),0.1f,1.f));
+	}
+	//Stamina
+	else if (ChangeAttribute == GetStaminaAttribute())
+	{
+		SetStamina(FMath::Clamp(GetStamina(), 0.f, GetMaxStamina()));
 	}
 	// Damage Logic
 	else if (ChangeAttribute == GetDamageAttribute())
@@ -85,4 +94,13 @@ void UGS_PlayerAttributeSet::OnRep_MoveSpeed(const FGameplayAttributeData& OldMo
 void UGS_PlayerAttributeSet::OnRep_SlowSpeedMultiplier(const FGameplayAttributeData& OldSlowSpeedMultiplier)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(ThisClass,SlowSpeedMultiplier,OldSlowSpeedMultiplier);
+}
+void UGS_PlayerAttributeSet::OnRep_Stamina(const FGameplayAttributeData& OldStamina)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(ThisClass, Stamina, OldStamina);
+}
+
+void UGS_PlayerAttributeSet::OnRep_MaxStamina(const FGameplayAttributeData& OldMaxStamina)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(ThisClass, MaxStamina, OldMaxStamina);
 }
