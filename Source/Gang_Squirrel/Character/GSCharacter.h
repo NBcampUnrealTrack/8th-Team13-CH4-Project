@@ -111,13 +111,22 @@ protected:
 
 public:
 	
+	//Food
 	UFUNCTION(Server, Reliable)
 	void Server_NotifyFoodEaten(AGSFoodBase* EatenFood);
 	
 	UFUNCTION(Server, Reliable)
 	void Server_SetEating(bool bEating);
 	
+	void InflateCheeks(float Value);
+	
 	bool bIsEating = false;
+	
+protected:
+	
+	//Food
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_InflateCheeks(float Value);
 
 
 protected:
