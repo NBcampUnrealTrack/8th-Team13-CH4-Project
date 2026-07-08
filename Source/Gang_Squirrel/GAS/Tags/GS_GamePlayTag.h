@@ -16,12 +16,16 @@ namespace EventTag
 namespace AbilityTag
 {
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Ability_Attack)
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Ability_Death);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Ability_Death)
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Ability_Sprint)
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Ability_Roll)
 }
 
 namespace StateTag
 {
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_State_Dead)
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_State_Sprinting)
+
 }
 
 namespace TeamTag

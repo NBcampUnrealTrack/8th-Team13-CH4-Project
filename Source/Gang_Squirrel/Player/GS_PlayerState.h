@@ -7,7 +7,7 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerNameChanged, const FString&, NewName);
 
-
+class UGameplayEffect;
 class UGS_PlayerAttributeSet;
 
 UCLASS()
@@ -20,7 +20,10 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;
+protected:
 	
+	virtual void BeginPlay() override;
+
 private:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComp;
@@ -43,17 +46,35 @@ public:
 	void OnRep_PlayerNickname();
 	
 private:
-	
 	//Score
 	UPROPERTY(ReplicatedUsing=OnRep_PlayerScore)
 	int32 PlayerScore = 0;
-	
+
 public:
-	
 	UFUNCTION()
 	void OnRep_PlayerScore();
 	
 	void AddScore(int32 Value);
 	
 	FORCEINLINE int32 GetPlayerScore() const { return PlayerScore; }
+
+protected:
+	//Stamina
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stamina")
+	TSubclassOf<UGameplayEffect> GE_StaminaRegen;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stamina")
+	float StaminaRegenInterval = 0.1f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stamina")
+	float StaminaRegenDelay = 1.0f;
+
+	FTimerHandle StaminaRegenTimerHandle;
+
+public:
+	void StartStaminaRegen();
+	void StopStaminaRegen();
+
+private:
+	void ApplyStaminaRegen();
 };
