@@ -28,7 +28,7 @@ protected:
 	float RollStaminaCost = 30.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameplayEffect")
-	TSubclassOf<UGameplayEffect> GE_RollStamina;
+	TSubclassOf<UGameplayEffect> GE_RollStaminaCost;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
 	TObjectPtr<UAnimMontage> AM_Roll;
