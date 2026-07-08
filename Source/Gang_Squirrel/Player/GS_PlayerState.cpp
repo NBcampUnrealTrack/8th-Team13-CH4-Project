@@ -2,7 +2,10 @@
 
 #include "AbilitySystemComponent.h"
 #include "Gang_Squirrel/GAS/AttributeSet/GS_PlayerAttributeSet.h"
+#include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 #include "Net/UnrealNetwork.h"
+#include "GameplayEffect.h"
+#include "TimerManager.h"
 
 
 AGS_PlayerState::AGS_PlayerState()
@@ -31,6 +34,16 @@ void AGS_PlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME(AGS_PlayerState, PlayerScore);
 }
 
+void AGS_PlayerState::BeginPlay()
+{
+	Super::BeginPlay();
+
+	UE_LOG(LogTemp, Warning, TEXT("[PlayerState] BeginPlay. HasAuthority: %s"),
+		HasAuthority() ? TEXT("true") : TEXT("false"));
+
+	StartStaminaRegen();
+}
+
 void AGS_PlayerState::SetPlayerNickname(const FString& NewName)
 {
 	PlayerNickname = NewName;
@@ -52,4 +65,104 @@ void AGS_PlayerState::AddScore(int32 Value)
 void AGS_PlayerState::OnRep_PlayerScore() 
 {
 	UE_LOG(LogTemp, Warning, TEXT("PlayerScore: %d"), PlayerScore);
+}
+
+void AGS_PlayerState::StartStaminaRegen()
+{
+
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	if (!GetWorld())
+	{
+		return;
+	}
+
+	GetWorld()->GetTimerManager().ClearTimer(StaminaRegenTimerHandle);
+
+	GetWorld()->GetTimerManager().SetTimer(
+		StaminaRegenTimerHandle,
+		this,
+		&AGS_PlayerState::ApplyStaminaRegen,
+		StaminaRegenInterval,
+		true,
+		StaminaRegenDelay
+	);
+}
+
+void AGS_PlayerState::StopStaminaRegen()
+{
+	if (!GetWorld())
+	{
+		return;
+	}
+
+	GetWorld()->GetTimerManager().ClearTimer(StaminaRegenTimerHandle);
+}
+
+void AGS_PlayerState::ApplyStaminaRegen()
+{
+
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	if (!AbilitySystemComp)
+	{	
+		return;
+	}
+
+	if (!GE_StaminaRegen)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[StaminaRegen] GE_StaminaRegen is NULL"));
+		return;
+	}
+
+	if (AbilitySystemComp->HasMatchingGameplayTag(StateTag::TAG_State_Dead))
+	{
+		return;
+	}
+
+	if (AbilitySystemComp->HasMatchingGameplayTag(StateTag::TAG_State_Sprinting))
+	{
+		return;
+	}
+
+	const float CurrentStamina = AbilitySystemComp->GetNumericAttribute(
+		UGS_PlayerAttributeSet::GetStaminaAttribute()
+	);
+
+	const float MaxStamina = AbilitySystemComp->GetNumericAttribute(
+		UGS_PlayerAttributeSet::GetMaxStaminaAttribute()
+	);
+
+	UE_LOG(LogTemp, Warning, TEXT("[StaminaRegen] Before Check: %f / %f"), CurrentStamina, MaxStamina);
+
+	if (CurrentStamina >= MaxStamina)
+	{
+		return;
+	}
+
+	FGameplayEffectContextHandle Context = AbilitySystemComp->MakeEffectContext();
+	Context.AddSourceObject(this);
+
+	FGameplayEffectSpecHandle SpecHandle = AbilitySystemComp->MakeOutgoingSpec(
+		GE_StaminaRegen,
+		1.f,
+		Context
+	);
+
+	if (SpecHandle.IsValid())
+	{
+		AbilitySystemComp->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+
+		UE_LOG(LogTemp, Warning, TEXT("[StaminaRegen] Stamina: %f / %f"),
+			AbilitySystemComp->GetNumericAttribute(UGS_PlayerAttributeSet::GetStaminaAttribute()),
+			MaxStamina
+		);
+	}
+
 }
