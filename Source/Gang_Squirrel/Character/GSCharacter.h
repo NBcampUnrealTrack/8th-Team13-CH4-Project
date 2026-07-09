@@ -162,18 +162,27 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Movement|Roll")
 	bool IsRolling() const { return bIsRolling; }
 
-protected:
-	// The Value for CharacterMovementComponent. 
-	// Not yet connected to AttributeSet.Need to be integrated into GAS.
+private:	
 	// Don't trust this Values. Go to AttributeSet
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Sprint")
-	float WalkSpeed = 50.f;
+	float CachedMoveSpeed = 50.f;
+	float CachedSlowSpeedMultiplier = 1.f;
 
+	bool bMovementSpeedDelegateBound = false;
+	bool bStaminaDelegateBound = false;
+
+	void BindMovementSpeedDelegates();
+	void OnMoveSpeedChanged(const FOnAttributeChangeData& Data);
+	void OnSlowSpeedMultiplierChanged(const FOnAttributeChangeData& Data);
+
+	void UpdateMaxWalkSpeedFromAttribute();
+	float GetFinalMoveSpeedMultiplier() const;
+
+protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Sprint")
-	float SprintSpeed = 100.f;
+	float SprintSpeedMultiplier = 2.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Roll")
-	float RollSpeed = 50.f;
+	float RollSpeedMultiplier = 2.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Roll")
 	float RollingDuration = 0.4f;
@@ -230,6 +239,8 @@ protected:
 		void BindStaminaDelegates();
 		void UpdateStaminaBar(float CurrentStamina, float MaxStamina);
 		void RefreshStaminaBarVisibility(float CurrentStamina, float MaxStamina);
+		void HideStaminaBar();
+		void UpdateStaminaBarWorldLocation();
 
 		void OnStaminaChanged(const FOnAttributeChangeData& Data);
 		void OnMaxStaminaChanged(const FOnAttributeChangeData& Data);
@@ -237,7 +248,13 @@ protected:
 		float CachedMaxStamina = 100.f;
 
 		FTimerHandle StaminaBarHideTimerHandle;
-		void HideStaminaBar();
+
+	protected:
+		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI|Stamina")
+		float StaminaBarSideOffset = 6.f;
+
+		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI|Stamina")
+		float StaminaBarHeightOffset = -2.f;
 
 #pragma endregion
 

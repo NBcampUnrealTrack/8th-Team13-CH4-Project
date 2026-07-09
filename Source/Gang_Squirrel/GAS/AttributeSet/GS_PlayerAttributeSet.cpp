@@ -11,7 +11,7 @@ UGS_PlayerAttributeSet::UGS_PlayerAttributeSet()
 	//TODO::Refac to DataTable,Asset
 	InitHealth(3.f);
 	InitMaxHealth(3.f);
-	InitMoveSpeed(600.f);
+	InitMoveSpeed(50.f);
 	InitSlowSpeedMultiplier(1.f);
 	InitStamina(100.f);
 	InitMaxStamina(100.f);
@@ -47,6 +47,11 @@ void UGS_PlayerAttributeSet::PostGameplayEffectExecute(const struct FGameplayEff
 	{
 		// TODO:: Test Value Change to DataStruct
 		SetSlowSpeedMultiplier(FMath::Clamp(GetSlowSpeedMultiplier(),0.1f,1.f));
+	}
+	// MoveSpeed
+	else if (ChangeAttribute == GetMoveSpeedAttribute())
+	{
+		SetMoveSpeed(FMath::Clamp(GetMoveSpeed(), 0.f, 120.f));
 	}
 	//Stamina
 	else if (ChangeAttribute == GetStaminaAttribute())
