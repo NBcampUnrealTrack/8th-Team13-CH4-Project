@@ -10,7 +10,7 @@
 #include "Gang_Squirrel/Player/GS_PlayerState.h"
 #include "Gang_Squirrel/DataAsset/GSFoodPrimaryDataAsset.h"
 #include "Gang_Squirrel/Character/GSCharacter.h"
-#include "Gang_Squirrel/GAS/GA/SpeedBoost/GA_SpeedBoost.h"
+#include "Gang_Squirrel/GAS/AttributeSet/GS_PlayerAttributeSet.h"
 
 AGS_GameModeBase::AGS_GameModeBase()
 {
@@ -100,6 +100,14 @@ void AGS_GameModeBase::GiveRandomReward(AGS_PlayerState* KillerPS)
 	if (!HasAuthority() || !IsValid(KillerPS)) return;
 
 	const ERewardType RewardType = static_cast<ERewardType>(FMath::RandRange(0, 2));
+	GiveSpecificReward(KillerPS, RewardType);
+	
+}
+
+void AGS_GameModeBase::GiveSpecificReward(AGS_PlayerState* KillerPS, ERewardType RewardType)
+{
+	if (!HasAuthority() || !IsValid(KillerPS)) return;
+
 	switch (RewardType)
 	{
 	case ERewardType::Food:
@@ -169,20 +177,21 @@ void AGS_GameModeBase::GiveSpeedBoostReward(AGS_PlayerState* PS)
 		return;
 	}
 
-	if (!IsValid(GA_SpeedBoostClass))
+	if (!IsValid(GE_MoveSpeedRewardClass))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[Reward] GA_SpeedBoostClass is not assigned in GameMode BP"));
+		UE_LOG(LogTemp, Warning, TEXT("[Reward] GE_MoveSpeedRewardClass is not assigned in GameMode BP"));
 		return;
 	}
 
-	FGameplayAbilitySpec* Spec = ASC->FindAbilitySpecFromClass(GA_SpeedBoostClass);
-	if (!Spec)
+	FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(GE_MoveSpeedRewardClass, 1.f, Context);
+
+	if (SpecHandle.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[Reward] SpeedBoost ability spec not found."));
-		return;
+		ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+
+		UE_LOG(LogTemp, Log, TEXT("[Reward] MoveSpeed Reward Applied. Current MoveSpeed: %.1f"),
+			ASC->GetNumericAttribute(UGS_PlayerAttributeSet::GetMoveSpeedAttribute()));
 	}
 
-	const bool bActivated = ASC->TryActivateAbility(Spec->Handle);
-
-	UE_LOG(LogTemp, Log, TEXT("[Reward] SpeedBoost Reward %s"), bActivated ? TEXT("Activated") : TEXT("FAILED"));
 }
