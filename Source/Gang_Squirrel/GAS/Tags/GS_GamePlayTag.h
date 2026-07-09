@@ -36,7 +36,3 @@ namespace TeamTag
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Team_Enemy)
 }
 
-namespace StatusTag
-{
-	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Status_SpeedBoost)
-}

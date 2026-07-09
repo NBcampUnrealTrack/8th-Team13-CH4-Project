@@ -22,7 +22,6 @@ class USphereComponent;
 class UWidgetComponent;
 class UAnimMontage;
 class UGS_StaminaBarWidget;
-class UGA_SpeedBoost;
 
 UCLASS()
 class GANG_SQUIRREL_API AGSCharacter : public ACharacter ,public IAbilitySystemInterface
@@ -262,9 +261,6 @@ protected:
 public:
 	UFUNCTION(NetMulticast,Reliable)
 	void NetMulticast_SetDeathPoseFrozen(bool bFrozen);
-
-	void StartSpeedBoostFromAbility(float Multiplier);
-	void StopSpeedBoostFromAbility();
 	
 protected:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="GameplayAbility")
@@ -276,12 +272,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameplayAbility")
 	TSubclassOf<UGA_Sprint> GA_Sprint;
 	// GA_Death CallBack Func
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameplayAbility")
-	TSubclassOf<UGA_SpeedBoost> GA_SpeedBoost;
 private:
 	void OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount);
 
-	float SpeedBoostMultiplier = 1.f;
 
 #pragma endregion 
 };
