@@ -16,6 +16,7 @@
 #include "Gang_Squirrel/GAS/GA/Roll/GA_Roll.h"
 #include "Gang_Squirrel/GAS/GA/Sprint/GA_Sprint.h"
 #include "Gang_Squirrel/GAS/GA/Death/GA_PlayerDeath.h"
+#include "Gang_Squirrel/GAS/GA/SpeedBoost/GA_SpeedBoost.h"
 #include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 #include "Components/WidgetComponent.h"
 #include "Gang_Squirrel/Food/GSFoodBase.h"
@@ -325,6 +326,7 @@ void AGSCharacter::IARolling(const FInputActionValue& InValue)
 void AGSCharacter::SetSprinting(bool bNewSprinting)
 {
 	bIsSprinting = bNewSprinting;
+
 	UpdateMaxWalkSpeedFromAttribute();
 }
 
@@ -581,6 +583,10 @@ void AGSCharacter::PossessedBy(AController* NewController)
 		{
 			PS->GetAbilitySystemComponent()->GiveAbility(FGameplayAbilitySpec(GA_Sprint, 1));
 		}
+		if (!PS->GetAbilitySystemComponent()->FindAbilitySpecFromClass(UGA_SpeedBoost::StaticClass()))
+		{
+			PS->GetAbilitySystemComponent()->GiveAbility(FGameplayAbilitySpec(GA_SpeedBoost, 1));
+		}
 		
 		// When State.Dead Tag Was Attached or Detached Call to Func
 		PS->GetAbilitySystemComponent()->RegisterGameplayTagEvent(StateTag::TAG_State_Dead, EGameplayTagEventType::NewOrRemoved).AddUObject(this,&AGSCharacter::OnDeathStateTagChanged);
@@ -750,6 +756,20 @@ void AGSCharacter::HideStaminaBar()
 		StaminaBarWidget->SetVisibility(false);
 		StaminaBarWidget->SetHiddenInGame(true);
 	}
+}
+
+void AGSCharacter::StartSpeedBoostFromAbility(float Multiplier)
+{
+	SpeedBoostMultiplier = Multiplier;
+
+	UpdateMaxWalkSpeedFromAttribute();
+}
+
+void AGSCharacter::StopSpeedBoostFromAbility()
+{
+	SpeedBoostMultiplier = 1.f;
+
+	UpdateMaxWalkSpeedFromAttribute();
 }
 
 void AGSCharacter::UpdateStaminaBarWorldLocation()

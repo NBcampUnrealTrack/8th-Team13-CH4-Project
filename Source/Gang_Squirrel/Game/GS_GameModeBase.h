@@ -10,6 +10,7 @@ class AGSSpawnManager;
 class AGS_PlayerState;
 class UGSFoodPrimaryDataAsset;   
 class AGSCharacter;
+class UGA_SpeedBoost;
 /**
  * 
  */
@@ -89,4 +90,7 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Reward|Capacity")
 	float CapacityIncreaseAmount = 0.1f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Reward|SpeedBoost")
+	TSubclassOf<UGA_SpeedBoost> GA_SpeedBoostClass;
 };
