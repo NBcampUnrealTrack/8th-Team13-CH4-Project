@@ -77,6 +77,8 @@ void AGS_PlayerState::AddKillCount()
 void AGS_PlayerState::OnRep_PlayerScore() 
 {
 	UE_LOG(LogTemp, Warning, TEXT("PlayerScore: %d"), PlayerScore);
+	
+	OnPlayerScoreChanged.Broadcast(PlayerScore);
 }
 
 void AGS_PlayerState::StartStaminaRegen()

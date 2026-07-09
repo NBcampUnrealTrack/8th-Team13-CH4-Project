@@ -502,11 +502,15 @@ void AGS_FallingHazard::MulticastFinishImpactVisual_Implementation(FVector InGro
 	{
 		WarningDecal->SetHiddenInGame(false);
 		WarningDecal->SetWorldLocation(GroundLocation + FVector(0.f, 0.f, WarningDecalZOffset));
-		WarningDecal->SetWorldRotation(FRotator(-90.f, 0.f, 0.f));
+		WarningDecal->SetWorldRotation(FRotator(-90.f, CurrentShadowDecalRotationYaw, 0.f));
+		
+		const float DecalSizeY = FallingDecalEndSize * CurrentShadowDecalSizeRatio.X;
+		const float DecalSizeZ = FallingDecalEndSize * CurrentShadowDecalSizeRatio.Y;
+
 		WarningDecal->DecalSize = FVector(
 			WarningDecalProjectionDepth,
-			FallingDecalEndSize,
-			FallingDecalEndSize
+			DecalSizeY,
+			DecalSizeZ
 		);
 		WarningDecal->MarkRenderStateDirty();
 	}
@@ -622,7 +626,7 @@ void AGS_FallingHazard::UpdateWarningDecalVisual(float DeltaTime)
 	}
 
 	WarningDecal->SetWorldLocation(CurrentDecalVisualLocation);
-	WarningDecal->SetWorldRotation(FRotator(-90.f, 0.f, 0.f));
+	WarningDecal->SetWorldRotation(FRotator(-90.f, CurrentShadowDecalRotationYaw, 0.f));
 
 	float CurrentSize = TrackingDecalStartSize;
 
@@ -657,10 +661,13 @@ void AGS_FallingHazard::UpdateWarningDecalVisual(float DeltaTime)
 		);
 	}
 
+	const float DecalSizeY = CurrentSize * CurrentShadowDecalSizeRatio.X;
+	const float DecalSizeZ = CurrentSize * CurrentShadowDecalSizeRatio.Y;
+
 	WarningDecal->DecalSize = FVector(
 		WarningDecalProjectionDepth,
-		CurrentSize,
-		CurrentSize
+		DecalSizeY,
+		DecalSizeZ
 	);
 
 	WarningDecal->MarkRenderStateDirty();
@@ -741,6 +748,17 @@ void AGS_FallingHazard::ApplyHazardDataByIndex(int32 InIndex)
 	{
 		DamageBox->SetBoxExtent(VisualData.DamageBoxExtent);
 		DamageBox->SetRelativeLocation(VisualData.DamageBoxRelativeLocation);
+	}
+
+	if (WarningDecal)
+	{
+		if (VisualData.ShadowDecalMaterial)
+		{
+			WarningDecal->SetDecalMaterial(VisualData.ShadowDecalMaterial);
+		}
+
+		CurrentShadowDecalSizeRatio = VisualData.ShadowDecalSizeRatio;
+		CurrentShadowDecalRotationYaw = VisualData.ShadowDecalRotationYaw;
 	}
 
 	GroundCheckDistance = VisualData.GroundCheckDistanceOverride;
