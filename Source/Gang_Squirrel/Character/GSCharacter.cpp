@@ -16,6 +16,7 @@
 #include "Gang_Squirrel/GAS/GA/Roll/GA_Roll.h"
 #include "Gang_Squirrel/GAS/GA/Sprint/GA_Sprint.h"
 #include "Gang_Squirrel/GAS/GA/Death/GA_PlayerDeath.h"
+#include "Gang_Squirrel/GAS/GA/SpeedBoost/GA_SpeedBoost.h"
 #include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 #include "Components/WidgetComponent.h"
 #include "Gang_Squirrel/Food/GSFoodBase.h"
@@ -317,7 +318,8 @@ void AGSCharacter::SetSprinting(bool bNewSprinting)
 {
 	bIsSprinting = bNewSprinting;
 
-	GetCharacterMovement()->MaxWalkSpeed = bIsSprinting ? SprintSpeed : WalkSpeed;
+	const float BaseSpeed = bIsSprinting ? SprintSpeed : WalkSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = BaseSpeed * SpeedBoostMultiplier;
 }
 
 void AGSCharacter::StartSprintFromAbility()
@@ -495,6 +497,10 @@ void AGSCharacter::PossessedBy(AController* NewController)
 		{
 			PS->GetAbilitySystemComponent()->GiveAbility(FGameplayAbilitySpec(GA_Sprint, 1));
 		}
+		if (!PS->GetAbilitySystemComponent()->FindAbilitySpecFromClass(UGA_SpeedBoost::StaticClass()))
+		{
+			PS->GetAbilitySystemComponent()->GiveAbility(FGameplayAbilitySpec(GA_SpeedBoost, 1));
+		}
 		
 		// When State.Dead Tag Was Attached or Detached Call to Func
 		PS->GetAbilitySystemComponent()->RegisterGameplayTagEvent(StateTag::TAG_State_Dead, EGameplayTagEventType::NewOrRemoved).AddUObject(this,&AGSCharacter::OnDeathStateTagChanged);
@@ -637,6 +643,22 @@ void AGSCharacter::HideStaminaBar()
 	{
 		StaminaBarWidget->SetVisibility(false);
 	}
+}
+
+void AGSCharacter::StartSpeedBoostFromAbility(float Multiplier)
+{
+	SpeedBoostMultiplier = Multiplier;
+
+	const float BaseSpeed = bIsSprinting ? SprintSpeed : WalkSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = BaseSpeed * SpeedBoostMultiplier;
+}
+
+void AGSCharacter::StopSpeedBoostFromAbility()
+{
+	SpeedBoostMultiplier = 1.f;
+
+	const float BaseSpeed = bIsSprinting ? SprintSpeed : WalkSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = BaseSpeed * SpeedBoostMultiplier;
 }
 
 void AGSCharacter::OnStaminaChanged(const FOnAttributeChangeData& Data)

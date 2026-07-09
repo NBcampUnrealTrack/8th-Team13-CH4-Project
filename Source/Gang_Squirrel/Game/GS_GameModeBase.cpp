@@ -4,11 +4,13 @@
 #include "GS_GameModeBase.h"
 #include "Gang_Squirrel/Game/GS_GameState.h"
 #include "EngineUtils.h"
+#include "AbilitySystemComponent.h"
 #include "Gang_Squirrel/Gimmick/GS_FallingHazardManager.h"
 #include "Gang_Squirrel/SpawnSystem/GSSpawnManager.h"
 #include "Gang_Squirrel/Player/GS_PlayerState.h"
 #include "Gang_Squirrel/DataAsset/GSFoodPrimaryDataAsset.h"
 #include "Gang_Squirrel/Character/GSCharacter.h"
+#include "Gang_Squirrel/GAS/GA/SpeedBoost/GA_SpeedBoost.h"
 
 AGS_GameModeBase::AGS_GameModeBase()
 {
@@ -98,7 +100,6 @@ void AGS_GameModeBase::GiveRandomReward(AGS_PlayerState* KillerPS)
 	if (!HasAuthority() || !IsValid(KillerPS)) return;
 
 	const ERewardType RewardType = static_cast<ERewardType>(FMath::RandRange(0, 2));
-
 	switch (RewardType)
 	{
 	case ERewardType::Food:
@@ -157,5 +158,31 @@ void AGS_GameModeBase::GiveCapacityReward(AGS_PlayerState* PS)
 
 void AGS_GameModeBase::GiveSpeedBoostReward(AGS_PlayerState* PS)
 {
-	UE_LOG(LogTemp, Log, TEXT("[Reward] SpeedBoost Reward (TODO)"));
+	if (IsValid(PS) == false)
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent();
+	if (IsValid(ASC) == false)
+	{
+		return;
+	}
+
+	if (!IsValid(GA_SpeedBoostClass))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Reward] GA_SpeedBoostClass is not assigned in GameMode BP"));
+		return;
+	}
+
+	FGameplayAbilitySpec* Spec = ASC->FindAbilitySpecFromClass(GA_SpeedBoostClass);
+	if (!Spec)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Reward] SpeedBoost ability spec not found."));
+		return;
+	}
+
+	const bool bActivated = ASC->TryActivateAbility(Spec->Handle);
+
+	UE_LOG(LogTemp, Log, TEXT("[Reward] SpeedBoost Reward %s"), bActivated ? TEXT("Activated") : TEXT("FAILED"));
 }
