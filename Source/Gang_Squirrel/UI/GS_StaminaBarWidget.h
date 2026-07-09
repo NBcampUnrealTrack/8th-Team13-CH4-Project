@@ -17,6 +17,17 @@ public:
 	void SetStaminaPercent(float InPercent);
 
 protected:
+	virtual void NativeConstruct() override;
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+
+protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UProgressBar> PB_Stamina;
+
+private:
+	float TargetStaminaPercent = 1.f;
+	float CurrentDisplayPercent = 1.f;
+
+	UPROPERTY(EditAnywhere, Category = "Stamina")
+	float StaminaInterpSpeed = 4.f;
 };
