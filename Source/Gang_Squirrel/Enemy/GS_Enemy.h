@@ -6,13 +6,15 @@
 #include "Gang_Squirrel/DataBase/DataTable/DT_Enemy.h"
 #include "GS_Enemy.generated.h"
 
+struct FOnAttributeChangeData;
+class UWidgetComponent;
 struct FGameplayTag;
 class UGA_EnemyDeath;
 class UGA_EnemyAttack;
 class USphereComponent;
 class UGameplayAbility;
 class UGS_PlayerAttributeSet;
-
+class AGS_PlayerState;
 
 UCLASS()
 class GANG_SQUIRREL_API AGS_Enemy : public ACharacter, public IAbilitySystemInterface
@@ -95,6 +97,26 @@ public:
 private:
 	FGS_EnemyDataTable CachedEnemyData;
 #pragma endregion 
+
+#pragma region HPBar
+private:
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UWidgetComponent> HPBarWidget;
 	
+	void RefreshHPBar();
+	void OnHealthAttributeChanged(const FOnAttributeChangeData& Data);
+#pragma endregion 
+
+#pragma region KillCount
+public:
+	FORCEINLINE void SetKillerPlayerState(AGS_PlayerState* InKiller);
+	
+	FORCEINLINE AGS_PlayerState* GetKillerPlayerState() const { return KillerPlayerState; }
+
+private:
+	UPROPERTY()
+	TObjectPtr<AGS_PlayerState> KillerPlayerState;
+
+#pragma endregion
 };
 

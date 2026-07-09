@@ -119,7 +119,7 @@ void AGSCharacter::BeginPlay()
 		}
 	}
 
-	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+	BindMovementSpeedDelegates();
 
 	BindStaminaDelegates();
 }
@@ -298,8 +298,7 @@ void AGSCharacter::IARolling(const FInputActionValue& InValue)
 void AGSCharacter::SetSprinting(bool bNewSprinting)
 {
 	bIsSprinting = bNewSprinting;
-
-	GetCharacterMovement()->MaxWalkSpeed = bIsSprinting ? SprintSpeed : WalkSpeed;
+	UpdateMaxWalkSpeedFromAttribute();
 }
 
 void AGSCharacter::StartSprintFromAbility()
@@ -342,6 +341,82 @@ void AGSCharacter::RollFromAbility()
 	}
 }
 
+void AGSCharacter::BindMovementSpeedDelegates()
+{
+	if (bMovementSpeedDelegateBound)
+	{
+		return;
+	}
+
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (PS == nullptr)
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent();
+	if (ASC == nullptr)
+	{
+		return;
+	}
+
+	ASC->GetGameplayAttributeValueChangeDelegate(UGS_PlayerAttributeSet::GetMoveSpeedAttribute())
+		.AddUObject(this, &AGSCharacter::OnMoveSpeedChanged);
+
+	ASC->GetGameplayAttributeValueChangeDelegate(UGS_PlayerAttributeSet::GetSlowSpeedMultiplierAttribute())
+		.AddUObject(this, &AGSCharacter::OnSlowSpeedMultiplierChanged);
+
+	CachedMoveSpeed = ASC->GetNumericAttribute(UGS_PlayerAttributeSet::GetMoveSpeedAttribute());
+	CachedSlowSpeedMultiplier = ASC->GetNumericAttribute(UGS_PlayerAttributeSet::GetSlowSpeedMultiplierAttribute());
+
+	bMovementSpeedDelegateBound = true;
+
+	UpdateMaxWalkSpeedFromAttribute();
+}
+
+//Caching MoveSpeed
+void AGSCharacter::OnMoveSpeedChanged(const FOnAttributeChangeData& Data)
+{
+	CachedMoveSpeed = Data.NewValue;
+	UpdateMaxWalkSpeedFromAttribute();
+}
+
+//Caching SlowSpeedMultiplier
+void AGSCharacter::OnSlowSpeedMultiplierChanged(const FOnAttributeChangeData& Data)
+{
+	CachedSlowSpeedMultiplier = Data.NewValue;
+	UpdateMaxWalkSpeedFromAttribute();
+}
+
+float AGSCharacter::GetFinalMoveSpeedMultiplier() const
+{
+	if (bIsRolling)
+	{
+		return RollSpeedMultiplier;
+	}
+
+	if (bIsSprinting)
+	{
+		return SprintSpeedMultiplier;
+	}
+
+	return 1.f;
+}
+
+//MaxWalkSpeed
+void AGSCharacter::UpdateMaxWalkSpeedFromAttribute()
+{
+	const float SafeMoveSpeed = FMath::Max(CachedMoveSpeed, 0.f);
+	const float SafeSlowMultiplier = FMath::Clamp(CachedSlowSpeedMultiplier, 0.1f, 1.f);
+
+	const float FinalSpeed =
+		SafeMoveSpeed *
+		SafeSlowMultiplier *
+		GetFinalMoveSpeedMultiplier();
+
+	GetCharacterMovement()->MaxWalkSpeed = FinalSpeed;
+}
+
 void AGSCharacter::StartRolling(const FVector& InRollingDirection)
 {
 	if (bIsRolling)
@@ -355,7 +430,7 @@ void AGSCharacter::StartRolling(const FVector& InRollingDirection)
 	RollingDirection.Z = 0.f;
 	RollingDirection.Normalize();
 
-	GetCharacterMovement()->MaxWalkSpeed = RollSpeed;
+	UpdateMaxWalkSpeedFromAttribute();
 
 	GetWorldTimerManager().ClearTimer(RollingTimerHandle);
 	GetWorldTimerManager().SetTimer(
@@ -384,7 +459,7 @@ void AGSCharacter::StartRollingLocal(const FVector& InRollingDirection)
 	RollingDirection.Z = 0.f;
 	RollingDirection.Normalize();
 
-	GetCharacterMovement()->MaxWalkSpeed = RollSpeed;
+	UpdateMaxWalkSpeedFromAttribute();
 
 	if (AM_Roll)
 	{
@@ -406,7 +481,7 @@ void AGSCharacter::FinishRolling()
 	bIsRolling = false;
 	RollingDirection = FVector::ZeroVector;
 
-	GetCharacterMovement()->MaxWalkSpeed = bIsSprinting ? SprintSpeed : WalkSpeed;
+	UpdateMaxWalkSpeedFromAttribute();
 }
 
 FVector AGSCharacter::GetRollingDirection() const
@@ -460,6 +535,8 @@ void AGSCharacter::PossessedBy(AController* NewController)
 		// Init ASC
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS,this);
 		PS->GetAbilitySystemComponent()->AddLooseGameplayTag(TeamTag::TAG_Team_Player);
+
+		BindMovementSpeedDelegates();
 		//Give Ability
 		if (!PS->GetAbilitySystemComponent()->FindAbilitySpecFromClass(UGA_Attack::StaticClass()))
 		{
@@ -493,6 +570,8 @@ void AGSCharacter::OnRep_PlayerState()
 	{
 		// Init ASC
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS,this);
+
+		BindMovementSpeedDelegates();
 
 		if (PS->OnPlayerNameChanged.IsAlreadyBound(this, &ThisClass::UpdateNameTag) == false)
 		{
@@ -543,6 +622,11 @@ void AGSCharacter::NetMulticast_SetDeathPoseFrozen_Implementation(bool bFrozen)
 //Stamina
 void AGSCharacter::BindStaminaDelegates()
 {
+	if (bStaminaDelegateBound)
+	{
+		return;
+	}
+
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (PS == nullptr)
 	{
