@@ -4,9 +4,11 @@
 #include "Blueprint/UserWidget.h"
 #include "GS_HUDWidget.generated.h"
 
+class UGS_PartyWidget;
 class AGS_PlayerState;
 struct FOnAttributeChangeData;
 class UGS_HPCountWidget;
+class UPanelWidget;
 
 UCLASS()
 class GANG_SQUIRREL_API UGS_HUDWidget : public UUserWidget
@@ -20,24 +22,20 @@ public:
 protected:
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UGS_HPCountWidget> HPWidget_Mine;
-	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UGS_HPCountWidget> HPWidget_Other;
+	
+	//PartyWidget
+	UPROPERTY(EditDefaultsOnly,Category="UI")
+	TSubclassOf<UGS_PartyWidget> PartyWidgetClass;
 	
 private:
 	// Binding PlayerState
 	void BindToMyPlayerState();
-	void TryFindAndBindOtherPlayer();
 	void PollForPlayer();
 	// Binding Attribute Change Delegate
 	void OnMyHealthChanged(const FOnAttributeChangeData& Data);
-	void OnOtherHealthChanged(const FOnAttributeChangeData& Data);
 	
 	void RefreshMyHealth();
-	void RefreshOtherHealth();
 	
-	UPROPERTY()
-	TObjectPtr<AGS_PlayerState> OtherPlayerState;
-	
-	FTimerHandle OtherPlayerFindTimerHandle;
+	FTimerHandle MyStateBindTimerHandle;
 	bool bMyStateBound = false;
 };
