@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "Engine/StaticMesh.h"
+#include "Materials/MaterialInterface.h"
 #include "GS_FallingHazardDataAsset.generated.h"
 
 USTRUCT(BlueprintType)
@@ -33,6 +34,15 @@ struct FGSFallingHazardVisualData
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float GroundCheckDistanceOverride = 0.01f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shadow")
+	TObjectPtr<UMaterialInterface> ShadowDecalMaterial = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shadow")
+	FVector2D ShadowDecalSizeRatio = FVector2D(1.f, 1.f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shadow")
+	float ShadowDecalRotationYaw = 0.f;
 };
 
 UCLASS(BlueprintType)

@@ -102,6 +102,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Warning")
 	float WarningDecalLocationInterpSpeed = 18.f;
 
+	UPROPERTY()
+	FVector2D CurrentShadowDecalSizeRatio = FVector2D(1.f, 1.f);
+
+	UPROPERTY()
+	float CurrentShadowDecalRotationYaw = 0.f;
+
 	float TrackingVisualElapsedTime = 0.f;
 
 	uint8 bHasInitializedDecalLocation : 1 = false;
