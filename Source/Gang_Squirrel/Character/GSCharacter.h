@@ -171,7 +171,6 @@ private:
 	void UpdateMaxWalkSpeedFromAttribute();
 	float GetFinalMoveSpeedMultiplier() const;
 
-
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Sprint")
 	float SprintSpeedMultiplier = 2.0f;
@@ -234,6 +233,8 @@ protected:
 		void BindStaminaDelegates();
 		void UpdateStaminaBar(float CurrentStamina, float MaxStamina);
 		void RefreshStaminaBarVisibility(float CurrentStamina, float MaxStamina);
+		void HideStaminaBar();
+		void UpdateStaminaBarWorldLocation();
 
 		void OnStaminaChanged(const FOnAttributeChangeData& Data);
 		void OnMaxStaminaChanged(const FOnAttributeChangeData& Data);
@@ -241,7 +242,13 @@ protected:
 		float CachedMaxStamina = 100.f;
 
 		FTimerHandle StaminaBarHideTimerHandle;
-		void HideStaminaBar();
+
+	protected:
+		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI|Stamina")
+		float StaminaBarSideOffset = 6.f;
+
+		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI|Stamina")
+		float StaminaBarHeightOffset = -2.f;
 
 #pragma endregion
 
