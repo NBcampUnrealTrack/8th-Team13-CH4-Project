@@ -6,6 +6,7 @@
 #include "GS_PlayerState.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerNameChanged, const FString&, NewName);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerScoreChanged, int32, NewScore);
 
 class UGameplayEffect;
 class UGS_PlayerAttributeSet;
@@ -18,8 +19,10 @@ public:
 	AGS_PlayerState();
 	
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
-
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;
+	
+	// Delegate Score
+	FOnPlayerScoreChanged OnPlayerScoreChanged;
 protected:
 	
 	virtual void BeginPlay() override;
