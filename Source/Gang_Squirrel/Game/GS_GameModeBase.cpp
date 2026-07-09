@@ -8,6 +8,7 @@
 #include "Gang_Squirrel/SpawnSystem/GSSpawnManager.h"
 #include "Gang_Squirrel/Player/GS_PlayerState.h"
 #include "Gang_Squirrel/DataAsset/GSFoodPrimaryDataAsset.h"
+#include "Gang_Squirrel/Character/GSCharacter.h"
 
 AGS_GameModeBase::AGS_GameModeBase()
 {
@@ -139,7 +140,19 @@ void AGS_GameModeBase::GiveFoodReward(AGS_PlayerState* PS)
 
 void AGS_GameModeBase::GiveCapacityReward(AGS_PlayerState* PS)
 {
-	UE_LOG(LogTemp, Log, TEXT("[Reward] Capacity Reward (TODO)"));
+	if (IsValid(PS) == false)
+	{
+		return;
+	}
+
+	AGSCharacter* Character = Cast<AGSCharacter>(PS->GetPawn());
+	if (IsValid(Character) == false)
+	{
+		return;
+	}
+
+	Character->AddMaxCheekSize(CapacityIncreaseAmount);
+	UE_LOG(LogTemp, Log, TEXT("[Reward] Capacity Reward: +%.2f"), CapacityIncreaseAmount);
 }
 
 void AGS_GameModeBase::GiveSpeedBoostReward(AGS_PlayerState* PS)

@@ -46,6 +46,8 @@ public:
 	FORCEINLINE USphereComponent* GetLeftHandCollision() const {return leftHandCollision;}
 	FORCEINLINE USphereComponent* GetRightHandCollision() const {return rightHandCollision;}
 	
+public:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 private:
 	//InputAction Function
@@ -140,14 +142,17 @@ protected:
 private:
 	
 	//Food
-	UPROPERTY()
+	UPROPERTY(ReplicatedUsing = OnRep_CheekSize)
 	float CurrentCheekSize = 0.f;
 	
-	UPROPERTY()
+	UPROPERTY(ReplicatedUsing = OnRep_CheekSize)
 	float MaxCheekSize = 1.f;
 	
 	UPROPERTY()
 	float IncreasingPercent = 1.f;
+
+	UFUNCTION()
+	void OnRep_CheekSize();
 
 public:
 	UFUNCTION(BlueprintPure, Category = "Movement|Sprint")
@@ -170,7 +175,6 @@ private:
 
 	void UpdateMaxWalkSpeedFromAttribute();
 	float GetFinalMoveSpeedMultiplier() const;
-
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement|Sprint")
@@ -234,6 +238,8 @@ protected:
 		void BindStaminaDelegates();
 		void UpdateStaminaBar(float CurrentStamina, float MaxStamina);
 		void RefreshStaminaBarVisibility(float CurrentStamina, float MaxStamina);
+		void HideStaminaBar();
+		void UpdateStaminaBarWorldLocation();
 
 		void OnStaminaChanged(const FOnAttributeChangeData& Data);
 		void OnMaxStaminaChanged(const FOnAttributeChangeData& Data);
@@ -241,7 +247,13 @@ protected:
 		float CachedMaxStamina = 100.f;
 
 		FTimerHandle StaminaBarHideTimerHandle;
-		void HideStaminaBar();
+
+	protected:
+		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI|Stamina")
+		float StaminaBarSideOffset = 6.f;
+
+		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI|Stamina")
+		float StaminaBarHeightOffset = -2.f;
 
 #pragma endregion
 

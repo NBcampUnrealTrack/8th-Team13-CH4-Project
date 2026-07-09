@@ -22,6 +22,7 @@
 #include "Gang_Squirrel/UI/GS_StaminaBarWidget.h"
 #include "Gang_Squirrel/UI/GSPlayerNameTag.h"
 #include "Gang_Squirrel/Gang_Squirrel.h"
+#include "Net/UnrealNetwork.h"
 
 AGSCharacter::AGSCharacter()
 {
@@ -66,11 +67,13 @@ AGSCharacter::AGSCharacter()
 	//Stamina Widget Component
 	StaminaBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("StaminaBarWidget"));
 	StaminaBarWidget->SetupAttachment(GetRootComponent());
-	StaminaBarWidget->SetRelativeLocation(FVector(0.f, 50.f, 90.f));
+	StaminaBarWidget->SetRelativeLocation(FVector(0.f, 50.f, -20.f));
 	StaminaBarWidget->SetWidgetSpace(EWidgetSpace::Screen);
 	StaminaBarWidget->SetDrawSize(FVector2D(32.f, 160.f));
+	StaminaBarWidget->SetOnlyOwnerSee(true);
 	StaminaBarWidget->SetVisibility(false);
-
+	StaminaBarWidget->SetHiddenInGame(true);
+	StaminaBarWidget->SetUsingAbsoluteLocation(true);
 	// for AnimNotifyTick Func
 	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickMontagesAndRefreshBonesWhenPlayingMontages;
 }
@@ -83,6 +86,8 @@ void AGSCharacter::Tick(float DeltaTime)
 	{
 		AddMovementInput(RollingDirection, 1.0f);
 	}
+
+	UpdateStaminaBarWorldLocation();
 }
 
 void AGSCharacter::BeginPlay()
@@ -99,6 +104,8 @@ void AGSCharacter::BeginPlay()
 
 			EILPS->AddMappingContext(IMC, 0);
 		}
+
+		UpdateStaminaBarWorldLocation();
 
 	}
 	
@@ -121,7 +128,10 @@ void AGSCharacter::BeginPlay()
 
 	BindMovementSpeedDelegates();
 
-	BindStaminaDelegates();
+	if (IsLocallyControlled())
+	{
+		BindStaminaDelegates();
+	}
 }
 
 void AGSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -143,6 +153,14 @@ void AGSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EIC->BindAction(Sprint, ETriggerEvent::Completed, this, &ThisClass::IAEndSprint);
 		EIC->BindAction(Rolling, ETriggerEvent::Started, this, &ThisClass::IARolling);
 	}
+}
+
+void AGSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AGSCharacter, CurrentCheekSize);
+	DOREPLIFETIME(AGSCharacter, MaxCheekSize);
 }
 
 void AGSCharacter::IAMove(const FInputActionValue& InValue)
@@ -206,6 +224,15 @@ void AGSCharacter::InflateCheeks(float Value)
 	if (HasAuthority())
 	{
 		Multicast_InflateCheeks(Value);
+	}
+}
+
+void AGSCharacter::OnRep_CheekSize()
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (IsValid(MeshComp) && MaxCheekSize > 0.f)
+	{
+		MeshComp->SetMorphTarget(FName("CheeksSize"), CurrentCheekSize / MaxCheekSize);
 	}
 }
 
@@ -527,7 +554,7 @@ void AGSCharacter::ServerStartRolling_Implementation(FVector_NetQuantizeNormal I
 void AGSCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
-	
+
 	// Server
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (PS)
@@ -563,7 +590,7 @@ void AGSCharacter::PossessedBy(AController* NewController)
 void AGSCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
-	
+
 	//Client
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (PS)
@@ -586,7 +613,10 @@ void AGSCharacter::OnRep_PlayerState()
 		// When State.Dead Tag Was Attached or Detached Call to Func
 		PS->GetAbilitySystemComponent()->RegisterGameplayTagEvent(StateTag::TAG_State_Dead, EGameplayTagEventType::NewOrRemoved).AddUObject(this,&AGSCharacter::OnDeathStateTagChanged);
 	
-		BindStaminaDelegates();
+		if (IsLocallyControlled())
+		{
+			BindStaminaDelegates();
+		}
 	}
 }
 
@@ -622,6 +652,11 @@ void AGSCharacter::NetMulticast_SetDeathPoseFrozen_Implementation(bool bFrozen)
 //Stamina
 void AGSCharacter::BindStaminaDelegates()
 {
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
 	if (bStaminaDelegateBound)
 	{
 		return;
@@ -655,6 +690,11 @@ void AGSCharacter::BindStaminaDelegates()
 
 void AGSCharacter::UpdateStaminaBar(float CurrentStamina, float MaxStamina)
 {
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
 	if (MaxStamina <= 0.f)
 	{
 		return;
@@ -672,6 +712,11 @@ void AGSCharacter::UpdateStaminaBar(float CurrentStamina, float MaxStamina)
 
 void AGSCharacter::RefreshStaminaBarVisibility(float CurrentStamina, float MaxStamina)
 {
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
 	if (StaminaBarWidget == nullptr)
 	{
 		return;
@@ -683,6 +728,7 @@ void AGSCharacter::RefreshStaminaBarVisibility(float CurrentStamina, float MaxSt
 
 	if (bShouldShow)
 	{
+		StaminaBarWidget->SetHiddenInGame(false);
 		StaminaBarWidget->SetVisibility(true);
 	}
 	else
@@ -702,7 +748,41 @@ void AGSCharacter::HideStaminaBar()
 	if (StaminaBarWidget)
 	{
 		StaminaBarWidget->SetVisibility(false);
+		StaminaBarWidget->SetHiddenInGame(true);
 	}
+}
+
+void AGSCharacter::UpdateStaminaBarWorldLocation()
+{
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
+	if (StaminaBarWidget == nullptr)
+	{
+		return;
+	}
+
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (PC == nullptr)
+	{
+		return;
+	}
+
+	FVector CameraLocation;
+	FRotator CameraRotation;
+	PC->GetPlayerViewPoint(CameraLocation, CameraRotation);
+
+	const FRotator CameraYawRotation(0.f, CameraRotation.Yaw, 0.f);
+	const FVector CameraRightVector = FRotationMatrix(CameraRotation).GetUnitAxis(EAxis::Y);
+
+	const FVector NewWidgetLocation =
+		GetActorLocation()
+		+ CameraRightVector * StaminaBarSideOffset
+		+ FVector(0.f, 0.f, StaminaBarHeightOffset);
+
+	StaminaBarWidget->SetWorldLocation(NewWidgetLocation);
 }
 
 void AGSCharacter::OnStaminaChanged(const FOnAttributeChangeData& Data)

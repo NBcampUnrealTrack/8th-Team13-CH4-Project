@@ -9,6 +9,7 @@
 class AGSSpawnManager;
 class AGS_PlayerState;
 class UGSFoodPrimaryDataAsset;   
+class AGSCharacter;
 /**
  * 
  */
@@ -85,4 +86,7 @@ private:
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Reward|Food")
 	TObjectPtr<UGSFoodPrimaryDataAsset> RewardFoodData;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Reward|Capacity")
+	float CapacityIncreaseAmount = 0.1f;
 };
