@@ -46,6 +46,8 @@ public:
 	FORCEINLINE USphereComponent* GetLeftHandCollision() const {return leftHandCollision;}
 	FORCEINLINE USphereComponent* GetRightHandCollision() const {return rightHandCollision;}
 	
+public:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 private:
 	//InputAction Function
@@ -140,14 +142,17 @@ protected:
 private:
 	
 	//Food
-	UPROPERTY()
+	UPROPERTY(ReplicatedUsing = OnRep_CheekSize)
 	float CurrentCheekSize = 0.f;
 	
-	UPROPERTY()
+	UPROPERTY(ReplicatedUsing = OnRep_CheekSize)
 	float MaxCheekSize = 1.f;
 	
 	UPROPERTY()
 	float IncreasingPercent = 1.f;
+
+	UFUNCTION()
+	void OnRep_CheekSize();
 
 public:
 	UFUNCTION(BlueprintPure, Category = "Movement|Sprint")

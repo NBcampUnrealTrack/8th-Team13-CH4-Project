@@ -22,6 +22,7 @@
 #include "Gang_Squirrel/UI/GS_StaminaBarWidget.h"
 #include "Gang_Squirrel/UI/GSPlayerNameTag.h"
 #include "Gang_Squirrel/Gang_Squirrel.h"
+#include "Net/UnrealNetwork.h"
 
 AGSCharacter::AGSCharacter()
 {
@@ -145,6 +146,14 @@ void AGSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	}
 }
 
+void AGSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AGSCharacter, CurrentCheekSize);
+	DOREPLIFETIME(AGSCharacter, MaxCheekSize);
+}
+
 void AGSCharacter::IAMove(const FInputActionValue& InValue)
 {
 	if (false == IsValid(Controller))
@@ -206,6 +215,15 @@ void AGSCharacter::InflateCheeks(float Value)
 	if (HasAuthority())
 	{
 		Multicast_InflateCheeks(Value);
+	}
+}
+
+void AGSCharacter::OnRep_CheekSize()
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (IsValid(MeshComp) && MaxCheekSize > 0.f)
+	{
+		MeshComp->SetMorphTarget(FName("CheeksSize"), CurrentCheekSize / MaxCheekSize);
 	}
 }
 
