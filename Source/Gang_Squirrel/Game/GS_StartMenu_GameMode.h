@@ -13,8 +13,10 @@ UCLASS()
 class GANG_SQUIRREL_API AGS_StartMenu_GameMode : public AGameModeBase
 {
 	GENERATED_BODY()
-	
+
 public:
+	AGS_StartMenu_GameMode();
+
 	void OnLobbyPlayerReady();
 
 private:

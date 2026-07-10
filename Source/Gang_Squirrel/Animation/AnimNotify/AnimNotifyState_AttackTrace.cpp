@@ -53,10 +53,10 @@ void UAnimNotifyState_AttackTrace::NotifyTick(USkeletalMeshComponent* MeshComp, 
 	// UE_LOG(LogGAS, Warning, TEXT("[AttackTrace] NotifyTick - Prev:%s, Current:%s, Radius:%f, bHit:%s, NumHits:%d"),
 	// 	*PrevSocketLocation.ToString(), *CurrentSocketLocation.ToString(), ScaledTraceRadius, bHit ? TEXT("true") : TEXT("false"), HitResult.Num());
 
-	if (bDrawDebug)
-	{
-		DrawDebugSphere(MeshComp->GetWorld(), CurrentSocketLocation,ScaledTraceRadius,12,bHit ? FColor::Red : FColor::Green,false, 1.f);
-	}
+	// if (bDrawDebug)
+	// {
+	// 	DrawDebugSphere(MeshComp->GetWorld(), CurrentSocketLocation,ScaledTraceRadius,12,bHit ? FColor::Red : FColor::Green,false, 1.f);
+	// }
 
 	PrevSocketLocation = CurrentSocketLocation;
 

@@ -41,7 +41,7 @@ void AGS_EnemyAIController::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	
-	DrawDebug_SightRadius();
+	// DrawDebug_SightRadius();
 }
 
 void AGS_EnemyAIController::OnPossess(APawn* InPawn)

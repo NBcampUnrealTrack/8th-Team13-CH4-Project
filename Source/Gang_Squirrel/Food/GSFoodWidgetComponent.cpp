@@ -41,6 +41,11 @@ void UGSFoodWidgetComponent::TickComponent(float DeltaTime, enum ELevelTick Tick
 		return;
 	}
 
+	if (!PC->PlayerCameraManager)
+	{
+		return;
+	}
+	
 	FVector CameraLocation = PC->PlayerCameraManager->GetCameraLocation();
 
 	FRotator Rotation =

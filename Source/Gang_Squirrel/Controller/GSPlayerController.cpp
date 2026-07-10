@@ -167,7 +167,7 @@ void AGSPlayerController::ShowGameEndUILocal()
 	if (IsValid(GameEndWidgetInstance))
 	{
 		TArray<FGSLeaderboardEntry> EmptyLeaderboard;
-		GameEndWidgetInstance->SetGameEndResult(EmptyLeaderboard);
+		GameEndWidgetInstance->SetGameEndResult();
 
 		GameEndWidgetInstance->AddToViewport(100);
 
