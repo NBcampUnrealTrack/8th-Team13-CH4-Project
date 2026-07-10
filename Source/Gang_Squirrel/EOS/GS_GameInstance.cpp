@@ -3,6 +3,7 @@
 #include "Online.h"
 #include "OnlineSubsystemUtils.h"
 #include "OnlineSessionSettings.h"
+#include "Interfaces/OnlinePresenceInterface.h"
 #include "Kismet/GameplayStatics.h"
 
 void UGS_GameInstance::Init()
@@ -102,6 +103,14 @@ void UGS_GameInstance::HandleReadFriendsListComplete(int32 LocalUserNum, bool bW
 	if (bWasSuccessful && FriendsInterface.IsValid())
 	{
 		FriendsInterface->GetFriendsList(LocalUserNum, ListName, CachedFriends);
+
+		UE_LOG(LogTemp, Log, TEXT("[EOS] Friends list loaded: %d friend(s)"), CachedFriends.Num());
+		for (int32 Index = 0; Index < CachedFriends.Num(); ++Index)
+		{
+			UE_LOG(LogTemp, Log, TEXT("[EOS]   [%d] %s (Presence: %s)"),
+				Index, *CachedFriends[Index]->GetDisplayName(),
+				*CachedFriends[Index]->GetPresence().Status.StatusStr);
+		}
 	}
 	else
 	{
@@ -161,6 +170,9 @@ void UGS_GameInstance::HandleCreateSessionComplete(FName SessionName, bool bWasS
 		SessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteDelegateHandle);
 	}
 
+	UE_LOG(LogTemp, Log, TEXT("[EOS] CreateSession(%s) complete -> %s"),
+		*SessionName.ToString(), bWasSuccessful ? TEXT("success") : TEXT("failed"));
+
 	if (bWasSuccessful && !PendingLobbyLevelName.IsNone())
 	{
 		UGameplayStatics::OpenLevel(this, PendingLobbyLevelName, true, TEXT("listen"));
@@ -171,12 +183,24 @@ void UGS_GameInstance::HandleCreateSessionComplete(FName SessionName, bool bWasS
 
 void UGS_GameInstance::InviteFriend(int32 FriendIndex)
 {
-	if (!SessionInterface.IsValid() || !CachedFriends.IsValidIndex(FriendIndex))
+	if (!SessionInterface.IsValid())
 	{
+		UE_LOG(LogTemp, Warning, TEXT("[EOS] InviteFriend failed: SessionInterface invalid"));
 		return;
 	}
 
-	SessionInterface->SendSessionInviteToFriend(0, NAME_GameSession, *CachedFriends[FriendIndex]->GetUserId());
+	if (!CachedFriends.IsValidIndex(FriendIndex))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[EOS] InviteFriend failed: FriendIndex %d invalid (CachedFriends count = %d)"),
+			FriendIndex, CachedFriends.Num());
+		return;
+	}
+
+	const TSharedRef<FOnlineFriend> Friend = CachedFriends[FriendIndex];
+	const bool bSent = SessionInterface->SendSessionInviteToFriend(0, NAME_GameSession, *Friend->GetUserId());
+
+	UE_LOG(LogTemp, Log, TEXT("[EOS] SendSessionInviteToFriend to %s (%s) -> %s"),
+		*Friend->GetDisplayName(), *Friend->GetUserId()->ToString(), bSent ? TEXT("true") : TEXT("false"));
 }
 
 void UGS_GameInstance::HandleSessionInviteReceived(const FUniqueNetId& UserId, const FUniqueNetId& FromId, const FString& AppId, const FOnlineSessionSearchResult& InviteResult)
@@ -193,6 +217,8 @@ void UGS_GameInstance::HandleSessionInviteReceived(const FUniqueNetId& UserId, c
 			InviterName = InviterFriend->GetDisplayName();
 		}
 	}
+
+	UE_LOG(LogTemp, Log, TEXT("[EOS] Session invite received from %s"), *InviterName);
 
 	OnGSInviteReceived.Broadcast(InviterName);
 }
