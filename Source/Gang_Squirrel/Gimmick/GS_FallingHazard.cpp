@@ -8,6 +8,9 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
+#include "Gang_Squirrel/Character/GSCharacter.h"
+#include "AbilitySystemBlueprintLibrary.h"
+#include "AbilitySystemComponent.h"
 
 AGS_FallingHazard::AGS_FallingHazard()
 {
@@ -362,8 +365,11 @@ void AGS_FallingHazard::StartFalling()
 		WarningDecal->SetHiddenInGame(false);
 	}
 
+	bCanDamage = true;
+
 	if (DamageBox)
 	{
+		DamageBox->SetGenerateOverlapEvents(true);
 		DamageBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	}
 
@@ -390,11 +396,21 @@ void AGS_FallingHazard::FinishImpact()
 
 	State = EGSFallingHazardState::Impact;
 	bIsFallingVisualReady = false;
+	bCanDamage = false;
 
 	if (DamageBox)
 	{
+		DamageBox->OnComponentBeginOverlap.RemoveDynamic(
+			this,
+			&AGS_FallingHazard::OnDamageBoxBeginOverlap
+		);
+
+		DamageBox->SetGenerateOverlapEvents(false);
 		DamageBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		DamageBox->SetCollisionResponseToAllChannels(ECR_Ignore);
 	}
+
+	HitActors.Empty();
 
 	const FVector ImpactLocation = FVector(
 		FixedDropLocation.X,
@@ -500,19 +516,7 @@ void AGS_FallingHazard::MulticastFinishImpactVisual_Implementation(FVector InGro
 
 	if (WarningDecal)
 	{
-		WarningDecal->SetHiddenInGame(false);
-		WarningDecal->SetWorldLocation(GroundLocation + FVector(0.f, 0.f, WarningDecalZOffset));
-		WarningDecal->SetWorldRotation(FRotator(-90.f, CurrentShadowDecalRotationYaw, 0.f));
-		
-		const float DecalSizeY = FallingDecalEndSize * CurrentShadowDecalSizeRatio.X;
-		const float DecalSizeZ = FallingDecalEndSize * CurrentShadowDecalSizeRatio.Y;
-
-		WarningDecal->DecalSize = FVector(
-			WarningDecalProjectionDepth,
-			DecalSizeY,
-			DecalSizeZ
-		);
-		WarningDecal->MarkRenderStateDirty();
+		WarningDecal->SetHiddenInGame(true);
 	}
 }
 
@@ -530,7 +534,17 @@ void AGS_FallingHazard::OnDamageBoxBeginOverlap(
 		return;
 	}
 
+	if (bCanDamage == false)
+	{
+		return;
+	}
+
 	if (State != EGSFallingHazardState::Falling)
+	{
+		return;
+	}
+
+	if (DamageBox == nullptr || DamageBox->GetCollisionEnabled() == ECollisionEnabled::NoCollision)
 	{
 		return;
 	}
@@ -557,21 +571,64 @@ void AGS_FallingHazard::OnHitTarget(AActor* HitActor)
 		return;
 	}
 
+	if (bCanDamage == false)
+	{
+		return;
+	}
+
+	if (State != EGSFallingHazardState::Falling)
+	{
+		return;
+	}
+
 	if (IsValid(HitActor) == false)
 	{
 		return;
 	}
 
-	UKismetSystemLibrary::PrintString(
-		this,
-		FString::Printf(TEXT("Falling Hazard Hit: %s"), *HitActor->GetName()),
-		true,
-		true,
-		FLinearColor::Yellow,
-		1.5f
-	);
+	AGSCharacter* HitCharacter = Cast<AGSCharacter>(HitActor);
+	if (HitCharacter == nullptr)
+	{
+		return;
+	}
 
-	// TODO: GE 또는 데미지 처리
+	if (GE_Damage == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[FallingHazard] GE_Damage is nullptr."));
+		return;
+	}
+
+	UAbilitySystemComponent* TargetASC =
+		UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(HitActor);
+
+	if (TargetASC == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[FallingHazard] TargetASC is nullptr. Target:%s"), *GetNameSafe(HitActor));
+		return;
+	}
+
+	FGameplayEffectContextHandle ContextHandle = TargetASC->MakeEffectContext();
+	ContextHandle.AddSourceObject(this);
+
+	FGameplayEffectSpecHandle SpecHandle =
+		TargetASC->MakeOutgoingSpec(GE_Damage, 1.f, ContextHandle);
+
+	if (SpecHandle.IsValid() == false)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[FallingHazard] SpecHandle is invalid."));
+		return;
+	}
+
+	FActiveGameplayEffectHandle AppliedHandle =
+		TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("[FallingHazard] Damage Applied. Target:%s, Success:%s"),
+		*GetNameSafe(HitActor),
+		AppliedHandle.WasSuccessfullyApplied() ? TEXT("true") : TEXT("false")
+	);
 }
 
 void AGS_FallingHazard::UpdateWarningDecalVisual(float DeltaTime)
@@ -609,6 +666,14 @@ void AGS_FallingHazard::UpdateWarningDecalVisual(float DeltaTime)
 	{
 		TargetDecalLocation = GroundLocation + FVector(0.f, 0.f, WarningDecalZOffset);
 	}
+
+	const FRotator DecalYawRotation(0.f, CurrentShadowDecalRotationYaw, 0.f);
+
+	const FVector RotatedOffset = DecalYawRotation.RotateVector(
+		FVector(CurrentShadowDecalLocationOffset.X, CurrentShadowDecalLocationOffset.Y, 0.f)
+	);
+
+	TargetDecalLocation += RotatedOffset;
 
 	if (bHasInitializedDecalLocation == false)
 	{
@@ -759,6 +824,7 @@ void AGS_FallingHazard::ApplyHazardDataByIndex(int32 InIndex)
 
 		CurrentShadowDecalSizeRatio = VisualData.ShadowDecalSizeRatio;
 		CurrentShadowDecalRotationYaw = VisualData.ShadowDecalRotationYaw;
+		CurrentShadowDecalLocationOffset = VisualData.ShadowDecalLocationOffset;
 	}
 
 	GroundCheckDistance = VisualData.GroundCheckDistanceOverride;
