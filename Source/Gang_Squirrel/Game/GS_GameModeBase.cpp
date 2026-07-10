@@ -15,6 +15,7 @@
 AGS_GameModeBase::AGS_GameModeBase()
 {
 	MatchTimeLimit = 600.f;
+	bUseSeamlessTravel = true;
 }
 
 void AGS_GameModeBase::BeginPlay()
@@ -22,8 +23,24 @@ void AGS_GameModeBase::BeginPlay()
 	Super::BeginPlay();
 
 	//StartMatch();
-	
+
 	SpawnSpawnManager();
+}
+
+void AGS_GameModeBase::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+
+	if (bHasTraveledToMainStage)
+	{
+		return;
+	}
+
+	if (GetNumPlayers() >= RequiredPlayerCountToStart)
+	{
+		bHasTraveledToMainStage = true;
+		GetWorld()->ServerTravel(MainStageLevelName.ToString() + TEXT("?listen"), true);
+	}
 }
 
 void AGS_GameModeBase::StartMatch()
