@@ -4,11 +4,13 @@
 #include "GS_GameModeBase.h"
 #include "Gang_Squirrel/Game/GS_GameState.h"
 #include "EngineUtils.h"
+#include "AbilitySystemComponent.h"
 #include "Gang_Squirrel/Gimmick/GS_FallingHazardManager.h"
 #include "Gang_Squirrel/SpawnSystem/GSSpawnManager.h"
 #include "Gang_Squirrel/Player/GS_PlayerState.h"
 #include "Gang_Squirrel/DataAsset/GSFoodPrimaryDataAsset.h"
 #include "Gang_Squirrel/Character/GSCharacter.h"
+#include "Gang_Squirrel/GAS/AttributeSet/GS_PlayerAttributeSet.h"
 
 AGS_GameModeBase::AGS_GameModeBase()
 {
@@ -98,6 +100,13 @@ void AGS_GameModeBase::GiveRandomReward(AGS_PlayerState* KillerPS)
 	if (!HasAuthority() || !IsValid(KillerPS)) return;
 
 	const ERewardType RewardType = static_cast<ERewardType>(FMath::RandRange(0, 2));
+	GiveSpecificReward(KillerPS, RewardType);
+	
+}
+
+void AGS_GameModeBase::GiveSpecificReward(AGS_PlayerState* KillerPS, ERewardType RewardType)
+{
+	if (!HasAuthority() || !IsValid(KillerPS)) return;
 
 	switch (RewardType)
 	{
@@ -157,5 +166,32 @@ void AGS_GameModeBase::GiveCapacityReward(AGS_PlayerState* PS)
 
 void AGS_GameModeBase::GiveSpeedBoostReward(AGS_PlayerState* PS)
 {
-	UE_LOG(LogTemp, Log, TEXT("[Reward] SpeedBoost Reward (TODO)"));
+	if (IsValid(PS) == false)
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent();
+	if (IsValid(ASC) == false)
+	{
+		return;
+	}
+
+	if (!IsValid(GE_MoveSpeedRewardClass))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Reward] GE_MoveSpeedRewardClass is not assigned in GameMode BP"));
+		return;
+	}
+
+	FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(GE_MoveSpeedRewardClass, 1.f, Context);
+
+	if (SpecHandle.IsValid())
+	{
+		ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+
+		UE_LOG(LogTemp, Log, TEXT("[Reward] MoveSpeed Reward Applied. Current MoveSpeed: %.1f"),
+			ASC->GetNumericAttribute(UGS_PlayerAttributeSet::GetMoveSpeedAttribute()));
+	}
+
 }

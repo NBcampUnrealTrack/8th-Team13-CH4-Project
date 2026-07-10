@@ -59,4 +59,16 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "DEV")
 	uint8 bSkipNicknameInputForDev : 1 = false;
+
+
+#pragma region Debugging
+public:
+	UFUNCTION(Exec)
+	void Debug_GiveReward(int32 RewardType);
+
+private:
+	UFUNCTION(Server, Reliable)
+	void ServerDebugGiveReward(int32 RewardType);
+
+#pragma endregion
 };

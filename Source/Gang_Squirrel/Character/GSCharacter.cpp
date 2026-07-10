@@ -325,6 +325,7 @@ void AGSCharacter::IARolling(const FInputActionValue& InValue)
 void AGSCharacter::SetSprinting(bool bNewSprinting)
 {
 	bIsSprinting = bNewSprinting;
+
 	UpdateMaxWalkSpeedFromAttribute();
 }
 

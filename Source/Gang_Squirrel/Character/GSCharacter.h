@@ -275,5 +275,6 @@ protected:
 private:
 	void OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount);
 
+
 #pragma endregion 
 };

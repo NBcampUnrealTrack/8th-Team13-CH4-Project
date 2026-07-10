@@ -19,6 +19,8 @@ namespace AbilityTag
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Ability_Death)
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Ability_Sprint)
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Ability_Roll)
+
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Ability_SpeedBoost)
 }
 
 namespace StateTag
@@ -33,3 +35,4 @@ namespace TeamTag
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Team_Player)
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Team_Enemy)
 }
+
