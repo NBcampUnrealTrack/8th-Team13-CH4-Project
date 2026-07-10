@@ -20,6 +20,7 @@ class UInputAction;
 class USphereComponent;
 class UWidgetComponent;
 class UAnimMontage;
+class UGSCheekWidget;
 
 UCLASS()
 class GANG_SQUIRREL_API AGSCharacter : public ACharacter ,public IAbilitySystemInterface
@@ -112,6 +113,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> Rolling;
 
+#pragma region Food,Cheek
+	
 public:
 	
 	//Food
@@ -135,6 +138,12 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_InflateCheeks(float Value);
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
+	TSubclassOf<UGSCheekWidget> CheekWidgetClass;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
+	UGSCheekWidget* CheekWidgetUIInstance;
+	
 private:
 	
 	//Food
@@ -144,8 +153,7 @@ private:
 	UPROPERTY()
 	float MaxCheekSize = 1.f;
 	
-	UPROPERTY()
-	float IncreasingPercent = 1.f;
+#pragma endregion
 
 public:
 	UFUNCTION(BlueprintPure, Category = "Movement|Sprint")
@@ -153,6 +161,7 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Movement|Roll")
 	bool IsRolling() const { return bIsRolling; }
+	
 
 protected:
 	// The Value for CharacterMovementComponent. 

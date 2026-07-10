@@ -20,6 +20,7 @@
 #include "Gang_Squirrel/Food/GSFoodBase.h"
 #include "Gang_Squirrel/UI/GSPlayerNameTag.h"
 #include "Gang_Squirrel/Gang_Squirrel.h"
+#include "Gang_Squirrel/Food/GSCheekWidget.h"
 
 AGSCharacter::AGSCharacter()
 {
@@ -110,6 +111,23 @@ void AGSCharacter::BeginPlay()
 	}
 
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+	
+	//Cheek  Widget
+	if (IsLocallyControlled() && CheekWidgetClass)
+	{
+		APlayerController* PC = Cast<APlayerController>(GetController());
+		if (PC)
+		{
+			CheekWidgetUIInstance = CreateWidget<UGSCheekWidget>(PC, CheekWidgetClass);
+			
+			if (CheekWidgetUIInstance)
+			{
+				CheekWidgetUIInstance->InitCheekWidget();
+				
+				CheekWidgetUIInstance->AddToViewport();
+			}
+		}
+	}
 }
 
 void AGSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -205,13 +223,19 @@ void AGSCharacter::Multicast_InflateCheeks_Implementation(float Value)
 	if (MaxCheekSize < TempValue)
 	{
 		CurrentCheekSize = MaxCheekSize;
-		MeshComp->SetMorphTarget(FName("CheeksSize"), CurrentCheekSize);
-		return;
+	}
+	else
+	{
+		CurrentCheekSize += Value;
 	}
 	
-	CurrentCheekSize += Value;
 	
 	float ResultValue = CurrentCheekSize / MaxCheekSize;
+	
+	if (CheekWidgetUIInstance)
+	{
+		CheekWidgetUIInstance->SetProgressValue(ResultValue);
+	}
 	
 	if (MeshComp)
 	{
