@@ -178,6 +178,28 @@ void AGSPlayerController::ShowGameEndUILocal()
 		SetInputMode(InputMode);
 	}
 }
+void AGSPlayerController::Debug_GiveReward(int32 RewardType)
+{
+	ServerDebugGiveReward(RewardType);
+}
+void AGSPlayerController::ServerDebugGiveReward_Implementation(int32 RewardType)
+{
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (!IsValid(PS)) return;
+
+	AGS_GameModeBase* GM = Cast<AGS_GameModeBase>(GetWorld()->GetAuthGameMode());
+	if (!IsValid(GM)) return;
+
+	if (RewardType < 0 || RewardType > 2)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Debug] Invalid RewardType: %d (0=Food, 1=Capacity, 2=SpeedBoost)"), RewardType);
+		return;
+	}
+
+	GM->GiveSpecificReward(PS, static_cast<ERewardType>(RewardType));
+
+	UE_LOG(LogTemp, Log, TEXT("[Debug] GiveSpecificReward called: %d"), RewardType);
+}
 void AGSPlayerController::ClientOnNicknameAccepted_Implementation()
 {
 	if (IsValid(NicknameWidgetInstance))

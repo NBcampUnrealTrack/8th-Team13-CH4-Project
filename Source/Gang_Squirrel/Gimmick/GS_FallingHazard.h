@@ -9,6 +9,7 @@ class USceneComponent;
 class UBoxComponent;
 class UStaticMeshComponent;
 class UDecalComponent;
+class UGameplayEffect;
 
 UENUM(BlueprintType)
 enum class EGSFallingHazardState : uint8
@@ -71,6 +72,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Falling")
 	float ImpactDestroyDelay = 0.3f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Falling Hazard|Damage")
+	TSubclassOf<UGameplayEffect> GE_Damage;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Trace")
 	float GroundTraceUpOffset = 150.f;
 
@@ -102,6 +106,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Warning")
 	float WarningDecalLocationInterpSpeed = 18.f;
 
+	UPROPERTY()
+	FVector2D CurrentShadowDecalLocationOffset = FVector2D::ZeroVector;
+
+	UPROPERTY()
+	FVector2D CurrentShadowDecalSizeRatio = FVector2D(1.f, 1.f);
+
+	UPROPERTY()
+	float CurrentShadowDecalRotationYaw = 0.f;
+
 	float TrackingVisualElapsedTime = 0.f;
 
 	uint8 bHasInitializedDecalLocation : 1 = false;
@@ -126,6 +139,7 @@ protected:
 
 	bool bHasValidGroundLocation = false;
 	bool bIsFallingVisualReady = false;
+	bool bCanDamage = false;
 
 	UPROPERTY()
 	TSet<TObjectPtr<AActor>> HitActors;

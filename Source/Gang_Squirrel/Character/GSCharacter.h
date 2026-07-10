@@ -22,6 +22,7 @@ class USphereComponent;
 class UWidgetComponent;
 class UAnimMontage;
 class UGS_StaminaBarWidget;
+class UGSCheekWidget;
 
 UCLASS()
 class GANG_SQUIRREL_API AGSCharacter : public ACharacter ,public IAbilitySystemInterface
@@ -116,11 +117,16 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> Rolling;
 
+#pragma region Food,Cheek
+	
 public:
 	
 	//Food
 	UFUNCTION(Server, Reliable)
 	void Server_NotifyFoodEaten(AGSFoodBase* EatenFood);
+	
+	UFUNCTION(Server, Reliable)
+	void Server_NotifyAddScore(int32 Value);
 	
 	UFUNCTION(Server, Reliable)
 	void Server_SetEating(bool bEating);
@@ -131,6 +137,12 @@ public:
 	
 	void InflateCheeks(float Value);
 	
+	void AddTempScore(int32 Value);
+	
+	void ResetTempScore();
+	
+	FORCEINLINE int32 GetTempScore() { return TempScore; }
+	
 	bool bIsEating = false;
 	
 protected:
@@ -138,7 +150,19 @@ protected:
 	//Food
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_InflateCheeks(float Value);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SetEatingAnimation(bool bEating);
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
+	TSubclassOf<UGSCheekWidget> CheekWidgetClass;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
+	UGSCheekWidget* CheekWidgetUIInstance;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Eat")
+	TObjectPtr<UAnimMontage> AM_Eat;
+
 private:
 	
 	//Food
@@ -149,7 +173,9 @@ private:
 	float MaxCheekSize = 1.f;
 	
 	UPROPERTY()
-	float IncreasingPercent = 1.f;
+	int32 TempScore = 0;
+	
+#pragma endregion
 
 	UFUNCTION()
 	void OnRep_CheekSize();
@@ -274,6 +300,7 @@ protected:
 	// GA_Death CallBack Func
 private:
 	void OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount);
+
 
 #pragma endregion 
 };

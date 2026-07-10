@@ -127,6 +127,8 @@ void AGSFoodBase::Tick(float DeltaTime)
 					LocalChar->Server_NotifyFoodEaten(this);
 				}
 			}
+			Eaten();
+			CurrentCharacter->AddTempScore(FoodData->ScoreAmount);
 			
 			UE_LOG(LogTemp, Warning, TEXT("Food Eat Progress Complete!!"));
 		}
@@ -207,7 +209,14 @@ int32 AGSFoodBase::Eaten()
 void AGSFoodBase::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	CurrentCharacter  = Cast<AGSCharacter>(OtherActor);
-	if (!CurrentCharacter) return;
+	if (!CurrentCharacter)
+	{
+		return;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("%s"), *CurrentCharacter->GetName());
+	}
 	if (CurrentCharacter->IsLocallyControlled())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Local Player Overlap Begin!"));

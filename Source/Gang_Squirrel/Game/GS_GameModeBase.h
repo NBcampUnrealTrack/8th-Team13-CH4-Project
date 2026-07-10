@@ -10,6 +10,7 @@ class AGSSpawnManager;
 class AGS_PlayerState;
 class UGSFoodPrimaryDataAsset;   
 class AGSCharacter;
+class UGameplayEffect;
 /**
  * 
  */
@@ -46,6 +47,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Reward")
 	void GiveRandomReward(AGS_PlayerState* KillerPS);
+
+	// 테스트 디버그용 - 타입 직접 지정
+	UFUNCTION(BlueprintCallable, Category = "Reward")
+	void GiveSpecificReward(AGS_PlayerState* KillerPS, ERewardType RewardType);
 
 protected:
 	//Call when timer == 0.f
@@ -89,4 +94,8 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Reward|Capacity")
 	float CapacityIncreaseAmount = 0.1f;
+
+
+	UPROPERTY(EditDefaultsOnly, Category = "Reward|SpeedBoost")
+	TSubclassOf<UGameplayEffect> GE_MoveSpeedRewardClass;
 };
