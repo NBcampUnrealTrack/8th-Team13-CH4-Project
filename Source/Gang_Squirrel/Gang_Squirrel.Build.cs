@@ -18,6 +18,8 @@ public class Gang_Squirrel : ModuleRules
 			,"UMG","Slate","SlateCore"
 			// AI Module
 			,"AIModule","NavigationSystem"
+			// EOS
+			,"OnlineSubsystem","OnlineSubsystemEOS","OnlineSubsystemUtils"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
