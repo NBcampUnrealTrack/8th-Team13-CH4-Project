@@ -150,6 +150,9 @@ protected:
 	//Food
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_InflateCheeks(float Value);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SetEatingAnimation(bool bEating);
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<UGSCheekWidget> CheekWidgetClass;
@@ -157,6 +160,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	UGSCheekWidget* CheekWidgetUIInstance;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Eat")
+	TObjectPtr<UAnimMontage> AM_Eat;
+
 private:
 	
 	//Food

@@ -220,21 +220,43 @@ void AGSCharacter::IAInteract(const FInputActionValue& InValue)
 	
 	if (CurrentCheekSize >= MaxCheekSize) return;
 	
-	Server_SetEating_Implementation(true);
+	if (bIsEating) return;
+
+	bIsEating = true;
+
+	// EatingAnimation
+	if (AM_Eat)
+	{
+		PlayAnimMontage(AM_Eat);
+	}
+
+	Server_SetEating(true);
 }
 
 void AGSCharacter::IAStopInteract(const FInputActionValue& InValue)
 {
 	UE_LOG(LogTemp, Log, TEXT("StopInteract!"));
-	
-	Server_SetEating_Implementation(false);
+
+
+	if (!bIsEating) return;
+
+	bIsEating = false;
+
+	if (AM_Eat)
+	{
+		StopAnimMontage(AM_Eat);
+	}
+
+	Server_SetEating(false);
 }
 
 void AGSCharacter::Server_SetEating_Implementation(bool bEating)
 {
 	UE_LOG(LogTemp, Log, TEXT("SetEating!"));
-	
+
 	bIsEating = bEating;
+
+	Multicast_SetEatingAnimation(bEating);
 }
 
 void AGSCharacter::InflateCheeks(float Value)
@@ -242,6 +264,31 @@ void AGSCharacter::InflateCheeks(float Value)
 	if (HasAuthority())
 	{
 		Multicast_InflateCheeks(Value);
+	}
+}
+
+void AGSCharacter::Multicast_SetEatingAnimation_Implementation(bool bEating)
+{
+	if (IsLocallyControlled())
+	{
+		return;
+	}
+
+	bIsEating = bEating;
+
+	if (bEating)
+	{
+		if (AM_Eat)
+		{
+			PlayAnimMontage(AM_Eat);
+		}
+	}
+	else
+	{
+		if (AM_Eat)
+		{
+			StopAnimMontage(AM_Eat);
+		}
 	}
 }
 
