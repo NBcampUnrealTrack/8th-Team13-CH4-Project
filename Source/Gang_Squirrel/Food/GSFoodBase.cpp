@@ -56,6 +56,14 @@ void AGSFoodBase::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	// Post Process Material
+	if (StaticMeshComponent)
+	{
+		StaticMeshComponent->SetRenderCustomDepth(true);
+		// Set StencilValue -> 1 
+		StaticMeshComponent->SetCustomDepthStencilValue(1);
+	}
+
 	UE_LOG(LogTemp, Warning, TEXT("[Before] WidgetClass = %s"), *GetNameSafe(FoodWidgetComponent->GetWidgetClass()));
     
 	if (FoodWidgetComponent)
@@ -196,6 +204,17 @@ void AGSFoodBase::OnRep_FoodData() const
 		float CurrentMeshSize = FoodData->MeshSize;
 		StaticMeshComponent->SetRelativeScale3D(FVector(CurrentMeshSize,CurrentMeshSize,CurrentMeshSize));
 		SphereComponent->SetSphereRadius(5.f);
+
+		// Set Overlay Material -> Name: M_Outline
+		UStaticMeshComponent* MutableMeshComp = const_cast<UStaticMeshComponent*>(StaticMeshComponent.Get());
+		if (MutableMeshComp)
+		{
+			UMaterialInterface* LoadedOverlayMat = Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, TEXT("/Game/ExternalContent/LevelPrototyping/Materials/M_Outline.M_Outline")));
+			if (LoadedOverlayMat)
+			{
+				StaticMeshComponent->SetOverlayMaterial(LoadedOverlayMat);
+			}
+		}
 	}
 }
 
