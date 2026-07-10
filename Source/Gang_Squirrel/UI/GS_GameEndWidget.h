@@ -34,7 +34,7 @@ public:
 	virtual void NativeConstruct() override;
 
 	UFUNCTION(BlueprintCallable, Category = "Game End")
-	void SetGameEndResult(const TArray<FGSLeaderboardEntry>& InLeaderboardEntries);
+	void SetGameEndResult();
 
 protected:
 	UPROPERTY(meta = (BindWidget))
@@ -62,6 +62,11 @@ protected:
 	TSubclassOf<UGS_LeaderboardRowWidget> LeaderboardRowWidgetClass;
 
 private:
+
+	void CreateLeaderboardRows(
+		const TArray<FGSLeaderboardEntry>& LeaderboardEntries
+	);
+
 	UFUNCTION()
 	void OnRestartGameClicked();
 
