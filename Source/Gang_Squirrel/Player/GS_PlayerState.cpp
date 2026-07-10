@@ -58,6 +58,11 @@ void AGS_PlayerState::OnRep_PlayerNickname()
 
 void AGS_PlayerState::AddScore(int32 Value)
 {
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
 	PlayerScore += Value;
 	
 	OnRep_PlayerScore();
