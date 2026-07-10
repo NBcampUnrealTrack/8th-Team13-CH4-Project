@@ -3,6 +3,10 @@
 
 #include "Gang_Squirrel/Game/GS_StartMenu_GameMode.h"
 
+AGS_StartMenu_GameMode::AGS_StartMenu_GameMode()
+{
+	bUseSeamlessTravel = true;
+}
 
 void AGS_StartMenu_GameMode::OnLobbyPlayerReady()
 {
