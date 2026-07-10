@@ -39,10 +39,14 @@ struct FGSFallingHazardVisualData
 	TObjectPtr<UMaterialInterface> ShadowDecalMaterial = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shadow")
-	FVector2D ShadowDecalSizeRatio = FVector2D(1.f, 1.f);
+	FVector2D ShadowDecalLocationOffset = FVector2D::ZeroVector;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shadow")
 	float ShadowDecalRotationYaw = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shadow")
+	FVector2D ShadowDecalSizeRatio = FVector2D(1.f, 1.f);
+
 };
 
 UCLASS(BlueprintType)
