@@ -702,11 +702,29 @@ void AGSCharacter::Server_NotifyFoodEaten_Implementation(AGSFoodBase* EatenFood)
 {
 	if (!EatenFood) return;
 	
+	EatenFood->Eaten();
+}
+
+void AGSCharacter::Server_NotifyAddScore_Implementation(int32 Score)
+{
+	
+	UE_LOG(LogTemp, Warning, TEXT("Oer"));
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (PS)
 	{
-		PS->AddScore(EatenFood->Eaten());
+		PS->AddScore(Score);
+		UE_LOG(LogTemp, Warning, TEXT("UpdateScore"));
 	}
+}
+
+void AGSCharacter::AddTempScore(int32 Value)
+{
+	TempScore += Value;
+}
+
+void AGSCharacter::ResetTempScore()
+{
+	TempScore = 0;
 }
 
 // GA_Death Callback Func : Temp Logic

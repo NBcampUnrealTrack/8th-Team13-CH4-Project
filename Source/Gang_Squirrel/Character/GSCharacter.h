@@ -126,6 +126,9 @@ public:
 	void Server_NotifyFoodEaten(AGSFoodBase* EatenFood);
 	
 	UFUNCTION(Server, Reliable)
+	void Server_NotifyAddScore(int32 Value);
+	
+	UFUNCTION(Server, Reliable)
 	void Server_SetEating(bool bEating);
 	
 	void ResetCheekSize();
@@ -133,6 +136,12 @@ public:
 	void AddMaxCheekSize(float Value);
 	
 	void InflateCheeks(float Value);
+	
+	void AddTempScore(int32 Value);
+	
+	void ResetTempScore();
+	
+	FORCEINLINE int32 GetTempScore() { return TempScore; }
 	
 	bool bIsEating = false;
 	
@@ -162,6 +171,9 @@ private:
 	
 	UPROPERTY(ReplicatedUsing = OnRep_CheekSize)
 	float MaxCheekSize = 1.f;
+	
+	UPROPERTY()
+	int32 TempScore = 0;
 	
 #pragma endregion
 
