@@ -126,6 +126,9 @@ public:
 	void Server_NotifyFoodEaten(AGSFoodBase* EatenFood);
 	
 	UFUNCTION(Server, Reliable)
+	void Server_NotifyAddScore(int32 Value);
+	
+	UFUNCTION(Server, Reliable)
 	void Server_SetEating(bool bEating);
 	
 	void ResetCheekSize();
@@ -134,6 +137,12 @@ public:
 	
 	void InflateCheeks(float Value);
 	
+	void AddTempScore(int32 Value);
+	
+	void ResetTempScore();
+	
+	FORCEINLINE int32 GetTempScore() { return TempScore; }
+	
 	bool bIsEating = false;
 	
 protected:
@@ -141,6 +150,9 @@ protected:
 	//Food
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_InflateCheeks(float Value);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SetEatingAnimation(bool bEating);
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<UGSCheekWidget> CheekWidgetClass;
@@ -148,6 +160,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	UGSCheekWidget* CheekWidgetUIInstance;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Eat")
+	TObjectPtr<UAnimMontage> AM_Eat;
+
 private:
 	
 	//Food
@@ -156,6 +171,9 @@ private:
 	
 	UPROPERTY(ReplicatedUsing = OnRep_CheekSize)
 	float MaxCheekSize = 1.f;
+	
+	UPROPERTY()
+	int32 TempScore = 0;
 	
 #pragma endregion
 

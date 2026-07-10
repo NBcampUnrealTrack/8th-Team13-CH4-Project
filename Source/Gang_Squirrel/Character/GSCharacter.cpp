@@ -163,7 +163,7 @@ void AGSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EIC->BindAction(Look, ETriggerEvent::Triggered, this, &ThisClass::IALook);
 		EIC->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
 		EIC->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-		EIC->BindAction(Interact, ETriggerEvent::Triggered, this, &ThisClass::IAInteract);
+		EIC->BindAction(Interact, ETriggerEvent::Started, this, &ThisClass::IAInteract);
 		EIC->BindAction(Interact, ETriggerEvent::Canceled, this, &ThisClass::IAStopInteract);
 		EIC->BindAction(Interact, ETriggerEvent::Completed, this, &ThisClass::IAStopInteract);
 		EIC->BindAction(Attack, ETriggerEvent::Started, this, &ThisClass::IAAttack);
@@ -220,21 +220,43 @@ void AGSCharacter::IAInteract(const FInputActionValue& InValue)
 	
 	if (CurrentCheekSize >= MaxCheekSize) return;
 	
-	Server_SetEating_Implementation(true);
+	if (bIsEating) return;
+
+	bIsEating = true;
+
+	// EatingAnimation
+	if (AM_Eat)
+	{
+		PlayAnimMontage(AM_Eat);
+	}
+
+	Server_SetEating(true);
 }
 
 void AGSCharacter::IAStopInteract(const FInputActionValue& InValue)
 {
 	UE_LOG(LogTemp, Log, TEXT("StopInteract!"));
-	
-	Server_SetEating_Implementation(false);
+
+
+	if (!bIsEating) return;
+
+	bIsEating = false;
+
+	if (AM_Eat)
+	{
+		StopAnimMontage(AM_Eat);
+	}
+
+	Server_SetEating(false);
 }
 
 void AGSCharacter::Server_SetEating_Implementation(bool bEating)
 {
 	UE_LOG(LogTemp, Log, TEXT("SetEating!"));
-	
+
 	bIsEating = bEating;
+
+	Multicast_SetEatingAnimation(bEating);
 }
 
 void AGSCharacter::InflateCheeks(float Value)
@@ -242,6 +264,31 @@ void AGSCharacter::InflateCheeks(float Value)
 	if (HasAuthority())
 	{
 		Multicast_InflateCheeks(Value);
+	}
+}
+
+void AGSCharacter::Multicast_SetEatingAnimation_Implementation(bool bEating)
+{
+	if (IsLocallyControlled())
+	{
+		return;
+	}
+
+	bIsEating = bEating;
+
+	if (bEating)
+	{
+		if (AM_Eat)
+		{
+			PlayAnimMontage(AM_Eat);
+		}
+	}
+	else
+	{
+		if (AM_Eat)
+		{
+			StopAnimMontage(AM_Eat);
+		}
 	}
 }
 
@@ -655,11 +702,29 @@ void AGSCharacter::Server_NotifyFoodEaten_Implementation(AGSFoodBase* EatenFood)
 {
 	if (!EatenFood) return;
 	
+	EatenFood->Eaten();
+}
+
+void AGSCharacter::Server_NotifyAddScore_Implementation(int32 Score)
+{
+	
+	UE_LOG(LogTemp, Warning, TEXT("Oer"));
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (PS)
 	{
-		PS->AddScore(EatenFood->Eaten());
+		PS->AddScore(Score);
+		UE_LOG(LogTemp, Warning, TEXT("UpdateScore"));
 	}
+}
+
+void AGSCharacter::AddTempScore(int32 Value)
+{
+	TempScore += Value;
+}
+
+void AGSCharacter::ResetTempScore()
+{
+	TempScore = 0;
 }
 
 // GA_Death Callback Func : Temp Logic
