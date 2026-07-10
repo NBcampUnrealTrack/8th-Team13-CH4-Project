@@ -39,11 +39,29 @@ void AGSHideoutPoint::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, A
 {
 	AGSCharacter* CurrentCharacter = Cast<AGSCharacter>(OtherActor);
 	
-	if (CurrentCharacter)
+
+	if (CurrentCharacter == nullptr)
 	{
-		CurrentCharacter->Server_NotifyAddScore(CurrentCharacter->GetTempScore());
-		CurrentCharacter->ResetCheekSize();
+		return;
 	}
+
+	if (CurrentCharacter->IsLocallyControlled() == false)
+	{
+		return;
+	}
+
+	const int32 TempScore =
+		CurrentCharacter->GetTempScore();
+
+	if (TempScore <= 0)
+	{
+		return;
+	}
+
+	CurrentCharacter->Server_NotifyAddScore(TempScore);
+
+	CurrentCharacter->ResetTempScore();
+	CurrentCharacter->ResetCheekSize();
 }
 
 void AGSHideoutPoint::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
