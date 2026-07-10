@@ -11,6 +11,7 @@
 #include "EnhancedInputComponent.h"
 #include "Gang_Squirrel/Player/GS_PlayerState.h"
 #include "Components/SphereComponent.h"
+#include "Gang_Squirrel/GAS/AttributeSet/GS_PlayerAttributeSet.h"
 #include "Gang_Squirrel/GAS/GA/Attack/GA_Attack.h"
 #include "Gang_Squirrel/GAS/GA/Roll/GA_Roll.h"
 #include "Gang_Squirrel/GAS/GA/Sprint/GA_Sprint.h"
@@ -18,9 +19,11 @@
 #include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 #include "Components/WidgetComponent.h"
 #include "Gang_Squirrel/Food/GSFoodBase.h"
+#include "Gang_Squirrel/UI/GS_StaminaBarWidget.h"
 #include "Gang_Squirrel/UI/GSPlayerNameTag.h"
 #include "Gang_Squirrel/Gang_Squirrel.h"
 #include "Gang_Squirrel/Food/GSCheekWidget.h"
+#include "Net/UnrealNetwork.h"
 
 AGSCharacter::AGSCharacter()
 {
@@ -62,6 +65,16 @@ AGSCharacter::AGSCharacter()
 	PlayerNameTagWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 120.0f)); // 머리 위
 	PlayerNameTagWidget->SetWidgetSpace(EWidgetSpace::Screen); // 항상 카메라를 향함
 	
+	//Stamina Widget Component
+	StaminaBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("StaminaBarWidget"));
+	StaminaBarWidget->SetupAttachment(GetRootComponent());
+	StaminaBarWidget->SetRelativeLocation(FVector(0.f, 50.f, -20.f));
+	StaminaBarWidget->SetWidgetSpace(EWidgetSpace::Screen);
+	StaminaBarWidget->SetDrawSize(FVector2D(32.f, 160.f));
+	StaminaBarWidget->SetOnlyOwnerSee(true);
+	StaminaBarWidget->SetVisibility(false);
+	StaminaBarWidget->SetHiddenInGame(true);
+	StaminaBarWidget->SetUsingAbsoluteLocation(true);
 	// for AnimNotifyTick Func
 	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickMontagesAndRefreshBonesWhenPlayingMontages;
 }
@@ -74,6 +87,8 @@ void AGSCharacter::Tick(float DeltaTime)
 	{
 		AddMovementInput(RollingDirection, 1.0f);
 	}
+
+	UpdateStaminaBarWorldLocation();
 }
 
 void AGSCharacter::BeginPlay()
@@ -90,6 +105,8 @@ void AGSCharacter::BeginPlay()
 
 			EILPS->AddMappingContext(IMC, 0);
 		}
+
+		UpdateStaminaBarWorldLocation();
 
 	}
 	
@@ -110,7 +127,12 @@ void AGSCharacter::BeginPlay()
 		}
 	}
 
-	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+	BindMovementSpeedDelegates();
+
+	if (IsLocallyControlled())
+	{
+		BindStaminaDelegates();
+	}
 	
 	//Cheek  Widget
 	if (IsLocallyControlled() && CheekWidgetClass)
@@ -149,6 +171,14 @@ void AGSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EIC->BindAction(Sprint, ETriggerEvent::Completed, this, &ThisClass::IAEndSprint);
 		EIC->BindAction(Rolling, ETriggerEvent::Started, this, &ThisClass::IARolling);
 	}
+}
+
+void AGSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AGSCharacter, CurrentCheekSize);
+	DOREPLIFETIME(AGSCharacter, MaxCheekSize);
 }
 
 void AGSCharacter::IAMove(const FInputActionValue& InValue)
@@ -212,6 +242,15 @@ void AGSCharacter::InflateCheeks(float Value)
 	if (HasAuthority())
 	{
 		Multicast_InflateCheeks(Value);
+	}
+}
+
+void AGSCharacter::OnRep_CheekSize()
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (IsValid(MeshComp) && MaxCheekSize > 0.f)
+	{
+		MeshComp->SetMorphTarget(FName("CheeksSize"), CurrentCheekSize / MaxCheekSize);
 	}
 }
 
@@ -311,7 +350,7 @@ void AGSCharacter::SetSprinting(bool bNewSprinting)
 {
 	bIsSprinting = bNewSprinting;
 
-	GetCharacterMovement()->MaxWalkSpeed = bIsSprinting ? SprintSpeed : WalkSpeed;
+	UpdateMaxWalkSpeedFromAttribute();
 }
 
 void AGSCharacter::StartSprintFromAbility()
@@ -354,6 +393,82 @@ void AGSCharacter::RollFromAbility()
 	}
 }
 
+void AGSCharacter::BindMovementSpeedDelegates()
+{
+	if (bMovementSpeedDelegateBound)
+	{
+		return;
+	}
+
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (PS == nullptr)
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent();
+	if (ASC == nullptr)
+	{
+		return;
+	}
+
+	ASC->GetGameplayAttributeValueChangeDelegate(UGS_PlayerAttributeSet::GetMoveSpeedAttribute())
+		.AddUObject(this, &AGSCharacter::OnMoveSpeedChanged);
+
+	ASC->GetGameplayAttributeValueChangeDelegate(UGS_PlayerAttributeSet::GetSlowSpeedMultiplierAttribute())
+		.AddUObject(this, &AGSCharacter::OnSlowSpeedMultiplierChanged);
+
+	CachedMoveSpeed = ASC->GetNumericAttribute(UGS_PlayerAttributeSet::GetMoveSpeedAttribute());
+	CachedSlowSpeedMultiplier = ASC->GetNumericAttribute(UGS_PlayerAttributeSet::GetSlowSpeedMultiplierAttribute());
+
+	bMovementSpeedDelegateBound = true;
+
+	UpdateMaxWalkSpeedFromAttribute();
+}
+
+//Caching MoveSpeed
+void AGSCharacter::OnMoveSpeedChanged(const FOnAttributeChangeData& Data)
+{
+	CachedMoveSpeed = Data.NewValue;
+	UpdateMaxWalkSpeedFromAttribute();
+}
+
+//Caching SlowSpeedMultiplier
+void AGSCharacter::OnSlowSpeedMultiplierChanged(const FOnAttributeChangeData& Data)
+{
+	CachedSlowSpeedMultiplier = Data.NewValue;
+	UpdateMaxWalkSpeedFromAttribute();
+}
+
+float AGSCharacter::GetFinalMoveSpeedMultiplier() const
+{
+	if (bIsRolling)
+	{
+		return RollSpeedMultiplier;
+	}
+
+	if (bIsSprinting)
+	{
+		return SprintSpeedMultiplier;
+	}
+
+	return 1.f;
+}
+
+//MaxWalkSpeed
+void AGSCharacter::UpdateMaxWalkSpeedFromAttribute()
+{
+	const float SafeMoveSpeed = FMath::Max(CachedMoveSpeed, 0.f);
+	const float SafeSlowMultiplier = FMath::Clamp(CachedSlowSpeedMultiplier, 0.1f, 1.f);
+
+	const float FinalSpeed =
+		SafeMoveSpeed *
+		SafeSlowMultiplier *
+		GetFinalMoveSpeedMultiplier();
+
+	GetCharacterMovement()->MaxWalkSpeed = FinalSpeed;
+}
+
 void AGSCharacter::StartRolling(const FVector& InRollingDirection)
 {
 	if (bIsRolling)
@@ -367,7 +482,7 @@ void AGSCharacter::StartRolling(const FVector& InRollingDirection)
 	RollingDirection.Z = 0.f;
 	RollingDirection.Normalize();
 
-	GetCharacterMovement()->MaxWalkSpeed = RollSpeed;
+	UpdateMaxWalkSpeedFromAttribute();
 
 	GetWorldTimerManager().ClearTimer(RollingTimerHandle);
 	GetWorldTimerManager().SetTimer(
@@ -396,7 +511,7 @@ void AGSCharacter::StartRollingLocal(const FVector& InRollingDirection)
 	RollingDirection.Z = 0.f;
 	RollingDirection.Normalize();
 
-	GetCharacterMovement()->MaxWalkSpeed = RollSpeed;
+	UpdateMaxWalkSpeedFromAttribute();
 
 	if (AM_Roll)
 	{
@@ -418,7 +533,7 @@ void AGSCharacter::FinishRolling()
 	bIsRolling = false;
 	RollingDirection = FVector::ZeroVector;
 
-	GetCharacterMovement()->MaxWalkSpeed = bIsSprinting ? SprintSpeed : WalkSpeed;
+	UpdateMaxWalkSpeedFromAttribute();
 }
 
 FVector AGSCharacter::GetRollingDirection() const
@@ -464,7 +579,7 @@ void AGSCharacter::ServerStartRolling_Implementation(FVector_NetQuantizeNormal I
 void AGSCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
-	
+
 	// Server
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (PS)
@@ -472,6 +587,8 @@ void AGSCharacter::PossessedBy(AController* NewController)
 		// Init ASC
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS,this);
 		PS->GetAbilitySystemComponent()->AddLooseGameplayTag(TeamTag::TAG_Team_Player);
+
+		BindMovementSpeedDelegates();
 		//Give Ability
 		if (!PS->GetAbilitySystemComponent()->FindAbilitySpecFromClass(UGA_Attack::StaticClass()))
 		{
@@ -498,13 +615,15 @@ void AGSCharacter::PossessedBy(AController* NewController)
 void AGSCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
-	
+
 	//Client
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (PS)
 	{
 		// Init ASC
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS,this);
+
+		BindMovementSpeedDelegates();
 
 		if (PS->OnPlayerNameChanged.IsAlreadyBound(this, &ThisClass::UpdateNameTag) == false)
 		{
@@ -518,6 +637,11 @@ void AGSCharacter::OnRep_PlayerState()
 		
 		// When State.Dead Tag Was Attached or Detached Call to Func
 		PS->GetAbilitySystemComponent()->RegisterGameplayTagEvent(StateTag::TAG_State_Dead, EGameplayTagEventType::NewOrRemoved).AddUObject(this,&AGSCharacter::OnDeathStateTagChanged);
+	
+		if (IsLocallyControlled())
+		{
+			BindStaminaDelegates();
+		}
 	}
 }
 
@@ -549,3 +673,168 @@ void AGSCharacter::NetMulticast_SetDeathPoseFrozen_Implementation(bool bFrozen)
 {
 	GetMesh()->bPauseAnims = bFrozen;
 }
+
+//Stamina
+void AGSCharacter::BindStaminaDelegates()
+{
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
+	if (bStaminaDelegateBound)
+	{
+		return;
+	}
+
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (PS == nullptr)
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent();
+	if (ASC == nullptr)
+	{
+		return;
+	}
+
+	ASC->GetGameplayAttributeValueChangeDelegate(UGS_PlayerAttributeSet::GetStaminaAttribute())
+		.AddUObject(this, &AGSCharacter::OnStaminaChanged);
+
+	ASC->GetGameplayAttributeValueChangeDelegate(UGS_PlayerAttributeSet::GetMaxStaminaAttribute())
+		.AddUObject(this, &AGSCharacter::OnMaxStaminaChanged);
+
+	const float CurrentStamina = ASC->GetNumericAttribute(UGS_PlayerAttributeSet::GetStaminaAttribute());
+	const float MaxStamina = ASC->GetNumericAttribute(UGS_PlayerAttributeSet::GetMaxStaminaAttribute());
+
+	CachedMaxStamina = MaxStamina;
+	UpdateStaminaBar(CurrentStamina, MaxStamina);
+	RefreshStaminaBarVisibility(CurrentStamina, MaxStamina);
+}
+
+void AGSCharacter::UpdateStaminaBar(float CurrentStamina, float MaxStamina)
+{
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
+	if (MaxStamina <= 0.f)
+	{
+		return;
+	}
+
+	UGS_StaminaBarWidget* StaminaWidget = Cast<UGS_StaminaBarWidget>(StaminaBarWidget->GetUserWidgetObject());
+	if (StaminaWidget == nullptr)
+	{
+		return;
+	}
+
+	const float Percent = CurrentStamina / MaxStamina;
+	StaminaWidget->SetStaminaPercent(Percent);
+}
+
+void AGSCharacter::RefreshStaminaBarVisibility(float CurrentStamina, float MaxStamina)
+{
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
+	if (StaminaBarWidget == nullptr)
+	{
+		return;
+	}
+
+	GetWorldTimerManager().ClearTimer(StaminaBarHideTimerHandle);
+
+	const bool bShouldShow = CurrentStamina < MaxStamina;
+
+	if (bShouldShow)
+	{
+		StaminaBarWidget->SetHiddenInGame(false);
+		StaminaBarWidget->SetVisibility(true);
+	}
+	else
+	{
+		GetWorldTimerManager().SetTimer(
+			StaminaBarHideTimerHandle,
+			this,
+			&AGSCharacter::HideStaminaBar,
+			0.75f,
+			false
+		);
+	}
+}
+
+void AGSCharacter::HideStaminaBar()
+{
+	if (StaminaBarWidget)
+	{
+		StaminaBarWidget->SetVisibility(false);
+		StaminaBarWidget->SetHiddenInGame(true);
+	}
+}
+
+void AGSCharacter::UpdateStaminaBarWorldLocation()
+{
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
+	if (StaminaBarWidget == nullptr)
+	{
+		return;
+	}
+
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (PC == nullptr)
+	{
+		return;
+	}
+
+	FVector CameraLocation;
+	FRotator CameraRotation;
+	PC->GetPlayerViewPoint(CameraLocation, CameraRotation);
+
+	const FRotator CameraYawRotation(0.f, CameraRotation.Yaw, 0.f);
+	const FVector CameraRightVector = FRotationMatrix(CameraRotation).GetUnitAxis(EAxis::Y);
+
+	const FVector NewWidgetLocation =
+		GetActorLocation()
+		+ CameraRightVector * StaminaBarSideOffset
+		+ FVector(0.f, 0.f, StaminaBarHeightOffset);
+
+	StaminaBarWidget->SetWorldLocation(NewWidgetLocation);
+}
+
+void AGSCharacter::OnStaminaChanged(const FOnAttributeChangeData& Data)
+{
+	UpdateStaminaBar(Data.NewValue, CachedMaxStamina);
+	RefreshStaminaBarVisibility(Data.NewValue, CachedMaxStamina);
+}
+
+void AGSCharacter::OnMaxStaminaChanged(const FOnAttributeChangeData& Data)
+{
+	CachedMaxStamina = Data.NewValue;
+
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (PS == nullptr)
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent();
+	if (ASC == nullptr)
+	{
+		return;
+	}
+
+	const float CurrentStamina = ASC->GetNumericAttribute(UGS_PlayerAttributeSet::GetStaminaAttribute());
+
+	UpdateStaminaBar(CurrentStamina, CachedMaxStamina);
+	RefreshStaminaBarVisibility(CurrentStamina, CachedMaxStamina);
+}
+

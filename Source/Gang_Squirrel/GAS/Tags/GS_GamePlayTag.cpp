@@ -17,6 +17,7 @@ namespace AbilityTag
 	UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Death,"Ability.Death")
 	UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Sprint, "Ability.Sprint")
 	UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Roll, "Ability.Roll")
+
 }
 
 namespace StateTag
@@ -31,3 +32,4 @@ namespace TeamTag
 	UE_DEFINE_GAMEPLAY_TAG(TAG_Team_Player,"Team.Player")
 	UE_DEFINE_GAMEPLAY_TAG(TAG_Team_Enemy,"Team.Enemy")
 }
+

@@ -7,9 +7,22 @@
 #include "GS_GameModeBase.generated.h"
 
 class AGSSpawnManager;
+class AGS_PlayerState;
+class UGSFoodPrimaryDataAsset;   
+class AGSCharacter;
+class UGameplayEffect;
 /**
  * 
  */
+
+UENUM(BlueprintType)
+enum class ERewardType : uint8
+{
+	Food,
+	Capacity,
+	SpeedBoost
+};
+
 UCLASS()
 class GANG_SQUIRREL_API AGS_GameModeBase : public AGameModeBase
 {
@@ -31,6 +44,13 @@ public:
 
 	//Notify completed Player nickname
 	void NotifyPlayerReady();
+
+	UFUNCTION(BlueprintCallable, Category = "Reward")
+	void GiveRandomReward(AGS_PlayerState* KillerPS);
+
+	// 테스트 디버그용 - 타입 직접 지정
+	UFUNCTION(BlueprintCallable, Category = "Reward")
+	void GiveSpecificReward(AGS_PlayerState* KillerPS, ERewardType RewardType);
 
 protected:
 	//Call when timer == 0.f
@@ -61,4 +81,21 @@ public:
 	
 	void SpawnSpawnManager() const;
 
+private:
+	void GiveFoodReward(AGS_PlayerState* PS);
+
+	void GiveCapacityReward(AGS_PlayerState* PS);
+
+	void GiveSpeedBoostReward(AGS_PlayerState* PS);
+
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Reward|Food")
+	TObjectPtr<UGSFoodPrimaryDataAsset> RewardFoodData;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Reward|Capacity")
+	float CapacityIncreaseAmount = 0.1f;
+
+
+	UPROPERTY(EditDefaultsOnly, Category = "Reward|SpeedBoost")
+	TSubclassOf<UGameplayEffect> GE_MoveSpeedRewardClass;
 };
