@@ -3,11 +3,22 @@
 
 #include "GSCheekWidget.h"
 
+#include "Components/TextBlock.h"
+
 void UGSCheekWidget::SetProgressValue(float NewPercent)
 {
 	CurrentPercent = NewPercent;
 	
 	OnProgressChanged(CurrentPercent);
+	
+	if (TextBlock)
+	{
+		int32 PercentInt = FMath::TruncToInt(NewPercent * 100.0f);
+		
+		TextBlock->SetText(
+	FText::FromString(FString::Printf(TEXT("%d%%"), PercentInt))
+);
+	}
 }
 
 void UGSCheekWidget::InitCheekWidget()

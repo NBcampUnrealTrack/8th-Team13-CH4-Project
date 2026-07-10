@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "GSCheekWidget.generated.h"
 
+class UTextBlock;
 /**
  * 
  */
@@ -21,6 +22,9 @@ public:
 	
 	UFUNCTION()
 	void InitCheekWidget();
+	
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* TextBlock;
 	
 protected:
 	
