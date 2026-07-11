@@ -40,6 +40,8 @@ public:
 	// 로그인
 	UFUNCTION(BlueprintCallable, Category = "EOS")
 	void Login();
+	UFUNCTION(BlueprintPure,Category="EOS")
+	bool IsLoggedIn() const;
 	
 	UFUNCTION(BlueprintPure,Category="EOS")
 	FString GetLocalDisplayName() const;
@@ -110,6 +112,13 @@ private:
 	void HandleSessionUserInviteAccepted(const bool bWasSuccessful, const int32 ControllerId, FUniqueNetIdPtr UserId, const FOnlineSessionSearchResult& InviteResult);
 	void HandleCreateSessionComplete(FName SessionName, bool bWasSuccessful);
 	void HandleJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+	
+#pragma region JoinFunc
+private:
+	void JoinPendingSession();
+	void DoJoinSession();
+	void HandleDestroySessionForJoin(FName SessionName, bool bWasSuccessful);
+#pragma endregion 
 	
 #if WITH_EDITOR
 	bool bWantsListenServerInPIE = false;

@@ -16,6 +16,9 @@ private:
 	UPROPERTY(EditDefaultsOnly,Category="UI")
 	TSubclassOf<UUserWidget> LobbyWidgetClass;
 	
+	UPROPERTY(EditDefaultsOnly,Category="Lobby")
+	int32 MaxPartyPlayers = 4;
+	
 public:
 	UFUNCTION(BlueprintCallable,Category="Lobby")
 	void RequestStartGame();
@@ -23,4 +26,6 @@ public:
 private:
 	UFUNCTION(Server,Reliable)
 	void ServerRequestStartGame();
+	UFUNCTION()
+	void OnLoginCompleteForHost(bool bWasSuccessful);
 };

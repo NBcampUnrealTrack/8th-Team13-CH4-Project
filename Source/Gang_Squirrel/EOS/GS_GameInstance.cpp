@@ -98,6 +98,11 @@ void UGS_GameInstance::Login()
 	}
 }
 
+bool UGS_GameInstance::IsLoggedIn() const
+{
+	return IdentityInterface.IsValid() && IdentityInterface->GetLoginStatus(0) == ELoginStatus::LoggedIn;
+}
+
 FString UGS_GameInstance::GetLocalDisplayName() const
 {
 	if (!IdentityInterface.IsValid() || IdentityInterface->GetLoginStatus(0) != ELoginStatus::LoggedIn)
@@ -219,9 +224,16 @@ void UGS_GameInstance::HandleCreateSessionComplete(FName SessionName, bool bWasS
 	UE_LOG(LogTemp, Log, TEXT("[EOS] CreateSession(%s) complete -> %s"),
 		*SessionName.ToString(), bWasSuccessful ? TEXT("success") : TEXT("failed"));
 
-	if (bWasSuccessful && !PendingLobbyLevelName.IsNone())
+	if (bWasSuccessful)
 	{
-		UGameplayStatics::OpenLevel(this, PendingLobbyLevelName, true, TEXT("listen"));
+		if (!PendingLobbyLevelName.IsNone())
+		{
+			UGameplayStatics::OpenLevel(this, PendingLobbyLevelName, true, TEXT("listen"));
+		}
+		else if (GetWorld() && GetWorld()->GetNetMode() != NM_ListenServer)
+		{
+			EnableListenServer(true);
+		}
 	}
 
 	OnGSCreateSessionComplete.Broadcast(bWasSuccessful);
@@ -276,17 +288,9 @@ void UGS_GameInstance::HandleSessionUserInviteAccepted(const bool bWasSuccessful
 		OnGSJoinSessionComplete.Broadcast(false);
 		return;
 	}
-
+	
 	PendingInviteResult = MakeShared<FOnlineSessionSearchResult>(InviteResult);
-
-	JoinSessionCompleteDelegateHandle = SessionInterface->AddOnJoinSessionCompleteDelegate_Handle(
-		FOnJoinSessionCompleteDelegate::CreateUObject(this, &UGS_GameInstance::HandleJoinSessionComplete));
-
-	if (!SessionInterface->JoinSession(0, NAME_GameSession, InviteResult))
-	{
-		SessionInterface->ClearOnJoinSessionCompleteDelegate_Handle(JoinSessionCompleteDelegateHandle);
-		OnGSJoinSessionComplete.Broadcast(false);
-	}
+	JoinPendingSession();
 }
 
 void UGS_GameInstance::AcceptPendingInvite()
@@ -296,15 +300,8 @@ void UGS_GameInstance::AcceptPendingInvite()
 		OnGSJoinSessionComplete.Broadcast(false);
 		return;
 	}
-
-	JoinSessionCompleteDelegateHandle = SessionInterface->AddOnJoinSessionCompleteDelegate_Handle(
-		FOnJoinSessionCompleteDelegate::CreateUObject(this, &UGS_GameInstance::HandleJoinSessionComplete));
-
-	if (!SessionInterface->JoinSession(0, NAME_GameSession, *PendingInviteResult))
-	{
-		SessionInterface->ClearOnJoinSessionCompleteDelegate_Handle(JoinSessionCompleteDelegateHandle);
-		OnGSJoinSessionComplete.Broadcast(false);
-	}
+	
+	JoinPendingSession();
 }
 
 void UGS_GameInstance::HandleJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
@@ -387,4 +384,39 @@ void UGS_GameInstance::StartGame(FName GameLevelName)
 	}
 
 	World->ServerTravel(GameLevelName.ToString() + TEXT("?listen"), true);
+}
+
+void UGS_GameInstance::JoinPendingSession()
+{
+	if (!SessionInterface.IsValid() || !PendingInviteResult.IsValid())
+	{
+		OnGSJoinSessionComplete.Broadcast(false);
+		return;
+	}
+	
+	if (SessionInterface->GetNamedSession(NAME_GameSession) != nullptr)
+	{
+		SessionInterface->DestroySession(NAME_GameSession,FOnDestroySessionCompleteDelegate::CreateUObject(this, &UGS_GameInstance::HandleDestroySessionForJoin));
+	}
+	else
+	{
+		DoJoinSession();
+	}
+}
+
+void UGS_GameInstance::DoJoinSession()
+{
+	JoinSessionCompleteDelegateHandle = SessionInterface->AddOnJoinSessionCompleteDelegate_Handle(
+		FOnJoinSessionCompleteDelegate::CreateUObject(this,&UGS_GameInstance::HandleJoinSessionComplete));
+	
+	if (!SessionInterface->JoinSession(0, NAME_GameSession, *PendingInviteResult))
+	{
+		SessionInterface->ClearOnJoinSessionCompleteDelegate_Handle(JoinSessionCompleteDelegateHandle);
+		OnGSJoinSessionComplete.Broadcast(false);
+	}
+}
+
+void UGS_GameInstance::HandleDestroySessionForJoin(FName SessionName, bool bWasSuccessful)
+{
+	DoJoinSession();
 }
