@@ -6,6 +6,7 @@
 
 
 class UGS_FriendEntryWidget;
+class UPanelWidget;
 
 UCLASS()
 class GANG_SQUIRREL_API UGS_FriendListWidget : public UUserWidget

@@ -5,6 +5,7 @@
 #include "GS_LobbyWidget.generated.h"
 
 class UGS_LobbySlotWidget;
+class UPanelWidget;
 
 UCLASS()
 class GANG_SQUIRREL_API UGS_LobbyWidget : public UUserWidget
