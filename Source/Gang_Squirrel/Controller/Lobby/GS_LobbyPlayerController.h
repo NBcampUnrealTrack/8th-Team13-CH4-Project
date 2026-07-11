@@ -4,6 +4,8 @@
 #include "GameFramework/PlayerController.h"
 #include "GS_LobbyPlayerController.generated.h"
 
+class AGSCharacter;
+
 UCLASS()
 class GANG_SQUIRREL_API AGS_LobbyPlayerController : public APlayerController
 {
@@ -19,6 +21,11 @@ private:
 	UPROPERTY(EditDefaultsOnly,Category="Lobby")
 	int32 MaxPartyPlayers = 4;
 	
+	UPROPERTY(EditDefaultsOnly,Category="Lobby|Display")
+	TSubclassOf<AGSCharacter> DisplayCharacterClass;
+	UPROPERTY(EditDefaultsOnly,Category="Lobby|Display")
+	FName LobbyCameraTag = "LobbyCamera";
+	
 public:
 	UFUNCTION(BlueprintCallable,Category="Lobby")
 	void RequestStartGame();
@@ -28,4 +35,17 @@ private:
 	void ServerRequestStartGame();
 	UFUNCTION()
 	void OnLoginCompleteForHost(bool bWasSuccessful);
+	UFUNCTION(Server,Reliable)
+	void ServerSetNickname(const FString& Nickname);
+	
+	void SetupLobbyCamera();
+	void CacheCharacterSlots();
+	void RefreshCharacterDisplay();
+	
+	UPROPERTY()
+	TArray<FTransform> SlotTransforms;
+	UPROPERTY()
+	TArray<TObjectPtr<AGSCharacter>> DisplayCharacters;
+	
+	FTimerHandle CharacterDisplayTimerHandle;
 };
