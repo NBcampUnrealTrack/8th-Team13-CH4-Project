@@ -158,7 +158,7 @@ void AGS_PlayerState::ApplyStaminaRegen()
 		UGS_PlayerAttributeSet::GetMaxStaminaAttribute()
 	);
 
-	UE_LOG(LogTemp, Warning, TEXT("[StaminaRegen] Before Check: %f / %f"), CurrentStamina, MaxStamina);
+	// UE_LOG(LogTemp, Warning, TEXT("[StaminaRegen] Before Check: %f / %f"), CurrentStamina, MaxStamina);
 
 	if (CurrentStamina >= MaxStamina)
 	{
@@ -178,10 +178,10 @@ void AGS_PlayerState::ApplyStaminaRegen()
 	{
 		AbilitySystemComp->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 
-		UE_LOG(LogTemp, Warning, TEXT("[StaminaRegen] Stamina: %f / %f"),
-			AbilitySystemComp->GetNumericAttribute(UGS_PlayerAttributeSet::GetStaminaAttribute()),
-			MaxStamina
-		);
+		// UE_LOG(LogTemp, Warning, TEXT("[StaminaRegen] Stamina: %f / %f"),
+		// 	AbilitySystemComp->GetNumericAttribute(UGS_PlayerAttributeSet::GetStaminaAttribute()),
+		// 	MaxStamina
+		// );
 	}
 
 }

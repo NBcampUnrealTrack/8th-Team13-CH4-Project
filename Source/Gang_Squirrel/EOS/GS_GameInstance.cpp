@@ -25,6 +25,11 @@ void UGS_GameInstance::Init()
 		SessionUserInviteAcceptedDelegateHandle = SessionInterface->AddOnSessionUserInviteAcceptedDelegate_Handle(
 			FOnSessionUserInviteAcceptedDelegate::CreateUObject(this, &UGS_GameInstance::HandleSessionUserInviteAccepted));
 	}
+	
+#if WITH_EDITOR
+		AutoLoginForPIETest();
+#endif
+	
 }
 
 void UGS_GameInstance::Shutdown()
@@ -44,6 +49,30 @@ void UGS_GameInstance::Shutdown()
 
 	Super::Shutdown();
 }
+
+#if WITH_EDITOR
+void UGS_GameInstance::AutoLoginForPIETest()
+{
+	if (!IdentityInterface.IsValid() || IdentityInterface->GetLoginStatus(0) == ELoginStatus::LoggedIn)
+	{
+		return;
+	}
+	
+	const int32 InstanceIndex = GetPIEInstanceIndexFromCommandLine();
+	const FString CredentialName = (InstanceIndex == 0) ? TEXT("dev1") : TEXT("dev2");
+	
+	LoginCompleteDelegateHandle = IdentityInterface->AddOnLoginCompleteDelegate_Handle(
+		0,FOnLoginCompleteDelegate::CreateUObject(this,&UGS_GameInstance::HandleLoginComplete));
+	
+	const FOnlineAccountCredentials Credentials(TEXT("developer"),TEXT("localhost:6300"),CredentialName);
+	if (!IdentityInterface->Login(0, Credentials))
+	{
+		IdentityInterface->ClearOnLoginCompleteDelegate_Handle(0, LoginCompleteDelegateHandle);
+	}
+	
+	UE_LOG(LogTemp, Log, TEXT("[EOS] PIE auto-login as '%s' (instance %d)"), *CredentialName, InstanceIndex);
+}
+#endif
 
 void UGS_GameInstance::Login()
 {
@@ -81,6 +110,13 @@ void UGS_GameInstance::HandleLoginComplete(int32 LocalUserNum, bool bWasSuccessf
 		UE_LOG(LogTemp, Warning, TEXT("GS_GameInstance Login failed: %s"), *Error);
 	}
 
+#if WITH_EDITOR
+	if (bWasSuccessful && bWantsListenServerInPIE && GetWorld() && GetWorld()->GetNetMode() != NM_ListenServer)
+	{
+		const bool bListen = EnableListenServer(true,PendingPIEListenPort);
+	}
+#endif
+	
 	OnGSLoginComplete.Broadcast(bWasSuccessful);
 }
 
@@ -284,6 +320,53 @@ void UGS_GameInstance::HandleJoinSessionComplete(FName SessionName, EOnJoinSessi
 
 	OnGSJoinSessionComplete.Broadcast(bSuccess);
 }
+
+#if WITH_EDITOR
+int32 UGS_GameInstance::GetPIEInstanceIndexFromCommandLine()
+{
+	FString Value;
+	if (FParse::Value(FCommandLine::Get(), TEXT("GameUserSettingsINI="),Value))
+	{
+		static const FString Marker = TEXT("PIEGameUserSettings");
+		const int32 MarkerPos = Value.Find(Marker);
+		if (MarkerPos != INDEX_NONE)
+		{
+			FString Digits;
+			for (int32 i = MarkerPos + Marker.Len(); i < Value.Len() && FChar::IsDigit(Value[i]); ++i)
+			{
+				Digits.AppendChar(Value[i]);
+			}
+			if (!Digits.IsEmpty())
+			{
+				return FCString::Atoi(*Digits);
+			}
+		}
+	}
+	return 0;
+}
+
+FGameInstancePIEResult UGS_GameInstance::StartPlayInEditorGameInstance(ULocalPlayer* LocalPlayer,
+	const FGameInstancePIEParameters& Params)
+{
+
+	bWantsListenServerInPIE = (Params.NetMode == PIE_ListenServer);
+
+	if (bWantsListenServerInPIE)
+	{
+		uint16 ServerPort = 0;
+		if (Params.EditorPlaySettings)
+		{
+			Params.EditorPlaySettings->GetServerPort(ServerPort);
+		}
+		PendingPIEListenPort = ServerPort;
+
+		Login();
+	}
+
+
+	return Super::StartPlayInEditorGameInstance(LocalPlayer, Params);
+}
+#endif
 
 void UGS_GameInstance::StartGame(FName GameLevelName)
 {
