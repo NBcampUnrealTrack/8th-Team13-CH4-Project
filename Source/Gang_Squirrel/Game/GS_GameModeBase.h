@@ -34,7 +34,6 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void PostLogin(APlayerController* NewPlayer) override;
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Match")
@@ -70,19 +69,11 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Match")
 	uint8 bMatchEnd : 1;
 
-protected:
-	UPROPERTY(EditDefaultsOnly, Category = "Match")
-	int32 RequiredPlayerCountToStart = 2;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Match")
-	FName MainStageLevelName = "/Game/ProjectFile/Level/L_Main_Stage";
-
 private:
 	//Match Timer
 	FTimerHandle MatchTimerHandle;
 
 	int32 ReadyPlayerCount = 0;
-	bool bHasTraveledToMainStage = false;
 public:
 	
 	UPROPERTY(EditDefaultsOnly)

@@ -33,6 +33,7 @@ void AGS_PlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME(AGS_PlayerState, PlayerNickname);
 	DOREPLIFETIME(AGS_PlayerState, PlayerScore);
 	DOREPLIFETIME(AGS_PlayerState, KillCount);
+	DOREPLIFETIME(AGS_PlayerState,bIsHost);
 }
 
 void AGS_PlayerState::BeginPlay()
@@ -184,4 +185,9 @@ void AGS_PlayerState::ApplyStaminaRegen()
 		// );
 	}
 
+}
+
+void AGS_PlayerState::OnRep_IsHost()
+{
+	UE_LOG(LogTemp,Log,TEXT("[Lobby] bIsHost Replicated: %s"), bIsHost ? TEXT("true") : TEXT("false"));
 }
