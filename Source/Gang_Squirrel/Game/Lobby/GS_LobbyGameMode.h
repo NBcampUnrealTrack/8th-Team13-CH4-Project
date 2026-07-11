@@ -9,5 +9,20 @@ class GANG_SQUIRREL_API AGS_LobbyGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 	
+protected:
+	virtual void PostLogin(APlayerController* NewPlayer) override;
+	
+public:
+	UFUNCTION(BlueprintCallable,Category="Lobby")
+	void TryStartGame(APlayerController* Requester);
+	
+	UFUNCTION(BlueprintPure,Category="Lobby")
+	bool CanStartGame();
+	
+protected:
+	UPROPERTY(EditDefaultsOnly,Category="Lobby")
+	int32 MinPlayersToStart = 2;
+	UPROPERTY(EditDefaultsOnly,Category="Lobby")
+	FName MainStageLevelName = "/Game/ProjectFile/Level/L_Main_Stage";
 	
 };
