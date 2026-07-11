@@ -1,15 +1,22 @@
 #include "GS_LobbyWidget.h"
 
 #include "GS_LobbySlotWidget.h"
+#include "Components/Button.h"
 #include "Components/PanelWidget.h"
+#include "Gang_Squirrel/Controller/Lobby/GS_LobbyPlayerController.h"
 #include "Gang_Squirrel/Game/GS_GameState.h"
 #include "Gang_Squirrel/Player/GS_PlayerState.h"
 
 void UGS_LobbyWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-	
+
 	CreateSlotPool();
+	
+	if (Button_Start)
+	{
+		Button_Start->OnClicked.AddDynamic(this,&UGS_LobbyWidget::OnStartButtonClicked);
+	}
 	
 	GetWorld()->GetTimerManager().SetTimer(RefreshTimerHanlde,this, &UGS_LobbyWidget::RefreshLobby, 0.5f, true, 0.f);
 }
@@ -60,6 +67,11 @@ void UGS_LobbyWidget::RefreshLobby()
 		return;
 	}
 	
+	if (SlotContainer)
+	{
+		SlotContainer->SetVisibility(ESlateVisibility::Visible);
+	}
+
 	int32 SlotIndex = 0;
 	for (APlayerState* PS : GS->PlayerArray)
 	{
@@ -79,4 +91,25 @@ void UGS_LobbyWidget::RefreshLobby()
 		Slots[i]->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	
+	RefreshStartButton();
+}
+
+void UGS_LobbyWidget::RefreshStartButton()
+{
+	if (!Button_Start)
+	{
+		return;
+	}
+
+	const bool bShowButton = IsLocalPlayerHost() && CanStartGame();
+	Button_Start->SetVisibility(bShowButton? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	Button_Start->SetIsEnabled(bShowButton);
+}
+
+void UGS_LobbyWidget::OnStartButtonClicked()
+{
+	if (AGS_LobbyPlayerController* PC = Cast<AGS_LobbyPlayerController>(GetOwningPlayer()))
+	{
+		PC->RequestStartGame();
+	}
 }

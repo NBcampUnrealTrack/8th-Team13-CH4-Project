@@ -1,12 +1,18 @@
 #include "GS_LobbyGameMode.h"
 
 #include "Gang_Squirrel/EOS/GS_GameInstance.h"
+#include "Gang_Squirrel/Game/GS_GameState.h"
 #include "Gang_Squirrel/Player/GS_PlayerState.h"
+
+AGS_LobbyGameMode::AGS_LobbyGameMode()
+{
+	GameStateClass = AGS_GameState::StaticClass();
+}
 
 void AGS_LobbyGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
-	
+
 	if (AGS_PlayerState* PS = NewPlayer ? NewPlayer->GetPlayerState<AGS_PlayerState>() : nullptr)
 	{
 		PS->bIsHost = NewPlayer->IsLocalController();

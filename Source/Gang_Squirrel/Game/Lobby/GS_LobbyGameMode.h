@@ -8,7 +8,10 @@ UCLASS()
 class GANG_SQUIRREL_API AGS_LobbyGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
-	
+
+public:
+	AGS_LobbyGameMode();
+
 protected:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	
