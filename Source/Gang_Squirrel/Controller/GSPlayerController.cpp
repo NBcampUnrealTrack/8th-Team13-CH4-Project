@@ -3,12 +3,10 @@
 
 #include "GSPlayerController.h"
 #include "Gang_Squirrel/Player/GS_PlayerState.h"
-#include "Kismet/GameplayStatics.h"
 #include "Blueprint/UserWidget.h"
 #include "Gang_Squirrel/Game/GS_GameModeBase.h"
 #include "Gang_Squirrel/Game/GS_GameState.h"
 #include "Gang_Squirrel/UI/GS_GameEndWidget.h"
-#include "Gang_Squirrel/UI/GS_NicknameInputWidget.h"
 #include "GameFramework/GameStateBase.h"
 #include "Gang_Squirrel/EOS/GS_GameInstance.h"
 
