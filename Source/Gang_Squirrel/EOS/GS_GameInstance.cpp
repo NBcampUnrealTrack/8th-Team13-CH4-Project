@@ -98,6 +98,16 @@ void UGS_GameInstance::Login()
 	}
 }
 
+FString UGS_GameInstance::GetLocalDisplayName() const
+{
+	if (!IdentityInterface.IsValid() || IdentityInterface->GetLoginStatus(0) != ELoginStatus::LoggedIn)
+	{
+		return FString();
+	}
+	
+	return IdentityInterface->GetPlayerNickname(0);
+}
+
 void UGS_GameInstance::HandleLoginComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Error)
 {
 	if (IdentityInterface.IsValid())

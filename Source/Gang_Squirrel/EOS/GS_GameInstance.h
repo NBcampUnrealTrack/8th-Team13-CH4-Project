@@ -40,6 +40,9 @@ public:
 	// 로그인
 	UFUNCTION(BlueprintCallable, Category = "EOS")
 	void Login();
+	
+	UFUNCTION(BlueprintPure,Category="EOS")
+	FString GetLocalDisplayName() const;
 
 	// 친구 목록 갱신 요청 (완료되면 OnGSFriendsListComplete 발생)
 	UFUNCTION(BlueprintCallable, Category = "EOS")
