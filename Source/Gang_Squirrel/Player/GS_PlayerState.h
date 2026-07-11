@@ -90,4 +90,13 @@ public:
 
 private:
 	void ApplyStaminaRegen();
+	
+#pragma region EOSLogic
+public:
+	UPROPERTY(ReplicatedUsing = OnRep_IsHost, BlueprintReadOnly,Category="Lobby")
+	bool bIsHost = false;
+	
+	UFUNCTION()
+	void OnRep_IsHost();
+#pragma endregion 
 };

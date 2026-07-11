@@ -33,6 +33,7 @@ void AGS_PlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME(AGS_PlayerState, PlayerNickname);
 	DOREPLIFETIME(AGS_PlayerState, PlayerScore);
 	DOREPLIFETIME(AGS_PlayerState, KillCount);
+	DOREPLIFETIME(AGS_PlayerState,bIsHost);
 }
 
 void AGS_PlayerState::BeginPlay()
@@ -158,7 +159,7 @@ void AGS_PlayerState::ApplyStaminaRegen()
 		UGS_PlayerAttributeSet::GetMaxStaminaAttribute()
 	);
 
-	UE_LOG(LogTemp, Warning, TEXT("[StaminaRegen] Before Check: %f / %f"), CurrentStamina, MaxStamina);
+	// UE_LOG(LogTemp, Warning, TEXT("[StaminaRegen] Before Check: %f / %f"), CurrentStamina, MaxStamina);
 
 	if (CurrentStamina >= MaxStamina)
 	{
@@ -178,10 +179,15 @@ void AGS_PlayerState::ApplyStaminaRegen()
 	{
 		AbilitySystemComp->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 
-		UE_LOG(LogTemp, Warning, TEXT("[StaminaRegen] Stamina: %f / %f"),
-			AbilitySystemComp->GetNumericAttribute(UGS_PlayerAttributeSet::GetStaminaAttribute()),
-			MaxStamina
-		);
+		// UE_LOG(LogTemp, Warning, TEXT("[StaminaRegen] Stamina: %f / %f"),
+		// 	AbilitySystemComp->GetNumericAttribute(UGS_PlayerAttributeSet::GetStaminaAttribute()),
+		// 	MaxStamina
+		// );
 	}
 
+}
+
+void AGS_PlayerState::OnRep_IsHost()
+{
+	UE_LOG(LogTemp,Log,TEXT("[Lobby] bIsHost Replicated: %s"), bIsHost ? TEXT("true") : TEXT("false"));
 }
