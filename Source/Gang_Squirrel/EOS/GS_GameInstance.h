@@ -33,10 +33,18 @@ class GANG_SQUIRREL_API UGS_GameInstance : public UGameInstance
 public:
 	virtual void Init() override;
 	virtual void Shutdown() override;
-
+#if WITH_EDITOR
+	void AutoLoginForPIETest();
+#endif
+	
 	// 로그인
 	UFUNCTION(BlueprintCallable, Category = "EOS")
 	void Login();
+	UFUNCTION(BlueprintPure,Category="EOS")
+	bool IsLoggedIn() const;
+	
+	UFUNCTION(BlueprintPure,Category="EOS")
+	FString GetLocalDisplayName() const;
 
 	// 친구 목록 갱신 요청 (완료되면 OnGSFriendsListComplete 발생)
 	UFUNCTION(BlueprintCallable, Category = "EOS")
@@ -76,6 +84,12 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FOnGSJoinSessionComplete OnGSJoinSessionComplete;
+	
+protected:
+#if WITH_EDITOR
+	virtual FGameInstancePIEResult StartPlayInEditorGameInstance(ULocalPlayer* LocalPlayer, const FGameInstancePIEParameters& Params) override;
+#endif
+	
 
 private:
 	IOnlineSessionPtr SessionInterface;
@@ -98,4 +112,17 @@ private:
 	void HandleSessionUserInviteAccepted(const bool bWasSuccessful, const int32 ControllerId, FUniqueNetIdPtr UserId, const FOnlineSessionSearchResult& InviteResult);
 	void HandleCreateSessionComplete(FName SessionName, bool bWasSuccessful);
 	void HandleJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+	
+#pragma region JoinFunc
+private:
+	void JoinPendingSession();
+	void DoJoinSession();
+	void HandleDestroySessionForJoin(FName SessionName, bool bWasSuccessful);
+#pragma endregion 
+	
+#if WITH_EDITOR
+	bool bWantsListenServerInPIE = false;
+	int32 PendingPIEListenPort = 0;
+	static int32 GetPIEInstanceIndexFromCommandLine();
+#endif
 };

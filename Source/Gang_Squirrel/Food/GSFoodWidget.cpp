@@ -11,11 +11,11 @@ void UGSFoodWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	
-	UE_LOG(LogTemp, Warning, TEXT("FoodWidget NativeConstruct"));
+	// UE_LOG(LogTemp, Warning, TEXT("FoodWidget NativeConstruct"));
 	
 	if (!ProgressImage)
 	{
-		UE_LOG(LogTemp, Error, TEXT("ProgressBar nullptr"));
+		// UE_LOG(LogTemp, Error, TEXT("ProgressBar nullptr"));
 		return;
 	}
 	
@@ -24,12 +24,12 @@ void UGSFoodWidget::NativeConstruct()
 	if (MID)
 	{
 		MID->SetScalarParameterValue(TEXT("Percent"), 0.f);
-		UE_LOG(LogTemp, Warning, TEXT("Successfully Created Dynamic Material Instance!!"));
+		// UE_LOG(LogTemp, Warning, TEXT("Successfully Created Dynamic Material Instance!!"));
 	}
-	else
+	/*else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No Mid"));
-	}
+	}*/
 	
 }
 

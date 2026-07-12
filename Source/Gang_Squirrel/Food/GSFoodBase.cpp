@@ -64,7 +64,7 @@ void AGSFoodBase::BeginPlay()
 		StaticMeshComponent->SetCustomDepthStencilValue(1);
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[Before] WidgetClass = %s"), *GetNameSafe(FoodWidgetComponent->GetWidgetClass()));
+	// UE_LOG(LogTemp, Warning, TEXT("[Before] WidgetClass = %s"), *GetNameSafe(FoodWidgetComponent->GetWidgetClass()));
     
 	if (FoodWidgetComponent)
 	{
@@ -99,7 +99,7 @@ void AGSFoodBase::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	if (!IsValid(CurrentCharacter))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("REturn"))
+		// UE_LOG(LogTemp, Warning, TEXT("REturn"))
 		return;
 	}
 	
@@ -138,22 +138,22 @@ void AGSFoodBase::Tick(float DeltaTime)
 			Eaten();
 			CurrentCharacter->AddTempScore(FoodData->ScoreAmount);
 			
-			UE_LOG(LogTemp, Warning, TEXT("Food Eat Progress Complete!!"));
+			// UE_LOG(LogTemp, Warning, TEXT("Food Eat Progress Complete!!"));
 		}
 	}
-	else
+	/*else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Init GSFoodBase failed %d"), bIsFilling);
-	}
+	}*/
 }
 
 void AGSFoodBase::Init(UGSFoodPrimaryDataAsset* InData)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Init GSFoodBase"));
+	//UE_LOG(LogTemp, Warning, TEXT("Init GSFoodBase"));
 	
 	if (!IsValid(InData))
 	{
-		UE_LOG(LogTemp, Error, TEXT("Init GSFoodBase failed"));
+		//UE_LOG(LogTemp, Error, TEXT("Init GSFoodBase failed"));
 		return;
 	}
 	FoodData = InData;
@@ -180,10 +180,10 @@ void AGSFoodBase::Deactivate()
 {
 	if (!HasAuthority())
 	{
-		UE_LOG(LogTemp, Error, TEXT("GSFoodBase deactivated failed"));
+		//UE_LOG(LogTemp, Error, TEXT("GSFoodBase deactivated failed"));
 		return;
 	}
-	UE_LOG(LogTemp, Warning, TEXT("Deactivate GSFoodBase"));
+	//UE_LOG(LogTemp, Warning, TEXT("Deactivate GSFoodBase"));
 	SetActorTickEnabled(false);
 	if (CurrentCharacter)
 	{
@@ -232,13 +232,13 @@ void AGSFoodBase::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 	{
 		return;
 	}
-	else
+	/*else
 	{
 		UE_LOG(LogTemp, Error, TEXT("%s"), *CurrentCharacter->GetName());
-	}
+	}*/
 	if (CurrentCharacter->IsLocallyControlled())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Local Player Overlap Begin!"));
+		// UE_LOG(LogTemp, Warning, TEXT("Local Player Overlap Begin!"));
 		
 		bIsFilling = true;
 		CurrentEatenTime = 0.f;
@@ -265,7 +265,7 @@ void AGSFoodBase::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
 	
 	if (Character->IsLocallyControlled())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Local Player Overlap End!"));
+		// UE_LOG(LogTemp, Warning, TEXT("Local Player Overlap End!"));
 		
 		bIsFilling = false;
 		CurrentEatenTime = 0.f;
@@ -283,7 +283,7 @@ void AGSFoodBase::SetUIVisible(bool bShow)
 {
 	if (FoodWidgetComponent)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SetUI"));
+		// UE_LOG(LogTemp, Warning, TEXT("SetUI"));
 		FoodWidgetComponent->SetVisibility(bShow);
 	}
 	

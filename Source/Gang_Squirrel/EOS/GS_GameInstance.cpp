@@ -25,6 +25,11 @@ void UGS_GameInstance::Init()
 		SessionUserInviteAcceptedDelegateHandle = SessionInterface->AddOnSessionUserInviteAcceptedDelegate_Handle(
 			FOnSessionUserInviteAcceptedDelegate::CreateUObject(this, &UGS_GameInstance::HandleSessionUserInviteAccepted));
 	}
+	
+#if WITH_EDITOR
+		AutoLoginForPIETest();
+#endif
+	
 }
 
 void UGS_GameInstance::Shutdown()
@@ -44,6 +49,30 @@ void UGS_GameInstance::Shutdown()
 
 	Super::Shutdown();
 }
+
+#if WITH_EDITOR
+void UGS_GameInstance::AutoLoginForPIETest()
+{
+	if (!IdentityInterface.IsValid() || IdentityInterface->GetLoginStatus(0) == ELoginStatus::LoggedIn)
+	{
+		return;
+	}
+	
+	const int32 InstanceIndex = GetPIEInstanceIndexFromCommandLine();
+	const FString CredentialName = (InstanceIndex == 0) ? TEXT("dev1") : TEXT("dev2");
+	
+	LoginCompleteDelegateHandle = IdentityInterface->AddOnLoginCompleteDelegate_Handle(
+		0,FOnLoginCompleteDelegate::CreateUObject(this,&UGS_GameInstance::HandleLoginComplete));
+	
+	const FOnlineAccountCredentials Credentials(TEXT("developer"),TEXT("localhost:6300"),CredentialName);
+	if (!IdentityInterface->Login(0, Credentials))
+	{
+		IdentityInterface->ClearOnLoginCompleteDelegate_Handle(0, LoginCompleteDelegateHandle);
+	}
+	
+	UE_LOG(LogTemp, Log, TEXT("[EOS] PIE auto-login as '%s' (instance %d)"), *CredentialName, InstanceIndex);
+}
+#endif
 
 void UGS_GameInstance::Login()
 {
@@ -69,6 +98,21 @@ void UGS_GameInstance::Login()
 	}
 }
 
+bool UGS_GameInstance::IsLoggedIn() const
+{
+	return IdentityInterface.IsValid() && IdentityInterface->GetLoginStatus(0) == ELoginStatus::LoggedIn;
+}
+
+FString UGS_GameInstance::GetLocalDisplayName() const
+{
+	if (!IdentityInterface.IsValid() || IdentityInterface->GetLoginStatus(0) != ELoginStatus::LoggedIn)
+	{
+		return FString();
+	}
+	
+	return IdentityInterface->GetPlayerNickname(0);
+}
+
 void UGS_GameInstance::HandleLoginComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Error)
 {
 	if (IdentityInterface.IsValid())
@@ -81,6 +125,13 @@ void UGS_GameInstance::HandleLoginComplete(int32 LocalUserNum, bool bWasSuccessf
 		UE_LOG(LogTemp, Warning, TEXT("GS_GameInstance Login failed: %s"), *Error);
 	}
 
+#if WITH_EDITOR
+	if (bWasSuccessful && bWantsListenServerInPIE && GetWorld() && GetWorld()->GetNetMode() != NM_ListenServer)
+	{
+		const bool bListen = EnableListenServer(true,PendingPIEListenPort);
+	}
+#endif
+	
 	OnGSLoginComplete.Broadcast(bWasSuccessful);
 }
 
@@ -173,9 +224,16 @@ void UGS_GameInstance::HandleCreateSessionComplete(FName SessionName, bool bWasS
 	UE_LOG(LogTemp, Log, TEXT("[EOS] CreateSession(%s) complete -> %s"),
 		*SessionName.ToString(), bWasSuccessful ? TEXT("success") : TEXT("failed"));
 
-	if (bWasSuccessful && !PendingLobbyLevelName.IsNone())
+	if (bWasSuccessful)
 	{
-		UGameplayStatics::OpenLevel(this, PendingLobbyLevelName, true, TEXT("listen"));
+		if (!PendingLobbyLevelName.IsNone())
+		{
+			UGameplayStatics::OpenLevel(this, PendingLobbyLevelName, true, TEXT("listen"));
+		}
+		else if (GetWorld() && GetWorld()->GetNetMode() != NM_ListenServer)
+		{
+			EnableListenServer(true);
+		}
 	}
 
 	OnGSCreateSessionComplete.Broadcast(bWasSuccessful);
@@ -230,17 +288,9 @@ void UGS_GameInstance::HandleSessionUserInviteAccepted(const bool bWasSuccessful
 		OnGSJoinSessionComplete.Broadcast(false);
 		return;
 	}
-
+	
 	PendingInviteResult = MakeShared<FOnlineSessionSearchResult>(InviteResult);
-
-	JoinSessionCompleteDelegateHandle = SessionInterface->AddOnJoinSessionCompleteDelegate_Handle(
-		FOnJoinSessionCompleteDelegate::CreateUObject(this, &UGS_GameInstance::HandleJoinSessionComplete));
-
-	if (!SessionInterface->JoinSession(0, NAME_GameSession, InviteResult))
-	{
-		SessionInterface->ClearOnJoinSessionCompleteDelegate_Handle(JoinSessionCompleteDelegateHandle);
-		OnGSJoinSessionComplete.Broadcast(false);
-	}
+	JoinPendingSession();
 }
 
 void UGS_GameInstance::AcceptPendingInvite()
@@ -250,15 +300,8 @@ void UGS_GameInstance::AcceptPendingInvite()
 		OnGSJoinSessionComplete.Broadcast(false);
 		return;
 	}
-
-	JoinSessionCompleteDelegateHandle = SessionInterface->AddOnJoinSessionCompleteDelegate_Handle(
-		FOnJoinSessionCompleteDelegate::CreateUObject(this, &UGS_GameInstance::HandleJoinSessionComplete));
-
-	if (!SessionInterface->JoinSession(0, NAME_GameSession, *PendingInviteResult))
-	{
-		SessionInterface->ClearOnJoinSessionCompleteDelegate_Handle(JoinSessionCompleteDelegateHandle);
-		OnGSJoinSessionComplete.Broadcast(false);
-	}
+	
+	JoinPendingSession();
 }
 
 void UGS_GameInstance::HandleJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
@@ -285,6 +328,53 @@ void UGS_GameInstance::HandleJoinSessionComplete(FName SessionName, EOnJoinSessi
 	OnGSJoinSessionComplete.Broadcast(bSuccess);
 }
 
+#if WITH_EDITOR
+int32 UGS_GameInstance::GetPIEInstanceIndexFromCommandLine()
+{
+	FString Value;
+	if (FParse::Value(FCommandLine::Get(), TEXT("GameUserSettingsINI="),Value))
+	{
+		static const FString Marker = TEXT("PIEGameUserSettings");
+		const int32 MarkerPos = Value.Find(Marker);
+		if (MarkerPos != INDEX_NONE)
+		{
+			FString Digits;
+			for (int32 i = MarkerPos + Marker.Len(); i < Value.Len() && FChar::IsDigit(Value[i]); ++i)
+			{
+				Digits.AppendChar(Value[i]);
+			}
+			if (!Digits.IsEmpty())
+			{
+				return FCString::Atoi(*Digits);
+			}
+		}
+	}
+	return 0;
+}
+
+FGameInstancePIEResult UGS_GameInstance::StartPlayInEditorGameInstance(ULocalPlayer* LocalPlayer,
+	const FGameInstancePIEParameters& Params)
+{
+
+	bWantsListenServerInPIE = (Params.NetMode == PIE_ListenServer);
+
+	if (bWantsListenServerInPIE)
+	{
+		uint16 ServerPort = 0;
+		if (Params.EditorPlaySettings)
+		{
+			Params.EditorPlaySettings->GetServerPort(ServerPort);
+		}
+		PendingPIEListenPort = ServerPort;
+
+		Login();
+	}
+
+
+	return Super::StartPlayInEditorGameInstance(LocalPlayer, Params);
+}
+#endif
+
 void UGS_GameInstance::StartGame(FName GameLevelName)
 {
 	UWorld* World = GetWorld();
@@ -294,4 +384,39 @@ void UGS_GameInstance::StartGame(FName GameLevelName)
 	}
 
 	World->ServerTravel(GameLevelName.ToString() + TEXT("?listen"), true);
+}
+
+void UGS_GameInstance::JoinPendingSession()
+{
+	if (!SessionInterface.IsValid() || !PendingInviteResult.IsValid())
+	{
+		OnGSJoinSessionComplete.Broadcast(false);
+		return;
+	}
+	
+	if (SessionInterface->GetNamedSession(NAME_GameSession) != nullptr)
+	{
+		SessionInterface->DestroySession(NAME_GameSession,FOnDestroySessionCompleteDelegate::CreateUObject(this, &UGS_GameInstance::HandleDestroySessionForJoin));
+	}
+	else
+	{
+		DoJoinSession();
+	}
+}
+
+void UGS_GameInstance::DoJoinSession()
+{
+	JoinSessionCompleteDelegateHandle = SessionInterface->AddOnJoinSessionCompleteDelegate_Handle(
+		FOnJoinSessionCompleteDelegate::CreateUObject(this,&UGS_GameInstance::HandleJoinSessionComplete));
+	
+	if (!SessionInterface->JoinSession(0, NAME_GameSession, *PendingInviteResult))
+	{
+		SessionInterface->ClearOnJoinSessionCompleteDelegate_Handle(JoinSessionCompleteDelegateHandle);
+		OnGSJoinSessionComplete.Broadcast(false);
+	}
+}
+
+void UGS_GameInstance::HandleDestroySessionForJoin(FName SessionName, bool bWasSuccessful)
+{
+	DoJoinSession();
 }

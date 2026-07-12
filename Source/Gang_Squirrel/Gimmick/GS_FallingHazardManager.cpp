@@ -63,14 +63,14 @@ void AGS_FallingHazardManager::SpawnFallingHazard()
 
 	if (FallingHazardClass == nullptr)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("FallingHazardClass is nullptr."));
+		// UE_LOG(LogTemp, Warning, TEXT("FallingHazardClass is nullptr."));
 		return;
 	}
 
 	AActor* TargetActor = FindTargetActor();
 	if (IsValid(TargetActor) == false)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("FallingHazard target actor is invalid."));
+		// UE_LOG(LogTemp, Warning, TEXT("FallingHazard target actor is invalid."));
 		return;
 	}
 
