@@ -5,10 +5,11 @@
 #include "Components/Button.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerState.h"
+#include "Gang_Squirrel/Controller/GSPlayerController.h"
 #include "GS_LeaderboardRowWidget.h"
 #include "Gang_Squirrel/Player/GS_PlayerState.h"
-#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
+
 
 
 void UGS_GameEndWidget::NativeConstruct()
@@ -28,6 +29,8 @@ void UGS_GameEndWidget::NativeConstruct()
 
 void UGS_GameEndWidget::SetGameEndResult()
 {
+	UpdateRestartButtonVisibility();
+
 	if (IsValid(TXT_Title))
 	{
 		TXT_Title->SetText(
@@ -197,13 +200,13 @@ void UGS_GameEndWidget::CreateLeaderboardRows(const TArray<FGSLeaderboardEntry>&
 
 	if (LeaderboardRowWidgetClass == nullptr)
 	{
-		UE_LOG(
+		/*UE_LOG(
 			LogTemp,
 			Error,
 			TEXT(
 				"[Leaderboard] LeaderboardRowWidgetClass is nullptr."
 			)
-		);
+		);*/
 
 		return;
 	}
@@ -227,20 +230,39 @@ void UGS_GameEndWidget::CreateLeaderboardRows(const TArray<FGSLeaderboardEntry>&
 	}
 }
 
-void UGS_GameEndWidget::OnRestartGameClicked()
+void UGS_GameEndWidget::UpdateRestartButtonVisibility()
 {
-	UWorld* World = GetWorld();
-	if (IsValid(World) == false)
+	if (IsValid(BTN_RestartGame) == false)
 	{
 		return;
 	}
 
-	const FName CurrentLevelName = FName(*UGameplayStatics::GetCurrentLevelName(World));
+	APlayerController* OwningPlayer = GetOwningPlayer();
+	AGS_PlayerState* MyPlayerState =
+		OwningPlayer ? OwningPlayer->GetPlayerState<AGS_PlayerState>() : nullptr;
 
-	UGameplayStatics::OpenLevel(
-		World,
-		CurrentLevelName
+	const bool bCanRestart = MyPlayerState && MyPlayerState->bIsHost;
+
+	BTN_RestartGame->SetVisibility(
+		bCanRestart ? ESlateVisibility::Visible : ESlateVisibility::Collapsed
 	);
+}
+
+void UGS_GameEndWidget::OnRestartGameClicked()
+{
+	APlayerController* OwningPlayer = GetOwningPlayer();
+	if (OwningPlayer == nullptr)
+	{
+		return;
+	}
+
+	AGSPlayerController* GSPlayerController = Cast<AGSPlayerController>(OwningPlayer);
+	if (GSPlayerController == nullptr)
+	{
+		return;
+	}
+
+	GSPlayerController->RequestRestartGame();
 }
 
 void UGS_GameEndWidget::OnQuitGameClicked()

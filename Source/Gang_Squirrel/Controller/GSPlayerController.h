@@ -17,9 +17,15 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientShowGameEndUI();
 
+	UFUNCTION(BlueprintCallable, Category = "Game")
+	void RequestRestartGame();
+
 private:
 	UFUNCTION(Server, Reliable)
 	void ServerSetNickname(const FString& Nickname);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRequestRestartGame();
 
 	FTimerHandle MatchEndCheckTimerHandle;
 
@@ -37,8 +43,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UGS_GameEndWidget> GameEndWidgetClass;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Game")
+	FName RestartLevelName = TEXT("/Game/ProjectFile/Level/L_Main_Stage");//Need Lobby Level
+
 	UPROPERTY()
 	TObjectPtr<UGS_GameEndWidget> GameEndWidgetInstance;
+
+	UPROPERTY()
+	TObjectPtr<UUserWidget> HUDWidgetInstance;
 
 #pragma region Debugging
 public:

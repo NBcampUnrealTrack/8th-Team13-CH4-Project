@@ -46,10 +46,10 @@ void AGSSpawnManager::BeginPlay()
 		if (!IsValid(Actor)) continue;
 		SpawnPoints.Add(Cast<AGSSpawnPoint>(Actor));
 		
-		UE_LOG(LogTemp, Warning, TEXT("Spawned Actor: %s"), *Actor->GetName());
+		// UE_LOG(LogTemp, Warning, TEXT("Spawned Actor: %s"), *Actor->GetName());
 	}
 	
-	UE_LOG(LogTemp, Warning, TEXT("SPawnPoint Count : %d"), SpawnPoints.Num());
+	// UE_LOG(LogTemp, Warning, TEXT("SPawnPoint Count : %d"), SpawnPoints.Num());
 	if (HasAuthority())
 	{
 		Spawn();
@@ -109,7 +109,7 @@ void AGSSpawnManager::Spawn()
 				AGSFoodBase* Food = PoolSubsystem->GetFood();
 				if (!IsValid(Food))
 				{
-					UE_LOG(LogTemp, Warning, TEXT("Food Null"));
+					// UE_LOG(LogTemp, Warning, TEXT("Food Null"));
 					return;
 				}
 			
@@ -118,7 +118,7 @@ void AGSSpawnManager::Spawn()
 				Food->SetActorLocation(CurrentLocation);
 				Food->Activate();
 			
-				UE_LOG(LogTemp, Warning, TEXT("Spawn Actor"));
+				// UE_LOG(LogTemp, Warning, TEXT("Spawn Actor"));
 			
 				SpawnPoint->CurrentFoodCount+=1;
 			}
