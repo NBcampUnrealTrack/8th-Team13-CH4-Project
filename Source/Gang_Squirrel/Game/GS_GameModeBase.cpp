@@ -54,7 +54,7 @@ void AGS_GameModeBase::StartMatch()
 			}
 		}
 	
-	UE_LOG(LogTemp, Log, TEXT("[Server] Match Started. %.1f sec"), MatchTimeLimit)
+	//UE_LOG(LogTemp, Log, TEXT("[Server] Match Started. %.1f sec"), MatchTimeLimit)
 }
 
 void AGS_GameModeBase::EndMatch()
@@ -77,7 +77,7 @@ void AGS_GameModeBase::EndMatch()
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[Server] Match Ended."))
+	//UE_LOG(LogTemp, Log, TEXT("[Server] Match Ended."))
 }
 
 void AGS_GameModeBase::NotifyPlayerReady()
@@ -86,7 +86,7 @@ void AGS_GameModeBase::NotifyPlayerReady()
 
 	MultiCastRPCPrintStatus(ReadyPlayerCount, GetNumPlayers());
 
-	UE_LOG(LogTemp, Warning, TEXT("[Server] Player ready : %d / %d"), ReadyPlayerCount, GetNumPlayers());
+	// UE_LOG(LogTemp, Warning, TEXT("[Server] Player ready : %d / %d"), ReadyPlayerCount, GetNumPlayers());
 
 
 	//Match started when all players input nickname
@@ -130,7 +130,7 @@ void AGS_GameModeBase::OnMatchTimeExpired()
 
 void AGS_GameModeBase::MultiCastRPCPrintStatus_Implementation(int32 Ready, int32 Total)
 {
-	UE_LOG(LogTemp, Log, TEXT("%d / %d 준비완료!!"), Ready, Total)
+	// (LogTemp, Log, TEXT("%d / %d 준비완료!!"), Ready, Total)
 }
 
 void AGS_GameModeBase::SpawnSpawnManager() const
@@ -180,7 +180,7 @@ void AGS_GameModeBase::GiveSpeedBoostReward(AGS_PlayerState* PS)
 
 	if (!IsValid(GE_MoveSpeedRewardClass))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[Reward] GE_MoveSpeedRewardClass is not assigned in GameMode BP"));
+		// UE_LOG(LogTemp, Warning, TEXT("[Reward] GE_MoveSpeedRewardClass is not assigned in GameMode BP"));
 		return;
 	}
 

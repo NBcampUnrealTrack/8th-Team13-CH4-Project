@@ -67,6 +67,8 @@ private:
 		const TArray<FGSLeaderboardEntry>& LeaderboardEntries
 	);
 
+	void UpdateRestartButtonVisibility();
+
 	UFUNCTION()
 	void OnRestartGameClicked();
 

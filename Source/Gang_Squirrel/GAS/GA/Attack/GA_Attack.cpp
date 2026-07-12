@@ -31,7 +31,7 @@ void UGA_Attack::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 	// Server
 	if (ActorInfo->IsNetAuthority())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[GA_Attack][Server] ActivateAbility - Delegate Binding"));
+		// UE_LOG(LogTemp, Warning, TEXT("[GA_Attack][Server] ActivateAbility - Delegate Binding"));
 		GetAbilitySystemComponentFromActorInfo()->AbilityTargetDataSetDelegate(Handle,ActivationInfo.GetActivationPredictionKey()).AddUObject(this, &UGA_Attack::OnTargetDataReceived);
 	}
 	
@@ -90,7 +90,7 @@ void UGA_Attack::OnAttackTraceHit(AActor* HitActor)
 // Server Outgoing to GE
 void UGA_Attack::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& TargetData, FGameplayTag ActivationTag)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[GA_Attack][Server] OnTargetDataReceived"));
+	// UE_LOG(LogTemp, Warning, TEXT("[GA_Attack][Server] OnTargetDataReceived"));
 	GetAbilitySystemComponentFromActorInfo()->ConsumeClientReplicatedTargetData(GetCurrentAbilitySpecHandle(),GetCurrentActivationInfo().GetActivationPredictionKey());
 	
 	if (!GE_Damage)

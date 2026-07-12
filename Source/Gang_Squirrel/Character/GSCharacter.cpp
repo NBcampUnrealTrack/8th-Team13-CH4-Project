@@ -216,7 +216,7 @@ void AGSCharacter::IALook(const FInputActionValue& InValue)
 
 void AGSCharacter::IAInteract(const FInputActionValue& InValue)
 {
-	UE_LOG(LogTemp, Log, TEXT("Interact!"));
+	// UE_LOG(LogTemp, Log, TEXT("Interact!"));
 	
 	if (CurrentCheekSize >= MaxCheekSize) return;
 	
@@ -235,7 +235,7 @@ void AGSCharacter::IAInteract(const FInputActionValue& InValue)
 
 void AGSCharacter::IAStopInteract(const FInputActionValue& InValue)
 {
-	UE_LOG(LogTemp, Log, TEXT("StopInteract!"));
+	// UE_LOG(LogTemp, Log, TEXT("StopInteract!"));
 
 
 	if (!bIsEating) return;
@@ -252,7 +252,7 @@ void AGSCharacter::IAStopInteract(const FInputActionValue& InValue)
 
 void AGSCharacter::Server_SetEating_Implementation(bool bEating)
 {
-	UE_LOG(LogTemp, Log, TEXT("SetEating!"));
+	// UE_LOG(LogTemp, Log, TEXT("SetEating!"));
 
 	bIsEating = bEating;
 
@@ -335,7 +335,7 @@ void AGSCharacter::ResetCheekSize()
 	
 	Multicast_InflateCheeks(0.f);
 	
-	UE_LOG(LogTemp, Error, TEXT("ResetCheekSize!"));
+	//UE_LOG(LogTemp, Error, TEXT("ResetCheekSize!"));
 }
 
 void AGSCharacter::AddMaxCheekSize(float Value)
@@ -347,7 +347,7 @@ void AGSCharacter::AddMaxCheekSize(float Value)
 
 void AGSCharacter::IAAttack(const FInputActionValue& InValue)
 {
-	UE_LOG(LogTemp, Log, TEXT("Attack!"));
+	// UE_LOG(LogTemp, Log, TEXT("Attack!"));
 	
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (PS)
@@ -358,7 +358,7 @@ void AGSCharacter::IAAttack(const FInputActionValue& InValue)
 
 void AGSCharacter::IAStartSprint(const FInputActionValue& InValue)
 {
-	UE_LOG(LogTemp, Log, TEXT("Start Sprint!"));
+	// UE_LOG(LogTemp, Log, TEXT("Start Sprint!"));
 
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (PS)
@@ -370,7 +370,7 @@ void AGSCharacter::IAStartSprint(const FInputActionValue& InValue)
 }
 void AGSCharacter::IAEndSprint(const FInputActionValue& InValue)
 {
-	UE_LOG(LogTemp, Log, TEXT("Complete Sprint!"));
+	// UE_LOG(LogTemp, Log, TEXT("Complete Sprint!"));
 
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (PS)
@@ -384,7 +384,7 @@ void AGSCharacter::IAEndSprint(const FInputActionValue& InValue)
 
 void AGSCharacter::IARolling(const FInputActionValue& InValue)
 {
-	UE_LOG(LogTemp, Log, TEXT("Rolling!"));
+	// UE_LOG(LogTemp, Log, TEXT("Rolling!"));
 
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (PS)
@@ -517,7 +517,7 @@ void AGSCharacter::UpdateMaxWalkSpeedFromAttribute()
 }
 
 void AGSCharacter::StartRolling(const FVector& InRollingDirection)
-{
+{// server
 	if (bIsRolling)
 	{
 		return;
@@ -531,6 +531,11 @@ void AGSCharacter::StartRolling(const FVector& InRollingDirection)
 
 	UpdateMaxWalkSpeedFromAttribute();
 
+	if (IsLocallyControlled() && AM_Roll)
+	{
+		PlayAnimMontage(AM_Roll);
+	}
+
 	GetWorldTimerManager().ClearTimer(RollingTimerHandle);
 	GetWorldTimerManager().SetTimer(
 		RollingTimerHandle,
@@ -542,7 +547,7 @@ void AGSCharacter::StartRolling(const FVector& InRollingDirection)
 
 	MulticastPlayRollMontage();
 
-	UE_LOG(LogTemp, Log, TEXT("Start Rolling"));
+	// UE_LOG(LogTemp, Log, TEXT("Start Rolling"));
 }
 
 void AGSCharacter::StartRollingLocal(const FVector& InRollingDirection)
@@ -708,12 +713,12 @@ void AGSCharacter::Server_NotifyFoodEaten_Implementation(AGSFoodBase* EatenFood)
 void AGSCharacter::Server_NotifyAddScore_Implementation(int32 Score)
 {
 	
-	UE_LOG(LogTemp, Warning, TEXT("Oer"));
+	// UE_LOG(LogTemp, Warning, TEXT("Oer"));
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (PS)
 	{
 		PS->AddScore(Score);
-		UE_LOG(LogTemp, Warning, TEXT("UpdateScore"));
+		// UE_LOG(LogTemp, Warning, TEXT("UpdateScore"));
 	}
 }
 

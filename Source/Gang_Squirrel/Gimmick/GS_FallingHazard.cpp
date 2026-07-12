@@ -594,7 +594,7 @@ void AGS_FallingHazard::OnHitTarget(AActor* HitActor)
 
 	if (GE_Damage == nullptr)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[FallingHazard] GE_Damage is nullptr."));
+		//UE_LOG(LogTemp, Warning, TEXT("[FallingHazard] GE_Damage is nullptr."));
 		return;
 	}
 
@@ -603,7 +603,7 @@ void AGS_FallingHazard::OnHitTarget(AActor* HitActor)
 
 	if (TargetASC == nullptr)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[FallingHazard] TargetASC is nullptr. Target:%s"), *GetNameSafe(HitActor));
+		//UE_LOG(LogTemp, Warning, TEXT("[FallingHazard] TargetASC is nullptr. Target:%s"), *GetNameSafe(HitActor));
 		return;
 	}
 
@@ -615,20 +615,20 @@ void AGS_FallingHazard::OnHitTarget(AActor* HitActor)
 
 	if (SpecHandle.IsValid() == false)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[FallingHazard] SpecHandle is invalid."));
+		//UE_LOG(LogTemp, Warning, TEXT("[FallingHazard] SpecHandle is invalid."));
 		return;
 	}
 
 	FActiveGameplayEffectHandle AppliedHandle =
 		TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 
-	UE_LOG(
+	/*UE_LOG(
 		LogTemp,
 		Warning,
 		TEXT("[FallingHazard] Damage Applied. Target:%s, Success:%s"),
 		*GetNameSafe(HitActor),
 		AppliedHandle.WasSuccessfullyApplied() ? TEXT("true") : TEXT("false")
-	);
+	);*/
 }
 
 void AGS_FallingHazard::UpdateWarningDecalVisual(float DeltaTime)
@@ -771,14 +771,14 @@ void AGS_FallingHazard::ChooseRandomHazardData()
 
 	if (FallingHazardDataAsset == nullptr)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("FallingHazardDataAsset is nullptr."));
+		// UE_LOG(LogTemp, Warning, TEXT("FallingHazardDataAsset is nullptr."));
 		return;
 	}
 
 	const int32 DataCount = FallingHazardDataAsset->HazardVisualDatas.Num();
 	if (DataCount <= 0)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("HazardVisualDatas is empty."));
+		// UE_LOG(LogTemp, Warning, TEXT("HazardVisualDatas is empty."));
 		return;
 	}
 
