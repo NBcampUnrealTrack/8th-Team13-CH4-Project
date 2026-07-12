@@ -25,7 +25,7 @@ void UGSPoolSubsystem::InitializePool(TArray<FFoodSpawnInfo> DataAssets)
 			
 			Food->Deactivate();
 			FoodPool.Add(Food);
-			UE_LOG(LogTemp, Warning, TEXT("Spawn Food!!Actor"));
+			// UE_LOG(LogTemp, Warning, TEXT("Spawn Food!!Actor"));
 		}
 			
 	}

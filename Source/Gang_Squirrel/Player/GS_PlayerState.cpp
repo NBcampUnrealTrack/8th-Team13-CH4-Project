@@ -40,8 +40,8 @@ void AGS_PlayerState::BeginPlay()
 {
 	Super::BeginPlay();
 
-	UE_LOG(LogTemp, Warning, TEXT("[PlayerState] BeginPlay. HasAuthority: %s"),
-		HasAuthority() ? TEXT("true") : TEXT("false"));
+	/*UE_LOG(LogTemp, Warning, TEXT("[PlayerState] BeginPlay. HasAuthority: %s"),
+		HasAuthority() ? TEXT("true") : TEXT("false"));*/
 
 	StartStaminaRegen();
 }
@@ -71,7 +71,7 @@ void AGS_PlayerState::AddScore(int32 Value)
 
 void AGS_PlayerState::OnRep_KillCount()
 {
-	UE_LOG(LogTemp, Warning, TEXT("KillCount: %d"), KillCount);
+	// UE_LOG(LogTemp, Warning, TEXT("KillCount: %d"), KillCount);
 }
 
 void AGS_PlayerState::AddKillCount()
@@ -82,7 +82,7 @@ void AGS_PlayerState::AddKillCount()
 
 void AGS_PlayerState::OnRep_PlayerScore() 
 {
-	UE_LOG(LogTemp, Warning, TEXT("PlayerScore: %d"), PlayerScore);
+	// UE_LOG(LogTemp, Warning, TEXT("PlayerScore: %d"), PlayerScore);
 	
 	OnPlayerScoreChanged.Broadcast(PlayerScore);
 }
@@ -137,7 +137,7 @@ void AGS_PlayerState::ApplyStaminaRegen()
 
 	if (!GE_StaminaRegen)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[StaminaRegen] GE_StaminaRegen is NULL"));
+		// UE_LOG(LogTemp, Error, TEXT("[StaminaRegen] GE_StaminaRegen is NULL"));
 		return;
 	}
 

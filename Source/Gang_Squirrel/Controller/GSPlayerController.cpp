@@ -14,12 +14,22 @@ void AGSPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	//UE_LOG(LogTemp, Warning, TEXT("[GSPlayerController] BeginPlay - IsLocal: %d"), IsLocalController());
+	UE_LOG(LogTemp, Warning, TEXT("[GSPlayerController] BeginPlay - IsLocal: %d"), IsLocalController());
 
 	if (IsLocalController() == false)
 	{
 		return;
 	}
+
+	bGameEndUIShown = false;
+
+	if (IsValid(GameEndWidgetInstance))
+	{
+		GameEndWidgetInstance->RemoveFromParent();
+		GameEndWidgetInstance = nullptr;
+	}
+
+	GetWorldTimerManager().ClearTimer(MatchEndCheckTimerHandle);
 
 	GetWorldTimerManager().SetTimer(
 		MatchEndCheckTimerHandle,
@@ -35,6 +45,12 @@ void AGSPlayerController::BeginPlay()
 
 	FInputModeGameOnly IMGameOnly;
 	SetInputMode(IMGameOnly);
+
+	if (IsValid(HUDWidgetInstance))
+	{
+		HUDWidgetInstance->RemoveFromParent();
+		HUDWidgetInstance = nullptr;
+	}
 
 	if (HUDWidgetClass)
 	{
@@ -59,9 +75,31 @@ void AGSPlayerController::BeginPlay()
 	ServerSetNickname(DisplayName);
 }
 
+void AGSPlayerController::RequestRestartGame()
+{
+	ServerRequestRestartGame();
+}
+
+void AGSPlayerController::ServerRequestRestartGame_Implementation()
+{
+	AGS_PlayerState* GSPS = GetPlayerState<AGS_PlayerState>();
+	if (GSPS == nullptr || GSPS->bIsHost == false)
+	{
+		return;
+	}
+
+	UGS_GameInstance* GSInst = GetGameInstance<UGS_GameInstance>();
+	if (GSInst == nullptr)
+	{
+		return;
+	}
+
+	GSInst->StartGame(RestartLevelName);
+}
+
 void AGSPlayerController::ServerSetNickname_Implementation(const FString& Nickname)
 {
-	//UE_LOG(LogTemp, Warning, TEXT("[ServerSetNickname] 호출됨. Nickname: '%s'"), *Nickname);
+	// UE_LOG(LogTemp, Warning, TEXT("[ServerSetNickname] 호출됨. Nickname: '%s'"), *Nickname);
 
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (IsValid(PS) == false)
@@ -120,7 +158,7 @@ void AGSPlayerController::ShowGameEndUILocal()
 
 	if (GameEndWidgetClass == nullptr)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GameEndWidgetClass is nullptr."));
+		// UE_LOG(LogTemp, Warning, TEXT("GameEndWidgetClass is nullptr."));
 		return;
 	}
 
@@ -162,13 +200,13 @@ void AGSPlayerController::ServerDebugGiveReward_Implementation(int32 RewardType)
 
 	if (RewardType < 0 || RewardType > 2)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[Debug] Invalid RewardType: %d (0=Food, 1=Capacity, 2=SpeedBoost)"), RewardType);
+		// UE_LOG(LogTemp, Warning, TEXT("[Debug] Invalid RewardType: %d (0=Food, 1=Capacity, 2=SpeedBoost)"), RewardType);
 		return;
 	}
 
 	GM->GiveSpecificReward(PS, static_cast<ERewardType>(RewardType));
 
-	UE_LOG(LogTemp, Log, TEXT("[Debug] GiveSpecificReward called: %d"), RewardType);
+//	UE_LOG(LogTemp, Log, TEXT("[Debug] GiveSpecificReward called: %d"), RewardType);
 }
 
 void AGSPlayerController::CheckMatchEndByTime()

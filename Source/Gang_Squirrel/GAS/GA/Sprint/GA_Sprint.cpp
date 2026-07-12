@@ -21,11 +21,11 @@ void UGA_Sprint::ActivateAbility(
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	UE_LOG(LogTemp, Warning, TEXT("[GA_Sprint] ActivateAbility called"));
+	// UE_LOG(LogTemp, Warning, TEXT("[GA_Sprint] ActivateAbility called"));
 
 	if (GetCurrentStamina() < MinStaminaToSprint)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[GA_Sprint] Not enough stamina."));
+		// UE_LOG(LogTemp, Warning, TEXT("[GA_Sprint] Not enough stamina."));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
@@ -87,13 +87,18 @@ void UGA_Sprint::EndAbility(
 		Character->StopSprintFromAbility();
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[GA_Sprint] EndAbility called"));
+	// UE_LOG(LogTemp, Warning, TEXT("[GA_Sprint] EndAbility called"));
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
 void UGA_Sprint::ApplySprintCost()
 {
+	if (!CurrentActorInfo || !CurrentActorInfo->IsNetAuthority())
+	{
+		return;
+	}
+
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 	if (!ASC)
 	{
@@ -103,7 +108,7 @@ void UGA_Sprint::ApplySprintCost()
 
 	if (!GE_SprintStaminaCost)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[GA_Sprint] GE_SprintStaminaCost is NULL"));
+		
 		K2_EndAbility();
 		return;
 	}
@@ -112,7 +117,7 @@ void UGA_Sprint::ApplySprintCost()
 
 	if (CurrentStamina <= 0.f)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[GA_Sprint] Stamina empty."));
+		// UE_LOG(LogTemp, Warning, TEXT("[GA_Sprint] Stamina empty."));
 		K2_EndAbility();
 		return;
 	}
@@ -126,8 +131,8 @@ void UGA_Sprint::ApplySprintCost()
 	{
 		ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 
-		UE_LOG(LogTemp, Warning, TEXT("[GA_Sprint] Stamina After Cost: %f"),
-			ASC->GetNumericAttribute(UGS_PlayerAttributeSet::GetStaminaAttribute()));
+		/*UE_LOG(LogTemp, Warning, TEXT("[GA_Sprint] Stamina After Cost: %f"),
+			ASC->GetNumericAttribute(UGS_PlayerAttributeSet::GetStaminaAttribute()));*/
 	}
 
 	if (GetCurrentStamina() <= 0.f)

@@ -21,11 +21,11 @@ void UGA_Roll::ActivateAbility(
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	UE_LOG(LogTemp, Warning, TEXT("[GA_Roll] ActivateAbility called"));
+	// UE_LOG(LogTemp, Warning, TEXT("[GA_Roll] ActivateAbility called"));
 
 	const float CurrentStamina = GetCurrentStamina();
 
-	UE_LOG(LogTemp, Warning, TEXT("[GA_Roll] CurrentStamina: %f / Cost: %f"), CurrentStamina, RollStaminaCost);
+	// UE_LOG(LogTemp, Warning, TEXT("[GA_Roll] CurrentStamina: %f / Cost: %f"), CurrentStamina, RollStaminaCost);
 
 	if (GetCurrentStamina() < RollStaminaCost)
 	{
@@ -58,8 +58,8 @@ void UGA_Roll::ActivateAbility(
 		{
 			ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 
-			UE_LOG(LogTemp, Warning, TEXT("[GA_Roll] Stamina After Cost: %f"),
-				ASC->GetNumericAttribute(UGS_PlayerAttributeSet::GetStaminaAttribute()));
+			/*UE_LOG(LogTemp, Warning, TEXT("[GA_Roll] Stamina After Cost: %f"),
+				ASC->GetNumericAttribute(UGS_PlayerAttributeSet::GetStaminaAttribute()));*/
 		
 			if (AGSCharacter* Character = Cast<AGSCharacter>(GetAvatarActorFromActorInfo()))
 			{

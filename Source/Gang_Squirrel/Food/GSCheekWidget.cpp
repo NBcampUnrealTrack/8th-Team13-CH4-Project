@@ -26,5 +26,5 @@ void UGSCheekWidget::InitCheekWidget()
 	CurrentPercent = 0.0f;
 	
 	OnProgressChanged(CurrentPercent);
-	UE_LOG(LogTemp, Warning, TEXT("UGSCheekWidget::InitCheekWidget()"));
+	// UE_LOG(LogTemp, Warning, TEXT("UGSCheekWidget::InitCheekWidget()"));
 }

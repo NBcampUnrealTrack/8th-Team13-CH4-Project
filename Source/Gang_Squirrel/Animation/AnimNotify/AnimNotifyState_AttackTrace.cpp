@@ -68,7 +68,7 @@ void UAnimNotifyState_AttackTrace::NotifyTick(USkeletalMeshComponent* MeshComp, 
 	UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OwnerActor);
 	if (!ASC)
 	{
-		UE_LOG(LogGAS, Error, TEXT("[AttackTrace] NotifyTick - ASC is NULL for OwnerActor:%s"), *GetNameSafe(OwnerActor));
+		// UE_LOG(LogGAS, Error, TEXT("[AttackTrace] NotifyTick - ASC is NULL for OwnerActor:%s"), *GetNameSafe(OwnerActor));
 		return;
 	}
 
