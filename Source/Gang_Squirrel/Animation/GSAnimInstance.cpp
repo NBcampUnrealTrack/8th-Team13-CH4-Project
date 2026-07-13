@@ -63,4 +63,5 @@ void UGSAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	const float RightValue = FVector::DotProduct(RightVector, NormalizedVelocity);
 
 	Direction = FMath::RadiansToDegrees(FMath::Atan2(RightValue, ForwardValue));
+
 }

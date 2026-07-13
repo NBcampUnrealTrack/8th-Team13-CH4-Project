@@ -14,6 +14,7 @@ struct FGameplayTag;
 class UGA_Attack;
 class UGA_Roll;
 class UGA_Sprint;
+class UGA_Grab;
 class UCameraComponent;
 class USpringArmComponent;
 class UInputMappingContext;
@@ -24,6 +25,7 @@ class UAnimMontage;
 class UGS_StaminaBarWidget;
 class UGSCheekWidget;
 class UGSFoodWidget;
+class UGameplayEffect;
 
 UCLASS()
 class GANG_SQUIRREL_API AGSCharacter : public ACharacter ,public IAbilitySystemInterface
@@ -55,6 +57,8 @@ private:
 	//InputAction Function
 	void IAMove(const FInputActionValue& InValue);
 
+	void IAStopMove(const FInputActionValue& InValue);
+
 	void IALook(const FInputActionValue& InValue);
 
 	void IAInteract(const FInputActionValue& InValue);
@@ -69,15 +73,10 @@ private:
 
 	void IARolling(const FInputActionValue& InValue);
 
+	void IAStartGrab(const FInputActionValue& InValue);
 
-private:
-	//Sprint Function
-	void SetSprinting(bool bNewSprinting);
+	void IAEndGrab(const FInputActionValue& InValue);
 
-public:
-	void StartSprintFromAbility();
-	void StopSprintFromAbility();
-	void RollFromAbility();
 
 public:
 	UFUNCTION()
@@ -117,6 +116,108 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> Rolling;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> Grab;
+
+#pragma region Fall
+
+protected:
+	virtual void Landed(const FHitResult& Hit) override;
+
+private:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FallDamage", meta = (AllowPrivateAccess = "true"))
+	float FallDamageVelocityThreshold = 900.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FallDamage", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UGameplayEffect> GE_FallDamage;
+
+	float MaxFallSpeedDuringFall = 0.f;
+
+#pragma endregion
+
+#pragma region Grab
+
+private:
+
+	UPROPERTY()
+	FVector LastMoveInputWorldDirection = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab", meta = (AllowPrivateAccess = "true"))
+	float GrabPullStrength = 8.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab", meta = (AllowPrivateAccess = "true"))
+	float MaxGrabResistance = 0.75f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab", meta = (AllowPrivateAccess = "true"))
+	float GrabResistanceSpeedPenalty = 0.5f;
+
+	UPROPERTY()
+	FVector LastGrabberLocation = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab|Push", meta = (AllowPrivateAccess = "true"))
+	float GrabPushDistanceMultiplier = 1.0f;
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SetGrabAnimation(bool bGrab);
+
+	float CurrentGrabResistance = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab|Push", meta = (AllowPrivateAccess = "true"))
+	float GrabPushContactDistance = 18.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab|Push", meta = (AllowPrivateAccess = "true"))
+	float GrabAlignmentStrength = 8.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab|Push", meta = (AllowPrivateAccess = "true"))
+	float MaxGrabCorrectionSpeed = 120.f;
+
+	UFUNCTION(Server, Unreliable)
+	void ServerSetMoveInputDirection(FVector_NetQuantizeNormal InMoveDirection);
+
+protected:
+
+	UPROPERTY(Replicated)
+	uint8 bIsGrabbing : 1 = false;
+
+	UPROPERTY(Replicated)
+	uint8 bIsGrabbed : 1 = false;
+
+	UPROPERTY(Replicated)
+	TObjectPtr<AGSCharacter> GrabbedTarget;
+
+	UPROPERTY(Replicated)
+	TObjectPtr<AGSCharacter> GrabOwner;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Grab")
+	TObjectPtr<UAnimMontage> AM_Grab;
+
+	UFUNCTION(Server, Reliable)
+	void ServerCancelGrabAbility();
+
+	void CancelGrabAbility();
+
+public:
+
+	FVector GetLastMoveInputWorldDirection() const { return LastMoveInputWorldDirection; }
+
+	float GetGrabResistanceAgainst(const FVector& PushDirection) const;
+
+	void UpdateGrabTargetPosition(float DeltaTime);
+
+	bool IsGrabbing() const { return bIsGrabbing; }
+	bool IsGrabbed() const { return bIsGrabbed; }
+
+	void StartGrabTarget(AGSCharacter* TargetCharacter);
+	void StopGrab();
+
+	float GetCurrentGrabResistance() const { return CurrentGrabResistance; }
+
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab|Push", meta = (AllowPrivateAccess = "true"))
+	float MinGrabPushMultiplier = 0.25f;
+
+#pragma endregion
 
 #pragma region Food,Cheek
 	
@@ -175,11 +276,20 @@ private:
 	
 	UPROPERTY()
 	int32 TempScore = 0;
-	
-#pragma endregion
 
 	UFUNCTION()
 	void OnRep_CheekSize();
+	
+#pragma endregion
+
+private:
+	//Sprint Function
+	void SetSprinting(bool bNewSprinting);
+
+public:
+	void StartSprintFromAbility();
+	void StopSprintFromAbility();
+	void RollFromAbility();
 
 public:
 	UFUNCTION(BlueprintPure, Category = "Movement|Sprint")
@@ -298,6 +408,8 @@ protected:
 	TSubclassOf<UGA_PlayerDeath> GA_Death;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameplayAbility")
 	TSubclassOf<UGA_Sprint> GA_Sprint;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameplayAbility")
+	TSubclassOf<UGameplayAbility> GA_Grab;
 	// GA_Death CallBack Func
 private:
 	void OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount);

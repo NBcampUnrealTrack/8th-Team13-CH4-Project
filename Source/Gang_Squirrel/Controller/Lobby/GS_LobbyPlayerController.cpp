@@ -32,35 +32,16 @@ void AGS_LobbyPlayerController::BeginPlay()
 	SetupLobbyCamera();
 	CacheCharacterSlots();
 	
-	FString DisplayName;
-	if (UGS_GameInstance* GSInst = GetGameInstance<UGS_GameInstance>())
-	{
-		DisplayName = GSInst->GetLocalDisplayName();
-	}
-	if (DisplayName.IsEmpty())
-	{
-		DisplayName = FString::Printf(TEXT("Player_%d"),GetLocalPlayer() ? GetLocalPlayer()->GetControllerId() : 0);
-	}
-	ServerSetNickname(DisplayName);
-	
 	GetWorldTimerManager().SetTimer(CharacterDisplayTimerHandle, this, &AGS_LobbyPlayerController::RefreshCharacterDisplay,0.5f,true,0.f);
 	
-	
-	if (GetNetMode() == NM_Client)
-	{
-		return;
-	}
-	
 	UGS_GameInstance* GSInst = GetGameInstance<UGS_GameInstance>();
-	
 	if (!GSInst)
 	{
 		return;
 	}
-	
 	if (GSInst->IsLoggedIn())
 	{
-		GSInst->HostParty(MaxPartyPlayers,NAME_None);
+		OnLoginCompleteForHost(true);
 	}
 	else
 	{
@@ -93,9 +74,21 @@ void AGS_LobbyPlayerController::OnLoginCompleteForHost(bool bWasSuccessful)
 	
 	GSInst->OnGSLoginComplete.RemoveDynamic(this, &AGS_LobbyPlayerController::OnLoginCompleteForHost);
 	
-	if (bWasSuccessful)
+	if (!bWasSuccessful)
 	{
-		GSInst->HostParty(MaxPartyPlayers,NAME_None);;
+		return;
+	}
+	
+	FString DisplayName = GSInst->GetLocalDisplayName();
+	if (DisplayName.IsEmpty())
+	{
+		DisplayName = FString::Printf(TEXT("Player %d"), GetLocalPlayer() ? GetLocalPlayer()->GetControllerId() : 0);
+	}
+	ServerSetNickname(DisplayName);
+	
+	if (GetNetMode() != NM_Client)
+	{
+		GSInst->HostParty(MaxPartyPlayers,NAME_None);
 	}
 }
 
@@ -150,39 +143,64 @@ void AGS_LobbyPlayerController::RefreshCharacterDisplay()
 		return;
 	}
 	
-	int32 SlotIndex = 0;
+	if (HasAuthority())
+	{
+		int32 SlotIndex = 0;
+		for (APlayerState* PS : GS->PlayerArray)
+		{
+			AGS_PlayerState* CandidatePS = Cast<AGS_PlayerState>(PS);
+			if (!CandidatePS || SlotIndex >= SlotTransforms.Num())
+			{
+				continue;
+			}
+		
+			if (!DisplayCharacters.IsValidIndex(SlotIndex) || !IsValid(DisplayCharacters[SlotIndex]))
+			{
+				AGSCharacter* NewCharacter = GetWorld()->SpawnActor<AGSCharacter>(DisplayCharacterClass, SlotTransforms[SlotIndex]);
+				if (!DisplayCharacters.IsValidIndex(SlotIndex))
+				{
+					DisplayCharacters.SetNum(SlotIndex + 1);
+				}
+				DisplayCharacters[SlotIndex] = NewCharacter;
+			}
+			++SlotIndex;
+		}
+	
+		for (int32 i = SlotIndex; i < DisplayCharacters.Num(); ++i)
+		{
+			if (IsValid(DisplayCharacters[i]))
+			{
+				DisplayCharacters[i]->Destroy();
+			}
+			DisplayCharacters[i] = nullptr;
+		}
+	}
+	
+	TArray<AActor*> FoundCharacter;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(),DisplayCharacterClass,FoundCharacter);;
+	
+	int32 NickIndex = 0;
 	for (APlayerState* PS : GS->PlayerArray)
 	{
 		AGS_PlayerState* CandidatePS = Cast<AGS_PlayerState>(PS);
-		if (!CandidatePS || SlotIndex >= SlotTransforms.Num())
+		if (!CandidatePS || NickIndex >= SlotTransforms.Num())
 		{
 			continue;
 		}
 		
-		if (!DisplayCharacters.IsValidIndex(SlotIndex) || !IsValid(DisplayCharacters[SlotIndex]))
+		for (AActor* GSCharacter : FoundCharacter)
 		{
-			AGSCharacter* NewCharacter = GetWorld()->SpawnActor<AGSCharacter>(DisplayCharacterClass, SlotTransforms[SlotIndex]);
-			if (!DisplayCharacters.IsValidIndex(SlotIndex))
+			if (GSCharacter->GetActorLocation().Equals(SlotTransforms[NickIndex].GetLocation(),10.f))
 			{
-				DisplayCharacters.SetNum(SlotIndex + 1);
+				if (AGSCharacter* GSChar = Cast<AGSCharacter>(GSCharacter))
+				{
+					GSChar->UpdateNameTag(CandidatePS->PlayerNickname);
+				}
+				break;
 			}
-			DisplayCharacters[SlotIndex] = NewCharacter;
 		}
 		
-		if (IsValid(DisplayCharacters[SlotIndex]))
-		{
-			DisplayCharacters[SlotIndex]->UpdateNameTag(CandidatePS->PlayerNickname);
-		}
-		
-		++SlotIndex;
+		++NickIndex;
 	}
 	
-	for (int32 i = SlotIndex; i < DisplayCharacters.Num(); ++i)
-	{
-		if (IsValid(DisplayCharacters[i]))
-		{
-			DisplayCharacters[i]->Destroy();
-		}
-		DisplayCharacters[i] = nullptr;
-	}
 }

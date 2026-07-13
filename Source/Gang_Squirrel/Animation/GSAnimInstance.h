@@ -37,4 +37,5 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	uint8 bIsFalling : 1;
+
 };
