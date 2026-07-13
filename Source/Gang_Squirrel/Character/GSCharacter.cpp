@@ -7,6 +7,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
 #include "Gang_Squirrel/Player/GS_PlayerState.h"
@@ -15,6 +16,7 @@
 #include "Gang_Squirrel/GAS/GA/Attack/GA_Attack.h"
 #include "Gang_Squirrel/GAS/GA/Roll/GA_Roll.h"
 #include "Gang_Squirrel/GAS/GA/Sprint/GA_Sprint.h"
+#include "Gang_Squirrel/GAS/GA/Grab/GA_Grab.h"
 #include "Gang_Squirrel/GAS/GA/Death/GA_PlayerDeath.h"
 #include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 #include "Components/WidgetComponent.h"
@@ -86,6 +88,17 @@ void AGSCharacter::Tick(float DeltaTime)
 	if (bIsRolling)
 	{
 		AddMovementInput(RollingDirection, 1.0f);
+	}
+
+	if (HasAuthority() && bIsGrabbing)
+	{
+		UpdateGrabTargetPosition(DeltaTime);
+	}
+
+	if (GetCharacterMovement()->IsFalling())
+	{
+		const float CurrentFallSpeed = FMath::Abs(GetCharacterMovement()->Velocity.Z);
+		MaxFallSpeedDuringFall = FMath::Max(MaxFallSpeedDuringFall, CurrentFallSpeed);
 	}
 
 	UpdateStaminaBarWorldLocation();
@@ -160,6 +173,8 @@ void AGSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	if (IsValid(EIC))
 	{
 		EIC->BindAction(Move, ETriggerEvent::Triggered, this, &ThisClass::IAMove);
+		EIC->BindAction(Move, ETriggerEvent::Completed, this, &ThisClass::IAStopMove);
+		EIC->BindAction(Move, ETriggerEvent::Canceled, this, &ThisClass::IAStopMove);
 		EIC->BindAction(Look, ETriggerEvent::Triggered, this, &ThisClass::IALook);
 		EIC->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
 		EIC->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
@@ -170,6 +185,10 @@ void AGSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EIC->BindAction(Sprint, ETriggerEvent::Started, this, &ThisClass::IAStartSprint);
 		EIC->BindAction(Sprint, ETriggerEvent::Completed, this, &ThisClass::IAEndSprint);
 		EIC->BindAction(Rolling, ETriggerEvent::Started, this, &ThisClass::IARolling);
+		EIC->BindAction(Grab, ETriggerEvent::Started, this, &ThisClass::IAStartGrab);
+		EIC->BindAction(Grab, ETriggerEvent::Completed, this, &ThisClass::IAEndGrab);
+		EIC->BindAction(Grab, ETriggerEvent::Canceled, this, &ThisClass::IAEndGrab
+		);
 	}
 }
 
@@ -179,6 +198,12 @@ void AGSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 
 	DOREPLIFETIME(AGSCharacter, CurrentCheekSize);
 	DOREPLIFETIME(AGSCharacter, MaxCheekSize);
+	DOREPLIFETIME(AGSCharacter, bIsGrabbing);
+	DOREPLIFETIME(AGSCharacter, bIsGrabbed);
+	DOREPLIFETIME(AGSCharacter, GrabbedTarget);
+	DOREPLIFETIME(AGSCharacter, GrabOwner);
+
+	
 }
 
 void AGSCharacter::IAMove(const FInputActionValue& InValue)
@@ -198,6 +223,24 @@ void AGSCharacter::IAMove(const FInputActionValue& InValue)
 
 	AddMovementInput(ForwardDirection, InMovementVector.X);//W S
 	AddMovementInput(RightDirection, InMovementVector.Y);//A D
+
+	FVector MoveInputDirection =
+		ForwardDirection * InMovementVector.X +
+		RightDirection * InMovementVector.Y;
+
+	MoveInputDirection.Z = 0.f;
+
+	if (!MoveInputDirection.IsNearlyZero())
+	{
+		MoveInputDirection.Normalize();
+	}
+
+	LastMoveInputWorldDirection = MoveInputDirection;
+
+	if (!HasAuthority())
+	{
+		ServerSetMoveInputDirection(MoveInputDirection);
+	}
 }
 
 void AGSCharacter::IALook(const FInputActionValue& InValue)
@@ -393,6 +436,45 @@ void AGSCharacter::IARolling(const FInputActionValue& InValue)
 	}
 }
 
+void AGSCharacter::IAStartGrab(const FInputActionValue& InValue)
+{
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (PS == nullptr)
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent();
+	if (ASC == nullptr || GA_Grab == nullptr)
+	{
+		return;
+	}
+
+	ASC->TryActivateAbilityByClass(GA_Grab);
+}
+
+void AGSCharacter::IAEndGrab(const FInputActionValue& InValue)
+{
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
+	if (HasAuthority())
+	{
+		CancelGrabAbility();
+	}
+	else
+	{
+		ServerCancelGrabAbility();
+	}
+}
+
 void AGSCharacter::SetSprinting(bool bNewSprinting)
 {
 	bIsSprinting = bNewSprinting;
@@ -417,6 +499,54 @@ void AGSCharacter::UpdateNameTag(const FString& Newname)
 	if (NameTag)
 	{
 		NameTag->SetNickname(Newname);
+	}
+}
+
+void AGSCharacter::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+
+	if (HasAuthority() == false)
+	{
+		MaxFallSpeedDuringFall = 0.f;
+		return;
+	}
+
+	const float FallSpeed = MaxFallSpeedDuringFall;
+	MaxFallSpeedDuringFall = 0.f;
+
+	if (FallSpeed < FallDamageVelocityThreshold)
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponent();
+	if (ASC == nullptr || GE_FallDamage == nullptr)
+	{
+		return;
+	}
+
+	FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+	Context.AddSourceObject(this);
+
+	FGameplayEffectSpecHandle SpecHandle =
+		ASC->MakeOutgoingSpec(GE_FallDamage, 1.f, Context);
+
+	if (SpecHandle.IsValid())
+	{
+		ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[FallDamage] FallSpeed: %.2f"), FallSpeed);//check for velocity
+}
+
+void AGSCharacter::IAStopMove(const FInputActionValue& InValue)
+{
+	LastMoveInputWorldDirection = FVector::ZeroVector;
+
+	if (!HasAuthority())
+	{
+		ServerSetMoveInputDirection(FVector::ZeroVector);
 	}
 }
 
@@ -492,6 +622,14 @@ float AGSCharacter::GetFinalMoveSpeedMultiplier() const
 	if (bIsRolling)
 	{
 		return RollSpeedMultiplier;
+	}
+
+	if (bIsGrabbing)
+	{
+		const float ResistancePenalty =
+			CurrentGrabResistance * GrabResistanceSpeedPenalty;
+
+		return FMath::Clamp(1.f - ResistancePenalty, 0.35f, 1.f);
 	}
 
 	if (bIsSprinting)
@@ -657,6 +795,10 @@ void AGSCharacter::PossessedBy(AController* NewController)
 		if (!PS->GetAbilitySystemComponent()->FindAbilitySpecFromClass(UGA_Sprint::StaticClass()))
 		{
 			PS->GetAbilitySystemComponent()->GiveAbility(FGameplayAbilitySpec(GA_Sprint, 1));
+		}
+		if (!PS->GetAbilitySystemComponent()->FindAbilitySpecFromClass(UGA_Grab::StaticClass()))
+		{
+			PS->GetAbilitySystemComponent()->GiveAbility(FGameplayAbilitySpec(GA_Grab, 1));
 		}
 		
 		// When State.Dead Tag Was Attached or Detached Call to Func
@@ -906,5 +1048,215 @@ void AGSCharacter::OnMaxStaminaChanged(const FOnAttributeChangeData& Data)
 
 	UpdateStaminaBar(CurrentStamina, CachedMaxStamina);
 	RefreshStaminaBarVisibility(CurrentStamina, CachedMaxStamina);
+}
+
+//Grab
+void AGSCharacter::ServerCancelGrabAbility_Implementation()
+{
+	CancelGrabAbility();
+}
+
+void AGSCharacter::ServerSetMoveInputDirection_Implementation(FVector_NetQuantizeNormal InMoveDirection)
+{
+	LastMoveInputWorldDirection = InMoveDirection;
+}
+
+void AGSCharacter::Multicast_SetGrabAnimation_Implementation(bool bGrab)
+{
+	if (AM_Grab == nullptr)
+	{
+		return;
+	}
+
+	if (bGrab)
+	{
+		PlayAnimMontage(AM_Grab);
+	}
+	else
+	{
+		StopAnimMontage(AM_Grab);
+	}
+}
+
+void AGSCharacter::CancelGrabAbility()
+{
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (PS == nullptr)
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent();
+	if (ASC == nullptr || GA_Grab == nullptr)
+	{
+		return;
+	}
+
+	FGameplayAbilitySpec* GrabSpec = ASC->FindAbilitySpecFromClass(GA_Grab);
+	if (GrabSpec == nullptr)
+	{
+		return;
+	}
+
+	if (GrabSpec->IsActive())
+	{
+		ASC->CancelAbilityHandle(GrabSpec->Handle);
+	}
+}
+
+float AGSCharacter::GetGrabResistanceAgainst(const FVector& PushDirection) const
+{
+	FVector SafePullDirection = PushDirection;
+	SafePullDirection.Z = 0.f;
+
+	if (SafePullDirection.IsNearlyZero())
+	{
+		return 0.f;
+	}
+
+	SafePullDirection.Normalize();
+
+	FVector TargetInputDirection = LastMoveInputWorldDirection;
+	TargetInputDirection.Z = 0.f;
+
+	if (TargetInputDirection.IsNearlyZero())
+	{
+		return 0.f;
+	}
+
+	TargetInputDirection.Normalize();
+
+	const float Dot = FVector::DotProduct(SafePullDirection, TargetInputDirection);
+
+	// Dot = 1  : Same Direction
+	// Dot = 0  : Side
+	// Dot = -1 : Opposite
+	const float OppositeAmount = FMath::Clamp(-Dot, 0.f, 1.f);
+
+	return OppositeAmount;
+}
+
+void AGSCharacter::StartGrabTarget(AGSCharacter* TargetCharacter)
+{
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
+	if (!IsValid(TargetCharacter))
+	{
+		return;
+	}
+
+	bIsGrabbing = true;
+	GrabbedTarget = TargetCharacter;
+
+	LastGrabberLocation = GetActorLocation();
+
+	TargetCharacter->bIsGrabbed = true;
+	TargetCharacter->GrabOwner = this;
+
+	Multicast_SetGrabAnimation(true);
+}
+
+void AGSCharacter::UpdateGrabTargetPosition(float DeltaTime)
+{
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
+	if (!IsValid(GrabbedTarget))
+	{
+		return;
+	}
+
+	if (DeltaTime <= KINDA_SMALL_NUMBER)
+	{
+		return;
+	}
+
+	const FVector CurrentGrabberLocation = GetActorLocation();
+
+	FVector GrabberMoveDelta = CurrentGrabberLocation - LastGrabberLocation;
+	GrabberMoveDelta.Z = 0.f;
+
+	LastGrabberLocation = CurrentGrabberLocation;
+
+	if (GrabberMoveDelta.IsNearlyZero())
+	{
+		CurrentGrabResistance = 0.f;
+		UpdateMaxWalkSpeedFromAttribute();
+		return;
+	}
+
+	FVector PushDirection = GrabberMoveDelta.GetSafeNormal();
+
+	CurrentGrabResistance = GrabbedTarget->GetGrabResistanceAgainst(PushDirection);
+	CurrentGrabResistance = FMath::Clamp(CurrentGrabResistance, 0.f, MaxGrabResistance);
+
+	const float PushMultiplier = FMath::Clamp(
+		1.f - CurrentGrabResistance,
+		MinGrabPushMultiplier,
+		1.f
+	);
+
+
+	const FVector PushVelocity =
+		(GrabberMoveDelta / DeltaTime) *
+		GrabPushDistanceMultiplier *
+		PushMultiplier;
+
+
+	const FVector DesiredTargetLocation =
+		CurrentGrabberLocation + PushDirection * GrabPushContactDistance;
+
+	FVector ToDesiredLocation =
+		DesiredTargetLocation - GrabbedTarget->GetActorLocation();
+
+	ToDesiredLocation.Z = 0.f;
+
+
+	FVector CorrectionVelocity =
+		ToDesiredLocation * GrabAlignmentStrength;
+
+	if (CorrectionVelocity.Size2D() > MaxGrabCorrectionSpeed)
+	{
+		CorrectionVelocity = CorrectionVelocity.GetSafeNormal2D() * MaxGrabCorrectionSpeed;
+	}
+
+	const FVector FinalVelocity = PushVelocity + CorrectionVelocity;
+
+	GrabbedTarget->LaunchCharacter(
+		FinalVelocity,
+		true,   
+		false   
+	);
+
+	UpdateMaxWalkSpeedFromAttribute();
+}
+
+void AGSCharacter::StopGrab()
+{
+	if (HasAuthority() == false)
+	{
+		return;
+	}
+
+	bIsGrabbing = false;
+	LastGrabberLocation = FVector::ZeroVector;
+	CurrentGrabResistance = 0.f;
+
+	Multicast_SetGrabAnimation(false);
+
+	if (IsValid(GrabbedTarget))
+	{
+		GrabbedTarget->bIsGrabbed = false;
+		GrabbedTarget->GrabOwner = nullptr;
+	}
+
+	GrabbedTarget = nullptr;
+
+	UpdateMaxWalkSpeedFromAttribute();
 }
 
