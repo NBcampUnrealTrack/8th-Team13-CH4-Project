@@ -3,6 +3,7 @@
 #include "GS_LobbySlotWidget.h"
 #include "Components/Button.h"
 #include "Components/PanelWidget.h"
+#include "Friend/GS_FriendListWidget.h"
 #include "Gang_Squirrel/Controller/Lobby/GS_LobbyPlayerController.h"
 #include "Gang_Squirrel/Game/GS_GameState.h"
 #include "Gang_Squirrel/Player/GS_PlayerState.h"
@@ -18,12 +19,17 @@ void UGS_LobbyWidget::NativeConstruct()
 		Button_Start->OnClicked.AddDynamic(this,&UGS_LobbyWidget::OnStartButtonClicked);
 	}
 	
-	GetWorld()->GetTimerManager().SetTimer(RefreshTimerHanlde,this, &UGS_LobbyWidget::RefreshLobby, 0.5f, true, 0.f);
+	if (Button_Invite)
+	{
+		Button_Invite->OnClicked.AddDynamic(this,&UGS_LobbyWidget::OnInviteButtonClicked);
+	}
+	
+	GetWorld()->GetTimerManager().SetTimer(RefreshTimerHandle,this, &UGS_LobbyWidget::RefreshLobby, 0.5f, true, 0.f);
 }
 
 void UGS_LobbyWidget::NativeDestruct()
 {
-	GetWorld()->GetTimerManager().ClearTimer(RefreshTimerHanlde);
+	GetWorld()->GetTimerManager().ClearTimer(RefreshTimerHandle);
 	Super::NativeDestruct();
 }
 
@@ -112,4 +118,32 @@ void UGS_LobbyWidget::OnStartButtonClicked()
 	{
 		PC->RequestStartGame();
 	}
+}
+
+void UGS_LobbyWidget::OnInviteButtonClicked()
+{
+	ToggleFriendList();
+}
+
+void UGS_LobbyWidget::ToggleFriendList()
+{
+	if (!FriendListContainer || !FriendWidgetClass)
+	{
+		return;
+	}
+	
+	if (!FriendListWidgetInst)
+	{
+		FriendListWidgetInst = CreateWidget<UGS_FriendListWidget>(this,FriendWidgetClass);
+		if (!FriendListWidgetInst)
+		{
+			return;
+		}
+		FriendListContainer->AddChild(FriendListWidgetInst);
+		FriendListWidgetInst->SetVisibility(ESlateVisibility::Visible);
+		return;
+	}
+	
+	const bool bIsVisible = FriendListWidgetInst->GetVisibility() == ESlateVisibility::Visible;
+	FriendListWidgetInst->SetVisibility(bIsVisible ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 }
