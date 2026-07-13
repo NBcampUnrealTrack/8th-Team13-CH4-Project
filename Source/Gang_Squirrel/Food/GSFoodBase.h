@@ -78,6 +78,10 @@ public:
 	
 	int32 Eaten();
 	
+	void StartWidgetAnime();
+	
+	void StopWidgetAnim();
+	
 protected:
 	
 	FTimerHandle UIDelayTimerHandle;
@@ -86,6 +90,8 @@ private:
 	
 	UPROPERTY()
 	AGSCharacter* CurrentCharacter = nullptr;
+	
+	bool bIsStartEating = true;
 	
 	
 };

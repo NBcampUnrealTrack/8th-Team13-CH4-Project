@@ -6,6 +6,7 @@
 #include "Gang_Squirrel/Food/GSFoodBase.h"
 #include "Gang_Squirrel/DataAsset/GSFoodPrimaryDataAsset.h"
 #include "Gang_Squirrel/SpawnSystem/GSSpawnManager.h"
+#include "Algo/RandomShuffle.h"
 
 void UGSPoolSubsystem::InitializePool(TArray<FFoodSpawnInfo> DataAssets)
 {
@@ -29,6 +30,7 @@ void UGSPoolSubsystem::InitializePool(TArray<FFoodSpawnInfo> DataAssets)
 		}
 			
 	}
+	Algo::RandomShuffle(FoodPool);
 }
 
 AGSFoodBase* UGSPoolSubsystem::GetFood() const
