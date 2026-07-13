@@ -8,6 +8,7 @@ class UGS_FriendListWidget;
 class UButton;
 class UGS_LobbySlotWidget;
 class UPanelWidget;
+class UGS_SettingWidget;
 
 UCLASS()
 class GANG_SQUIRREL_API UGS_LobbyWidget : public UUserWidget
@@ -32,11 +33,16 @@ protected:
 	TObjectPtr<UButton> Button_Invite;
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UPanelWidget> FriendListContainer;
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> Button_Settings;
+
 	
 	UPROPERTY(EditDefaultsOnly,Category="UI")
 	TSubclassOf<UGS_LobbySlotWidget> SlotWidgetClass;
 	UPROPERTY(EditDefaultsOnly,Category="UI")
 	TSubclassOf<UGS_FriendListWidget> FriendWidgetClass;
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UGS_SettingWidget> SettingWidgetClass;
 	
 	UPROPERTY(EditDefaultsOnly,Category="UI")
 	int32 MaxLobbySize = 4;
@@ -48,6 +54,8 @@ private:
 	TArray<TObjectPtr<UGS_LobbySlotWidget>> Slots;
 	UPROPERTY()
 	TObjectPtr<UGS_FriendListWidget> FriendListWidgetInst;
+	UPROPERTY()
+	TObjectPtr<UGS_SettingWidget> SettingWidgetInst;
 	
 	FTimerHandle RefreshTimerHandle;
 	
@@ -59,6 +67,8 @@ private:
 	void OnStartButtonClicked();
 	UFUNCTION()
 	void OnInviteButtonClicked();
+	UFUNCTION()
+	void OnSettingsButtonClicked();
 	
 	void ToggleFriendList();
 };

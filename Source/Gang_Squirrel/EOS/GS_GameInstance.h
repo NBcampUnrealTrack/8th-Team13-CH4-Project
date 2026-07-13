@@ -13,6 +13,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGSInviteReceived, FString, Invite
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGSCreateSessionComplete, bool, bWasSuccessful);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGSJoinSessionComplete, bool, bWasSuccessful);
 
+class USoundClass;
+class USoundMix;
+
 USTRUCT(BlueprintType)
 struct FGSFriendInfo
 {
@@ -84,6 +87,36 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FOnGSJoinSessionComplete OnGSJoinSessionComplete;
+
+	//인게임 설정 세팅(Setting 버튼 연동)
+	//감도
+	UPROPERTY(BlueprintReadOnly, Category = "Settings")
+	float MouseSensitivity = 100.f;
+
+	//마스터볼륨
+	UPROPERTY(BlueprintReadOnly, Category = "Settings")
+	float MasterVolume = 100.f;
+
+	//화면 밝기
+	UPROPERTY(BlueprintReadOnly, Category = "Settings")
+	float ScreenBrightness = 100.f;
+
+	UFUNCTION(BlueprintCallable, Category = "Settings")
+	void SetMouseSensitivity(float NewValue);
+
+	UFUNCTION(BlueprintCallable, Category = "Settings")
+	void SetMasterVolume(float NewValue);
+
+	UFUNCTION(BlueprintCallable, Category = "Settings")
+	void SetScreenBrightness(float NewValue);
+
+	void ApplyBrightnessToWorld();
+
+	UPROPERTY(EditDefaultsOnly, Category = "Settings")
+	TObjectPtr<class USoundMix> MasterSoundMix;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Settings")
+	TObjectPtr<USoundClass> MasterSoundClass;
 	
 protected:
 #if WITH_EDITOR

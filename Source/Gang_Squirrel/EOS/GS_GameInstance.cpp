@@ -5,6 +5,9 @@
 #include "OnlineSessionSettings.h"
 #include "Interfaces/OnlinePresenceInterface.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/PostProcessVolume.h"
+#include "Sound/SoundClass.h"
+#include "Sound/SoundMix.h"
 
 void UGS_GameInstance::Init()
 {
@@ -30,6 +33,10 @@ void UGS_GameInstance::Init()
 		AutoLoginForPIETest();
 #endif
 	
+	if (MasterSoundMix)
+	{
+		UGameplayStatics::PushSoundMixModifier(this, MasterSoundMix);
+	}
 }
 
 void UGS_GameInstance::Shutdown()
@@ -350,6 +357,47 @@ int32 UGS_GameInstance::GetPIEInstanceIndexFromCommandLine()
 		}
 	}
 	return 0;
+}
+
+void UGS_GameInstance::SetMouseSensitivity(float NewValue)
+{
+	MouseSensitivity = FMath::Clamp(NewValue, 0.f, 100.f);
+}
+
+void UGS_GameInstance::SetMasterVolume(float NewValue)
+{
+	MasterVolume = FMath::Clamp(NewValue, 0.f, 100.f);
+
+	if (MasterSoundMix && MasterSoundClass)
+	{
+		UGameplayStatics::SetSoundMixClassOverride(this, MasterSoundMix, MasterSoundClass, MasterVolume / 100.f, 1.0f, 0.f, true);
+	}
+}
+
+void UGS_GameInstance::SetScreenBrightness(float NewValue)
+{
+	ScreenBrightness = FMath::Clamp(NewValue, 0.f, 100.f);
+	ApplyBrightnessToWorld();
+}
+
+void UGS_GameInstance::ApplyBrightnessToWorld()
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	TArray<AActor*> FoundVolumes;
+	UGameplayStatics::GetAllActorsOfClass(World, APostProcessVolume::StaticClass(), FoundVolumes);
+
+	const float MappedBias = (ScreenBrightness - 100.f) / 50.f;
+
+	for (AActor* Actor : FoundVolumes)
+	{
+		if (APostProcessVolume* PPVolume = Cast<APostProcessVolume>(Actor))
+		{
+			PPVolume->Settings.bOverride_AutoExposureBias = true;
+			PPVolume->Settings.AutoExposureBias = MappedBias;
+		}
+	}
 }
 
 FGameInstancePIEResult UGS_GameInstance::StartPlayInEditorGameInstance(ULocalPlayer* LocalPlayer,
