@@ -1,19 +1,27 @@
 #include "GS_FriendListWidget.h"
 
 #include "GS_FriendEntryWidget.h"
+#include "Components/Button.h"
+#include "Components/HorizontalBox.h"
 #include "Components/PanelWidget.h"
+#include "Components/ScrollBox.h"
+#include "Components/ScrollBoxSlot.h"
 #include "Gang_Squirrel/EOS/GS_GameInstance.h"
 
 void UGS_FriendListWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	
+	if (Button_Exit)
+	{
+		Button_Exit->OnClicked.AddDynamic(this,&UGS_FriendListWidget::OnExitButtonClicked);
+	}
+	
 	if (UGS_GameInstance* GSInst = GetGameInstance<UGS_GameInstance>())
 	{
 		GSInst->OnGSFriendsListComplete.AddDynamic(this,&UGS_FriendListWidget::OnFriendsListComplete);
 		GSInst->RequestFriendsList();
 	}
-		
 }
 
 void UGS_FriendListWidget::NativeDestruct()
@@ -58,8 +66,19 @@ void UGS_FriendListWidget::RefreshEntries()
 		if (Entry)
 		{
 			Entry->InitEntry(Info);
-			EntryContainer->AddChild(Entry);
+			
+			if (UScrollBoxSlot* EntrySlot = Cast<UScrollBoxSlot>(EntryContainer->AddChild(Entry)))
+			{
+				EntrySlot->SetPadding(FMargin(0.f,10.f,0.f,0.f));
+				// UE_LOG(LogTemp,Log,TEXT("None"));
+			}
+			
 		}
 	}
 	
+}
+
+void UGS_FriendListWidget::OnExitButtonClicked()
+{
+	SetVisibility(ESlateVisibility::Collapsed);
 }

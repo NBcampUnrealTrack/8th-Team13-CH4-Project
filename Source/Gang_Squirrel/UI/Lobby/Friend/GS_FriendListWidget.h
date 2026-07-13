@@ -5,6 +5,7 @@
 #include "GS_FriendListWidget.generated.h"
 
 
+class UButton;
 class UGS_FriendEntryWidget;
 class UPanelWidget;
 
@@ -20,6 +21,8 @@ public:
 protected:
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UPanelWidget> EntryContainer;
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UButton> Button_Exit;
 	
 	UPROPERTY(EditDefaultsOnly,Category="UI")
 	TSubclassOf<UGS_FriendEntryWidget> EntryWidgetClass;
@@ -27,6 +30,8 @@ protected:
 private:
 	UFUNCTION()
 	void OnFriendsListComplete(bool bWasSuccessful);
+	UFUNCTION()
+	void OnExitButtonClicked();
 	
 	void RefreshEntries();
 };
