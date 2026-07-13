@@ -23,6 +23,7 @@ class UWidgetComponent;
 class UAnimMontage;
 class UGS_StaminaBarWidget;
 class UGSCheekWidget;
+class UGSFoodWidget;
 
 UCLASS()
 class GANG_SQUIRREL_API AGSCharacter : public ACharacter ,public IAbilitySystemInterface
