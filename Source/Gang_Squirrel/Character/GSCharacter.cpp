@@ -26,6 +26,7 @@
 #include "Gang_Squirrel/Gang_Squirrel.h"
 #include "Gang_Squirrel/Food/GSCheekWidget.h"
 #include "Net/UnrealNetwork.h"
+#include "Gang_Squirrel/Food/Score/GSSlideWidget.h"
 
 AGSCharacter::AGSCharacter()
 {
@@ -847,6 +848,13 @@ void AGSCharacter::Server_NotifyAddScore_Implementation(int32 Score)
 	if (PS)
 	{
 		PS->AddScore(Score);
+		
+		UGSSlideWidget* CurrentSlideWidget = CreateWidget<UGSSlideWidget>(GetWorld(),SlideWidgetClass);
+		
+		CurrentSlideWidget->AddToViewport();
+		CurrentSlideWidget->UpdateSlideWidget(Score);
+		
+		
 		// UE_LOG(LogTemp, Warning, TEXT("UpdateScore"));
 	}
 }
@@ -1422,3 +1430,16 @@ void AGSCharacter::StopGrab()
 
 	UpdateMaxWalkSpeedFromAttribute();
 }
+
+void AGSCharacter::UpdateSlideWidget(int32 Value)
+{
+	UGSSlideWidget* CurrentSlideRewardWidget = CreateWidget<UGSSlideWidget>(GetWorld(), SlideWidgetRewardClass);
+	
+	if (CurrentSlideRewardWidget)
+	{
+		CurrentSlideRewardWidget->AddToViewport();
+		
+		CurrentSlideRewardWidget->UpdateText(Value);
+	}
+}
+

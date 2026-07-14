@@ -9,6 +9,7 @@
 #include "GameplayEffectTypes.h"
 #include "GSCharacter.generated.h"
 
+class UGSSlideWidget;
 class UGA_PlayerDeath;
 struct FGameplayTag;
 class UGA_Attack;
@@ -253,9 +254,17 @@ public:
 	
 	void ResetTempScore();
 	
+	void UpdateSlideWidget(int32 Value);
+	
 	FORCEINLINE int32 GetTempScore() { return TempScore; }
 	
 	bool bIsEating = false;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Score")
+	TSubclassOf<UGSSlideWidget> SlideWidgetClass;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Score")
+	TSubclassOf<UGSSlideWidget> SlideWidgetRewardClass;
 	
 protected:
 	
