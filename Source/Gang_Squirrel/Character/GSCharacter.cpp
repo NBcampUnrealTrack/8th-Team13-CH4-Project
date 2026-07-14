@@ -26,7 +26,9 @@
 #include "Gang_Squirrel/Gang_Squirrel.h"
 #include "Gang_Squirrel/Food/GSCheekWidget.h"
 #include "Net/UnrealNetwork.h"
+#include "Gang_Squirrel/EOS/GS_GameInstance.h"
 #include "Gang_Squirrel/Food/Score/GSSlideWidget.h"
+
 
 AGSCharacter::AGSCharacter()
 {
@@ -253,9 +255,14 @@ void AGSCharacter::IALook(const FInputActionValue& InValue)
 
 	const FVector2D InLookVector = InValue.Get<FVector2D>();
 
-	//Change controller rotation
-	AddControllerYawInput(InLookVector.X);
-	AddControllerPitchInput(InLookVector.Y);
+	float SensitivityMultiplier = 1.f;
+	if (UGS_GameInstance* GSInst = GetGameInstance<UGS_GameInstance>())
+	{
+		SensitivityMultiplier = GSInst->MouseSensitivity / 100.f;   // 50이 기본값(배율 1.0)
+	}
+
+	AddControllerYawInput(InLookVector.X * SensitivityMultiplier);
+	AddControllerPitchInput(InLookVector.Y * SensitivityMultiplier);
 }
 
 void AGSCharacter::IAInteract(const FInputActionValue& InValue)
