@@ -7,6 +7,7 @@
 #include "Gang_Squirrel/Controller/Lobby/GS_LobbyPlayerController.h"
 #include "Gang_Squirrel/Game/GS_GameState.h"
 #include "Gang_Squirrel/Player/GS_PlayerState.h"
+#include "Gang_Squirrel/UI/Lobby/GS_SettingWidget.h"
 
 void UGS_LobbyWidget::NativeConstruct()
 {
@@ -23,7 +24,12 @@ void UGS_LobbyWidget::NativeConstruct()
 	{
 		Button_Invite->OnClicked.AddDynamic(this,&UGS_LobbyWidget::OnInviteButtonClicked);
 	}
-	
+
+	if (Button_Settings)
+	{
+		Button_Settings->OnClicked.AddDynamic(this, &UGS_LobbyWidget::OnSettingsButtonClicked);
+	}
+
 	GetWorld()->GetTimerManager().SetTimer(RefreshTimerHandle,this, &UGS_LobbyWidget::RefreshLobby, 0.5f, true, 0.f);
 }
 
@@ -123,6 +129,21 @@ void UGS_LobbyWidget::OnStartButtonClicked()
 void UGS_LobbyWidget::OnInviteButtonClicked()
 {
 	ToggleFriendList();
+}
+
+void UGS_LobbyWidget::OnSettingsButtonClicked()
+{
+	if (!SettingWidgetClass) return;
+
+	if (!IsValid(SettingWidgetInst))
+	{
+		SettingWidgetInst = CreateWidget<UGS_SettingWidget>(this, SettingWidgetClass);
+	}
+
+	if (IsValid(SettingWidgetInst) && !SettingWidgetInst->IsInViewport())
+	{
+		SettingWidgetInst->AddToViewport(10);
+	}
 }
 
 void UGS_LobbyWidget::ToggleFriendList()
