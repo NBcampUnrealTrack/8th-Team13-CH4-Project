@@ -203,12 +203,6 @@ void UGA_Grab::GrabTick()
 	if (SpecHandle.IsValid())
 	{
 		ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-
-		// GE Again
-		if (GrabberCharacter->GetCurrentGrabResistance() > 0.65f)
-		{
-			ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-		}
 	}
 
 	if (GetCurrentStamina() <= 0.f)
