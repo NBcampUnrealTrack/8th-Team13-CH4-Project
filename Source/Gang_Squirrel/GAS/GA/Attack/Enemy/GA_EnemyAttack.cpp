@@ -63,6 +63,11 @@ void UGA_EnemyAttack::OnAttackTraceHit(AActor* HitActor)
 	ApplyDamageToTarget(HitActor);
 }
 
+void UGA_EnemyAttack::OnComboWindowOpen()
+{
+	UE_LOG(LogTemp,Warning,TEXT("None"));
+}
+
 void UGA_EnemyAttack::ApplyDamageToTarget(AActor* TargetActor)
 {
 	UE_LOG(LogGAS, Warning, TEXT("[GA_EnemyAttack] ApplyDamageToTarget - Target:%s, GE_Damage:%s"), *GetNameSafe(TargetActor), GE_Damage ? *GE_Damage->GetName() : TEXT("NULL"));

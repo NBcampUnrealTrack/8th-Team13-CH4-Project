@@ -19,6 +19,7 @@ protected:
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 	// Attack Interface
 	virtual void OnAttackTraceHit(AActor* HitActor) override;
+	virtual void OnComboWindowOpen() override;
 	
 	
 	//TODO:: Refac to DataAssets
