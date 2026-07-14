@@ -884,6 +884,10 @@ void AGSCharacter::ResetTempScore()
 void AGSCharacter::OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount)
 {
 	SetActorEnableCollision(NewCount <= 0);
+	
+	TempScore = 0;
+	CurrentCheekSize = 0;
+	Multicast_InflateCheeks(0.f);
 }
 
 // For After GA_Death Frozen Death Animation Func

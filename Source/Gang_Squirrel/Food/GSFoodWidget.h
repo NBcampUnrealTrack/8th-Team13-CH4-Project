@@ -7,7 +7,7 @@
 #include "GSFoodWidget.generated.h"
 
 
-class UImage;
+class UProgressBar;
 /**
  * 
  */
@@ -18,14 +18,19 @@ class GANG_SQUIRREL_API UGSFoodWidget : public UUserWidget
 	
 public:
 	
-	UPROPERTY(meta = (BindWidget))
-	UImage* ProgressImage;
-	
 	UFUNCTION(BlueprintCallable)
 	void SetProgress(float Value);
 	
 	UPROPERTY()
 	UMaterialInstanceDynamic* MID;
+	
+	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
+	void UpdateWidget();
+	
+	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
+	void StopWidget();
+	
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	
 protected:
 	

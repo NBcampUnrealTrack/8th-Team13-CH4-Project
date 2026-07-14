@@ -107,6 +107,12 @@ void AGSFoodBase::Tick(float DeltaTime)
 	{
 		CurrentEatenTime += DeltaTime;
 		
+		if (bIsStartEating && CurrentCharacter->bIsEating)
+		{
+			StartWidgetAnime();
+			bIsStartEating = false;
+		}
+		
 		float FinalTime = FoodData->EatTime * 4;
 		
 		float Alpha = FMath::Clamp(CurrentEatenTime / FinalTime, 0.f, 1.f );
@@ -123,6 +129,8 @@ void AGSFoodBase::Tick(float DeltaTime)
 		{
 			bIsFilling = false;
 			SetActorTickEnabled(false);
+			
+			StopWidgetAnim();
 			
 			bIsFilling = false;
 			
@@ -141,10 +149,11 @@ void AGSFoodBase::Tick(float DeltaTime)
 			// UE_LOG(LogTemp, Warning, TEXT("Food Eat Progress Complete!!"));
 		}
 	}
-	/*else
+	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Init GSFoodBase failed %d"), bIsFilling);
-	}*/
+		StopWidgetAnim();
+		bIsStartEating = true;
+	}
 }
 
 void AGSFoodBase::Init(UGSFoodPrimaryDataAsset* InData)
@@ -287,5 +296,37 @@ void AGSFoodBase::SetUIVisible(bool bShow)
 		FoodWidgetComponent->SetVisibility(bShow);
 	}
 	
+}
+
+void AGSFoodBase::StartWidgetAnime()
+{
+	if  (FoodWidgetComponent)
+	{
+		UUserWidget* UserWidget = FoodWidgetComponent->GetUserWidgetObject();
+		if (UserWidget)
+		{
+			UGSFoodWidget* CurrentFoodWidget =  Cast<UGSFoodWidget>(UserWidget);
+			if (CurrentFoodWidget)
+			{
+				CurrentFoodWidget->UpdateWidget();
+			}
+		}
+	}
+}
+
+void AGSFoodBase::StopWidgetAnim()
+{
+	if  (FoodWidgetComponent)
+	{
+		UUserWidget* UserWidget = FoodWidgetComponent->GetUserWidgetObject();
+		if (UserWidget)
+		{
+			UGSFoodWidget* CurrentFoodWidget =  Cast<UGSFoodWidget>(UserWidget);
+			if (CurrentFoodWidget)
+			{
+				CurrentFoodWidget->StopWidget();
+			}
+		}
+	}
 }
 
