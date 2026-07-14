@@ -444,6 +444,11 @@ void AGSCharacter::IAStartGrab(const FInputActionValue& InValue)
 		return;
 	}
 
+	if (bIsGrabbed)
+	{
+		return;
+	}
+
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (PS == nullptr)
 	{

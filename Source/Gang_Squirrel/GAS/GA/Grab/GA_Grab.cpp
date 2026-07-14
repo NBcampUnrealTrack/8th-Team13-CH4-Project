@@ -37,6 +37,18 @@ void UGA_Grab::ActivateAbility(
 		return;
 	}
 
+	if (GrabberCharacter->IsGrabbed())
+	{
+		EndAbility(
+			Handle,
+			ActorInfo,
+			ActivationInfo,
+			true,
+			true
+		);
+		return;
+	}
+
 	if (GetCurrentStamina() < MinStaminaToGrab)
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
