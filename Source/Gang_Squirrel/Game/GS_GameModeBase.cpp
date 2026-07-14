@@ -109,16 +109,23 @@ void AGS_GameModeBase::GiveSpecificReward(AGS_PlayerState* KillerPS, ERewardType
 {
 	if (!HasAuthority() || !IsValid(KillerPS)) return;
 
+	AGSCharacter* Character = Cast<AGSCharacter>(KillerPS->GetPawn());
+	
+	if (!Character) return;
+	
 	switch (RewardType)
 	{
 	case ERewardType::Food:
 		GiveFoodReward(KillerPS);
+		Character->UpdateSlideWidget(0);
 		break;
 	case ERewardType::Capacity:
 		GiveCapacityReward(KillerPS);
+		Character->UpdateSlideWidget(1);
 		break;
 	case ERewardType::SpeedBoost:
 		GiveSpeedBoostReward(KillerPS);
+		Character->UpdateSlideWidget(2);
 		break;
 	}
 }
