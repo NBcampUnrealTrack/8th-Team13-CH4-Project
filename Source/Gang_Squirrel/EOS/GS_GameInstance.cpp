@@ -389,6 +389,7 @@ void UGS_GameInstance::ApplyBrightnessToWorld()
 	UGameplayStatics::GetAllActorsOfClass(World, APostProcessVolume::StaticClass(), FoundVolumes);
 
 	const float MappedBias = (ScreenBrightness - 100.f) / 50.f;
+	//UE_LOG(LogTemp, Warning, TEXT("[Brightness] Found %d volumes, ScreenBrightness=%.1f, MappedBias=%.2f"),FoundVolumes.Num(), ScreenBrightness, MappedBias);
 
 	for (AActor* Actor : FoundVolumes)
 	{
@@ -396,6 +397,8 @@ void UGS_GameInstance::ApplyBrightnessToWorld()
 		{
 			PPVolume->Settings.bOverride_AutoExposureBias = true;
 			PPVolume->Settings.AutoExposureBias = MappedBias;
+
+			//UE_LOG(LogTemp, Warning, TEXT("[Brightness] Applied to %s, BlendWeight=%.2f, Unbound=%s"),*PPVolume->GetName(), PPVolume->BlendWeight, PPVolume->bUnbound ? TEXT("true") : TEXT("false"));
 		}
 	}
 }
