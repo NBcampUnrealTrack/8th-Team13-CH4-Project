@@ -87,6 +87,11 @@ void UGA_Attack::OnAttackTraceHit(AActor* HitActor)
 		GetCurrentAbilitySpecHandle(),GetCurrentActivationInfo().GetActivationPredictionKey(),TargetDataHandle,FGameplayTag::EmptyTag,ASC->ScopedPredictionKey);
 }
 
+void UGA_Attack::OnComboWindowOpen()
+{
+	UE_LOG(LogTemp,Warning,TEXT("None"));
+}
+
 // Server Outgoing to GE
 void UGA_Attack::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& TargetData, FGameplayTag ActivationTag)
 {

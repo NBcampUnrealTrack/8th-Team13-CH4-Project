@@ -21,10 +21,13 @@ protected:
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 	// InterFace PureVirtual
 	virtual void OnAttackTraceHit(AActor* HitActor) override;
+	virtual void OnComboWindowOpen() override;
 	
-	//TODO::Refac to DataAssets
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Animation|Combat")
 	TObjectPtr<UAnimMontage> AM_Attack;
+	
+	
+	
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="GameplayEffect")
 	TSubclassOf<UGameplayEffect> GE_Damage;
 	
