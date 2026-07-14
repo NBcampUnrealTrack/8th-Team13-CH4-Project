@@ -11,5 +11,4 @@ class GANG_SQUIRREL_API UAnimNotify_ComboWindow : public UAnimNotify
 	
 public:
 	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference) override;
-	
 };
