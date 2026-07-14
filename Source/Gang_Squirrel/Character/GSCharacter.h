@@ -413,6 +413,9 @@ protected:
 	// GA_Death CallBack Func
 private:
 	void OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount);
+	// Combo Attack
+	UFUNCTION(Server,Reliable)
+	void ServerRequestComboAttack();
 
 
 #pragma endregion 

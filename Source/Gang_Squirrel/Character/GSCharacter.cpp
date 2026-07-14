@@ -393,10 +393,33 @@ void AGSCharacter::IAAttack(const FInputActionValue& InValue)
 	// UE_LOG(LogTemp, Log, TEXT("Attack!"));
 	
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
-	if (PS)
+	if (!PS)
 	{
-		PS->GetAbilitySystemComponent()->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag::TAG_Ability_Attack));
+		return;
 	}
+	UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent();
+	if (!ASC)
+	{
+		return;
+	}
+	
+	for (FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities())
+	{
+		if (Spec.IsActive() && Spec.Ability && Spec.Ability->AbilityTags.HasTag(AbilityTag::TAG_Ability_Attack))
+		{
+			if (!HasAuthority())
+			{
+				if (UGA_Attack* LocalPredicted = Cast<UGA_Attack>(Spec.GetPrimaryInstance()))
+				{
+					LocalPredicted->RequestComboInput();
+				}
+			}
+			ServerRequestComboAttack();
+			return;
+		}
+	}
+	
+	ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag::TAG_Ability_Attack));
 }
 
 void AGSCharacter::IAStartSprint(const FInputActionValue& InValue)
@@ -411,6 +434,7 @@ void AGSCharacter::IAStartSprint(const FInputActionValue& InValue)
 		);
 	}
 }
+
 void AGSCharacter::IAEndSprint(const FInputActionValue& InValue)
 {
 	// UE_LOG(LogTemp, Log, TEXT("Complete Sprint!"));
@@ -882,6 +906,34 @@ void AGSCharacter::OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount
 	TempScore = 0;
 	CurrentCheekSize = 0;
 	Multicast_InflateCheeks(0.f);
+}
+
+// GA_Attack ComboAttackWindow
+void AGSCharacter::ServerRequestComboAttack_Implementation()
+{
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (!PS)
+	{
+		return;
+	}
+	
+	UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent();
+	if (!ASC)
+	{
+		return;
+	}
+
+	for (FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities())
+	{
+		if (Spec.IsActive() && Spec.Ability && Spec.Ability->AbilityTags.HasTag(AbilityTag::TAG_Ability_Attack))
+		{
+			if (UGA_Attack* AttackAbility = Cast<UGA_Attack>(Spec.GetPrimaryInstance()))
+			{
+				AttackAbility->RequestComboInput();
+			}
+			return;
+		}
+	}
 }
 
 // For After GA_Death Frozen Death Animation Func
