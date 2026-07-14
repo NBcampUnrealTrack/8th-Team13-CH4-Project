@@ -24,6 +24,7 @@ class UWidgetComponent;
 class UAnimMontage;
 class UGS_StaminaBarWidget;
 class UGSCheekWidget;
+class UGSFoodWidget;
 class UGameplayEffect;
 
 UCLASS()

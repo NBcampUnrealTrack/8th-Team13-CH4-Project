@@ -4,6 +4,7 @@
 #include "Blueprint/UserWidget.h"
 #include "GS_LobbyWidget.generated.h"
 
+class UGS_FriendListWidget;
 class UButton;
 class UGS_LobbySlotWidget;
 class UPanelWidget;
@@ -27,9 +28,15 @@ protected:
 	TObjectPtr<UPanelWidget> SlotContainer;
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> Button_Start;
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UButton> Button_Invite;
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UPanelWidget> FriendListContainer;
 	
 	UPROPERTY(EditDefaultsOnly,Category="UI")
 	TSubclassOf<UGS_LobbySlotWidget> SlotWidgetClass;
+	UPROPERTY(EditDefaultsOnly,Category="UI")
+	TSubclassOf<UGS_FriendListWidget> FriendWidgetClass;
 	
 	UPROPERTY(EditDefaultsOnly,Category="UI")
 	int32 MaxLobbySize = 4;
@@ -39,8 +46,10 @@ protected:
 private:
 	UPROPERTY()
 	TArray<TObjectPtr<UGS_LobbySlotWidget>> Slots;
+	UPROPERTY()
+	TObjectPtr<UGS_FriendListWidget> FriendListWidgetInst;
 	
-	FTimerHandle RefreshTimerHanlde;
+	FTimerHandle RefreshTimerHandle;
 	
 	void CreateSlotPool();
 	void RefreshLobby();
@@ -48,4 +57,8 @@ private:
 	
 	UFUNCTION()
 	void OnStartButtonClicked();
+	UFUNCTION()
+	void OnInviteButtonClicked();
+	
+	void ToggleFriendList();
 };

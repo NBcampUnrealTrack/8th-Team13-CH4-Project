@@ -138,6 +138,7 @@ bool AGSSpawnManager::bCheckArround(const FVector& CheckLocation) const
 	
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldDynamic));
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
 	
 	bool bOverlap = UKismetSystemLibrary::SphereOverlapActors(
 		GetWorld(),
