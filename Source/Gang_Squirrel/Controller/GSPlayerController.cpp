@@ -21,6 +21,12 @@ void AGSPlayerController::BeginPlay()
 		return;
 	}
 
+	//로비에서 설정한 밝기값을 메인스테이지에 가져오는 코드
+	if (UGS_GameInstance* GSInst = GetGameInstance<UGS_GameInstance>())
+	{
+		GSInst->SetScreenBrightness(GSInst->ScreenBrightness);
+	}
+
 	bGameEndUIShown = false;
 
 	if (IsValid(GameEndWidgetInstance))
