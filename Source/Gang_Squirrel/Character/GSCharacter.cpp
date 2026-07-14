@@ -211,6 +211,12 @@ void AGSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 
 void AGSCharacter::IAMove(const FInputActionValue& InValue)
 {
+	//Grabbed
+	if (bIsGrabbed)
+	{
+		return;
+	}
+
 	if (false == IsValid(Controller))
 	{
 		return;
@@ -238,12 +244,6 @@ void AGSCharacter::IAMove(const FInputActionValue& InValue)
 		MoveInputDirection.Normalize();
 	}
 
-	LastMoveInputWorldDirection = MoveInputDirection;
-
-	if (!HasAuthority())
-	{
-		ServerSetMoveInputDirection(MoveInputDirection);
-	}
 }
 
 void AGSCharacter::IALook(const FInputActionValue& InValue)
@@ -451,6 +451,11 @@ void AGSCharacter::IAStartGrab(const FInputActionValue& InValue)
 		return;
 	}
 
+	if (bIsGrabbed)
+	{
+		return;
+	}
+
 	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
 	if (PS == nullptr)
 	{
@@ -550,12 +555,7 @@ void AGSCharacter::Landed(const FHitResult& Hit)
 
 void AGSCharacter::IAStopMove(const FInputActionValue& InValue)
 {
-	LastMoveInputWorldDirection = FVector::ZeroVector;
-
-	if (!HasAuthority())
-	{
-		ServerSetMoveInputDirection(FVector::ZeroVector);
-	}
+	//direction
 }
 
 void AGSCharacter::RollFromAbility()
@@ -630,14 +630,6 @@ float AGSCharacter::GetFinalMoveSpeedMultiplier() const
 	if (bIsRolling)
 	{
 		return RollSpeedMultiplier;
-	}
-
-	if (bIsGrabbing)
-	{
-		const float ResistancePenalty =
-			CurrentGrabResistance * GrabResistanceSpeedPenalty;
-
-		return FMath::Clamp(1.f - ResistancePenalty, 0.35f, 1.f);
 	}
 
 	if (bIsSprinting)
@@ -1075,11 +1067,6 @@ void AGSCharacter::ServerCancelGrabAbility_Implementation()
 	CancelGrabAbility();
 }
 
-void AGSCharacter::ServerSetMoveInputDirection_Implementation(FVector_NetQuantizeNormal InMoveDirection)
-{
-	LastMoveInputWorldDirection = InMoveDirection;
-}
-
 void AGSCharacter::Multicast_SetGrabAnimation_Implementation(bool bGrab)
 {
 	if (AM_Grab == nullptr)
@@ -1094,6 +1081,75 @@ void AGSCharacter::Multicast_SetGrabAnimation_Implementation(bool bGrab)
 	else
 	{
 		StopAnimMontage(AM_Grab);
+	}
+}
+
+void AGSCharacter::OnRep_IsGrabbed()
+{
+	SetGrabbedMovementState(bIsGrabbed);
+}
+
+void AGSCharacter::SetGrabbedMovementState(bool bNewGrabbed)
+{
+	UCharacterMovementComponent* MovementComp = GetCharacterMovement();
+	if (MovementComp == nullptr)
+	{
+		return;
+	}
+
+	if (bNewGrabbed)
+	{
+		if (!bCachedGrabbedMovementSettings)
+		{
+			CachedGrabbedGroundFriction =
+				MovementComp->GroundFriction;
+
+			CachedGrabbedBrakingDeceleration =
+				MovementComp->BrakingDecelerationWalking;
+
+			CachedGrabbedMaxAcceleration =
+				MovementComp->MaxAcceleration;
+
+			bCachedGrabbedMovementSettings = true;
+		}
+
+		/*
+		 * 잡힌 동안 자기 입력으로 가속하거나,
+		 * 브레이킹 때문에 전달받은 속도가 즉시 줄어드는 것을 방지한다.
+		 */
+		MovementComp->MaxAcceleration = 0.f;
+		MovementComp->GroundFriction = 0.f;
+		MovementComp->BrakingDecelerationWalking = 0.f;
+
+		if (Controller)
+		{
+			Controller->SetIgnoreMoveInput(true);
+		}
+	}
+	else
+	{
+		if (bCachedGrabbedMovementSettings)
+		{
+			MovementComp->GroundFriction =
+				CachedGrabbedGroundFriction;
+
+			MovementComp->BrakingDecelerationWalking =
+				CachedGrabbedBrakingDeceleration;
+
+			MovementComp->MaxAcceleration =
+				CachedGrabbedMaxAcceleration;
+
+			bCachedGrabbedMovementSettings = false;
+		}
+
+		if (Controller)
+		{
+			Controller->SetIgnoreMoveInput(false);
+		}
+
+		// 잡기가 풀린 뒤 밀기 속도가 계속 남지 않게 한다.
+		MovementComp->Velocity.X = 0.f;
+		MovementComp->Velocity.Y = 0.f;
 	}
 }
 
@@ -1123,41 +1179,9 @@ void AGSCharacter::CancelGrabAbility()
 	}
 }
 
-float AGSCharacter::GetGrabResistanceAgainst(const FVector& PushDirection) const
-{
-	FVector SafePullDirection = PushDirection;
-	SafePullDirection.Z = 0.f;
-
-	if (SafePullDirection.IsNearlyZero())
-	{
-		return 0.f;
-	}
-
-	SafePullDirection.Normalize();
-
-	FVector TargetInputDirection = LastMoveInputWorldDirection;
-	TargetInputDirection.Z = 0.f;
-
-	if (TargetInputDirection.IsNearlyZero())
-	{
-		return 0.f;
-	}
-
-	TargetInputDirection.Normalize();
-
-	const float Dot = FVector::DotProduct(SafePullDirection, TargetInputDirection);
-
-	// Dot = 1  : Same Direction
-	// Dot = 0  : Side
-	// Dot = -1 : Opposite
-	const float OppositeAmount = FMath::Clamp(-Dot, 0.f, 1.f);
-
-	return OppositeAmount;
-}
-
 void AGSCharacter::StartGrabTarget(AGSCharacter* TargetCharacter)
 {
-	if (HasAuthority() == false)
+	if (!HasAuthority())
 	{
 		return;
 	}
@@ -1167,111 +1191,251 @@ void AGSCharacter::StartGrabTarget(AGSCharacter* TargetCharacter)
 		return;
 	}
 
+	if (TargetCharacter == this)
+	{
+		return;
+	}
+
+	if (TargetCharacter->bIsGrabbed)
+	{
+		return;
+	}
+
 	bIsGrabbing = true;
 	GrabbedTarget = TargetCharacter;
 
-	LastGrabberLocation = GetActorLocation();
-
 	TargetCharacter->bIsGrabbed = true;
 	TargetCharacter->GrabOwner = this;
+
+	/*
+	 * 처음에는 실제 상대가 있는 방향을 사용한다.
+	 * 그래서 잡기 시작 순간 상대가 갑자기 캐릭터 정면을
+	 * 가로질러 이동하려는 현상을 줄인다.
+	 */
+	CurrentGrabPushDirection =
+		TargetCharacter->GetActorLocation() - GetActorLocation();
+
+	CurrentGrabPushDirection.Z = 0.f;
+
+	if (CurrentGrabPushDirection.IsNearlyZero())
+	{
+		CurrentGrabPushDirection = GetActorForwardVector();
+	}
+
+	CurrentGrabPushDirection.Normalize();
+
+	/*
+ * 잡는 캐릭터와 잡힌 캐릭터가
+ * 서로의 이동을 막지 않게 한다.
+ */
+	MoveIgnoreActorAdd(TargetCharacter);
+	TargetCharacter->MoveIgnoreActorAdd(this);
+
+
+	// 서버에서도 즉시 이동 제한 적용
+	TargetCharacter->SetGrabbedMovementState(true);
 
 	Multicast_SetGrabAnimation(true);
 }
 
 void AGSCharacter::UpdateGrabTargetPosition(float DeltaTime)
 {
-	if (HasAuthority() == false)
+	if (!HasAuthority())
 	{
 		return;
 	}
 
 	if (!IsValid(GrabbedTarget))
 	{
+		StopGrab();
 		return;
 	}
 
-	if (DeltaTime <= KINDA_SMALL_NUMBER)
+	UCharacterMovementComponent* GrabberMovement =
+		GetCharacterMovement();
+
+	UCharacterMovementComponent* TargetMovement =
+		GrabbedTarget->GetCharacterMovement();
+
+	if (GrabberMovement == nullptr || TargetMovement == nullptr)
 	{
+		StopGrab();
 		return;
 	}
 
-	const FVector CurrentGrabberLocation = GetActorLocation();
+	/*
+	 * 1. 잡는 플레이어의 현재 수평 속도
+	 *
+	 * 위치 차이를 DeltaTime으로 나누지 않고
+	 * CharacterMovement가 관리하는 Velocity를 그대로 사용
+	 */
+	FVector GrabberHorizontalVelocity = GrabberMovement->Velocity;
+	GrabberHorizontalVelocity.Z = 0.f;
 
-	FVector GrabberMoveDelta = CurrentGrabberLocation - LastGrabberLocation;
-	GrabberMoveDelta.Z = 0.f;
+	/*
+	 * 2. 밀리는 방향
+	 *
+	 * 이동 중이면 실제 이동 방향을 사용한다.
+	 * 멈춘 상태라면 캐릭터 전방 방향을 사용한다.
+	 */
+	/*FVector PushDirection = GrabberHorizontalVelocity.GetSafeNormal2D();
 
-	LastGrabberLocation = CurrentGrabberLocation;
-
-	if (GrabberMoveDelta.IsNearlyZero())
+	if (PushDirection.IsNearlyZero())
 	{
-		CurrentGrabResistance = 0.f;
-		UpdateMaxWalkSpeedFromAttribute();
-		return;
+		PushDirection = GetActorForwardVector();
+		PushDirection.Z = 0.f;
+		PushDirection.Normalize();
+	}*/
+
+	/*
+	 * 속도가 충분할 때만 새로운 이동 방향을 계산한다.
+	 *
+	 * 아주 느린 속도나 감속 과정에서 방향이 흔들리는 것을 막는다.
+	 */
+	if (GrabberHorizontalVelocity.Size2D() > GrabDirectionUpdateMinSpeed)
+	{
+		FVector DesiredPushDirection =
+			GrabberHorizontalVelocity.GetSafeNormal2D();
+
+		/*
+		 * 현재 밀기 방향과 새 이동 방향의 각도 차이 확인
+		*/
+		const float DirectionDot = FVector::DotProduct(
+			CurrentGrabPushDirection,
+			DesiredPushDirection
+		);
+
+		/*
+		 * Dot -0.5는 약 120도 차이
+		 */
+		if (DirectionDot < -0.5f)
+		{
+			StopGrab();
+			return;
+		}
+		/*
+		 * 현재 방향을 새 방향으로 바로 바꾸지 않고
+		 * 부드럽게 보간한다.
+		 */
+		CurrentGrabPushDirection = FMath::VInterpTo(
+			CurrentGrabPushDirection,
+			DesiredPushDirection,
+			DeltaTime,
+			GrabDirectionInterpSpeed
+		);
+
+		CurrentGrabPushDirection.Z = 0.f;
+		CurrentGrabPushDirection.Normalize();
 	}
 
-	FVector PushDirection = GrabberMoveDelta.GetSafeNormal();
+	FVector PushDirection = CurrentGrabPushDirection;
 
-	CurrentGrabResistance = GrabbedTarget->GetGrabResistanceAgainst(PushDirection);
-	CurrentGrabResistance = FMath::Clamp(CurrentGrabResistance, 0.f, MaxGrabResistance);
+	if (PushDirection.IsNearlyZero())
+	{
+		PushDirection = GetActorForwardVector();
+		PushDirection.Z = 0.f;
+		PushDirection.Normalize();
 
-	const float PushMultiplier = FMath::Clamp(
-		1.f - CurrentGrabResistance,
-		MinGrabPushMultiplier,
-		1.f
-	);
+		CurrentGrabPushDirection = PushDirection;
+	}
 
+	/*
+	 * 3. 두 캡슐이 겹치지 않는 최소 거리 계산
+	 *
+	 * 고정값 18이 아니라:
+	 * 잡는 캐릭터 캡슐 반지름
+	 * + 잡힌 캐릭터 캡슐 반지름
+	 * + 작은 여유 간격
+	 */
+	const float GrabberCapsuleRadius =
+		GetCapsuleComponent()->GetScaledCapsuleRadius();
 
-	const FVector PushVelocity =
-		(GrabberMoveDelta / DeltaTime) *
-		GrabPushDistanceMultiplier *
-		PushMultiplier;
+	const float TargetCapsuleRadius =
+		GrabbedTarget->GetCapsuleComponent()
+		->GetScaledCapsuleRadius();
 
+	const float ContactDistance =
+		GrabberCapsuleRadius
+		+ TargetCapsuleRadius
+		+ GrabContactGap;
 
+	/*
+	 * 4. 잡힌 플레이어가 있어야 할 목표 위치
+	 */
 	const FVector DesiredTargetLocation =
-		CurrentGrabberLocation + PushDirection * GrabPushContactDistance;
+		GetActorLocation()
+		+ PushDirection * ContactDistance;
 
-	FVector ToDesiredLocation =
-		DesiredTargetLocation - GrabbedTarget->GetActorLocation();
+	FVector PositionError =
+		DesiredTargetLocation
+		- GrabbedTarget->GetActorLocation();
 
-	ToDesiredLocation.Z = 0.f;
+	PositionError.Z = 0.f;
 
+	/*
+	 * 5. 잡는 사람의 속도를 기본 속도로 사용
+	 *
+	 * 따라서 상대가 점점 멀어지지 않고
+	 * 기본적으로 나와 같은 속도로 움직임
+	 */
+	FVector FinalVelocity = GrabberHorizontalVelocity;
 
-	FVector CorrectionVelocity =
-		ToDesiredLocation * GrabAlignmentStrength;
+	/*
+	 * 6. 거리가 벌어진 경우에만 약한 보정 추가
+	 *
+	 * 항상 강제로 정렬하지 않고 DeadZone을 둬서
+	 * 작은 위치 오차에 의한 떨림을 막기
+	 */
+	const float PositionErrorSize = PositionError.Size2D();
 
-	if (CorrectionVelocity.Size2D() > MaxGrabCorrectionSpeed)
+	if (PositionErrorSize > GrabPositionDeadZone)
 	{
-		CorrectionVelocity = CorrectionVelocity.GetSafeNormal2D() * MaxGrabCorrectionSpeed;
+		FVector CorrectionVelocity =
+			PositionError * GrabFollowCorrectionStrength;
+
+		CorrectionVelocity.Z = 0.f;
+
+		if (CorrectionVelocity.Size2D()
+			> MaxGrabFollowCorrectionSpeed)
+		{
+			CorrectionVelocity =
+				CorrectionVelocity.GetSafeNormal2D()
+				* MaxGrabFollowCorrectionSpeed;
+		}
+
+		FinalVelocity += CorrectionVelocity;
 	}
 
-	const FVector FinalVelocity = PushVelocity + CorrectionVelocity;
-
-	GrabbedTarget->LaunchCharacter(
-		FinalVelocity,
-		true,   
-		false   
-	);
-
-	UpdateMaxWalkSpeedFromAttribute();
+	/*
+	 * LaunchCharacter를 호출하지 않는다.
+	 * 잡힌 캐릭터의 수평 속도만 갱신하고
+	 * 점프나 낙하에 필요한 Z 속도는 유지한다.
+	 */
+	TargetMovement->Velocity.X = FinalVelocity.X;
+	TargetMovement->Velocity.Y = FinalVelocity.Y;
 }
 
 void AGSCharacter::StopGrab()
 {
-	if (HasAuthority() == false)
+	if (!HasAuthority())
 	{
 		return;
 	}
 
 	bIsGrabbing = false;
-	LastGrabberLocation = FVector::ZeroVector;
-	CurrentGrabResistance = 0.f;
 
 	Multicast_SetGrabAnimation(false);
 
 	if (IsValid(GrabbedTarget))
 	{
+		MoveIgnoreActorRemove(GrabbedTarget);
+		GrabbedTarget->MoveIgnoreActorRemove(this);
+
 		GrabbedTarget->bIsGrabbed = false;
 		GrabbedTarget->GrabOwner = nullptr;
+
+		// 서버에서 즉시 원래 이동 설정 복구
+		GrabbedTarget->SetGrabbedMovementState(false);
 	}
 
 	GrabbedTarget = nullptr;
