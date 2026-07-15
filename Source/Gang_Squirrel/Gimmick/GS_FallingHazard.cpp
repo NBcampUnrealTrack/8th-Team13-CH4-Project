@@ -136,6 +136,11 @@ void AGS_FallingHazard::SetTargetActor(AActor* InTargetActor)
 	}
 
 	TargetActor = InTargetActor;
+
+	if (AGSCharacter* TargetCharacter = Cast<AGSCharacter>(TargetActor))
+	{
+		TargetCharacter->Client_ShowFallingHazardTutorial();
+	}
 }
 
 float AGS_FallingHazard::GetServerWorldTime() const

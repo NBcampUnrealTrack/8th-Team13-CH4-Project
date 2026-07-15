@@ -389,6 +389,14 @@ void AGSCharacter::Multicast_InflateCheeks_Implementation(float Value)
 	
 	
 	float ResultValue = CurrentCheekSize / MaxCheekSize;
+
+	if (IsLocallyControlled()
+		&& CurrentCheekSize >= MaxCheekSize
+		&& !bCheekFullTutorialShown)
+	{
+		bCheekFullTutorialShown = true;
+		BP_OnCheekFull();
+	}
 	
 	if (CheekWidgetUIInstance)
 	{
@@ -596,6 +604,18 @@ void AGSCharacter::Landed(const FHitResult& Hit)
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("[FallDamage] FallSpeed: %.2f"), FallSpeed);//check for velocity
+}
+
+void AGSCharacter::Client_ShowFallingHazardTutorial_Implementation()
+{
+	if (bHasShownFallingHazardTutorial)
+	{
+		return;
+	}
+
+	bHasShownFallingHazardTutorial = true;
+
+	BP_OnFallingHazardTargeted();
 }
 
 void AGSCharacter::IAStopMove(const FInputActionValue& InValue)

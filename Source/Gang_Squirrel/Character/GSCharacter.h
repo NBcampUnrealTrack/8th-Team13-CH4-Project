@@ -137,7 +137,18 @@ private:
 	float MaxFallSpeedDuringFall = 0.f;
 
 #pragma endregion
+#pragma region FallingHazardWarining
+public:
+	UFUNCTION(Client, Reliable)
+	void Client_ShowFallingHazardTutorial();
 
+	UFUNCTION(BlueprintImplementableEvent, Category = "Tutorial")
+	void BP_OnFallingHazardTargeted();
+
+private:
+
+	bool bHasShownFallingHazardTutorial = false;
+#pragma endregion
 #pragma region Grab
 
 private:
@@ -245,6 +256,9 @@ public:
 	
 	UFUNCTION(Server, Reliable)
 	void Server_SetEating(bool bEating);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Food|Tutorial")
+	void BP_OnCheekFull();
 	
 	void ResetCheekSize();
 	
@@ -300,6 +314,8 @@ private:
 
 	UFUNCTION()
 	void OnRep_CheekSize();
+
+	bool bCheekFullTutorialShown = false;
 	
 #pragma endregion
 
