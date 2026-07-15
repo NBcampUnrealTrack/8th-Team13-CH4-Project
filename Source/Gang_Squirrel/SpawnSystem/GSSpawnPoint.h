@@ -29,6 +29,9 @@ public:
 	UPROPERTY(EditAnywhere)
 	int32 CurrentFoodCount = 0;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpawnSetting")
+	int32 Floor;
+	
 
 protected:
 	// Called when the game starts or when spawned
