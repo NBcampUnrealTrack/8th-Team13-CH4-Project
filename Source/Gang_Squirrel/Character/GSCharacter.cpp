@@ -917,7 +917,7 @@ void AGSCharacter::OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount
 
 void AGSCharacter::PlayVictoryMontage()
 {
-	if (IsValid(AM_Victory))
+	if(AM_Victory)
 	{
 		PlayAnimMontage(AM_Victory);
 	}
