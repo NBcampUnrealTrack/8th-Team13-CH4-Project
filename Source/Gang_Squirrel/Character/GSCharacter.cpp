@@ -28,6 +28,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Gang_Squirrel/EOS/GS_GameInstance.h"
 #include "Gang_Squirrel/Food/Score/GSSlideWidget.h"
+#include "Components/AudioComponent.h"
 
 
 AGSCharacter::AGSCharacter()
@@ -80,6 +81,11 @@ AGSCharacter::AGSCharacter()
 	StaminaBarWidget->SetVisibility(false);
 	StaminaBarWidget->SetHiddenInGame(true);
 	StaminaBarWidget->SetUsingAbsoluteLocation(true);
+	
+	//Audio Component
+	AudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("AudioComponent"));
+	AudioComponent->SetupAttachment(GetRootComponent());
+	AudioComponent->SetVolumeMultiplier(0.4);
 	// for AnimNotifyTick Func
 	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
 }
@@ -113,6 +119,8 @@ void AGSCharacter::BeginPlay()
 	
 	DefaultMeshRelativeLocation = GetMesh()->GetRelativeLocation();
 	DefaultMeshRelativeRotation = GetMesh()->GetRelativeRotation();
+	
+	AudioComponent->Stop();
 	
 	SetupUpperBodyRagdoll();
 
@@ -284,6 +292,7 @@ void AGSCharacter::IAInteract(const FInputActionValue& InValue)
 	if (AM_Eat)
 	{
 		PlayAnimMontage(AM_Eat);
+		AudioComponent->Play();
 	}
 
 	Server_SetEating(true);
@@ -301,6 +310,7 @@ void AGSCharacter::IAStopInteract(const FInputActionValue& InValue)
 	if (AM_Eat)
 	{
 		StopAnimMontage(AM_Eat);
+		AudioComponent->Stop();
 	}
 
 	Server_SetEating(false);
