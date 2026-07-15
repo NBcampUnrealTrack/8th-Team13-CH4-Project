@@ -20,17 +20,17 @@ protected:
 	TObjectPtr<UAnimMontage> AM_Death;
 	//TODO:: TempLogic -> Refac to Respawn Logic
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Death|Respawn")
-	float RespawnDelay = 3.f;
+	float RespawnDelay = 10.f;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Death|Respawn")
 	TSubclassOf<UGameplayEffect> GE_Respawn;
+	
+	//Physics AnimProperty
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Death|Ragdoll")
+	float DeathImpulseStrength = 300.f;
 	
 private:
 	//TODO:: TempLogic -> Refac to Respawn Logic
 	void HandleRespawn();
-	
-	// For AnimMontage Stop
-	UFUNCTION()
-	void HandleDeathBlendOut();
 	
 	FVector CachedRespawnLocation = FVector::ZeroVector;
 	FRotator CachedRespawnRotation = FRotator::ZeroRotator;

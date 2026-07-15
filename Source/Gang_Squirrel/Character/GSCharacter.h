@@ -447,7 +447,19 @@ private:
 	
 	void SetupUpperBodyRagdoll();
 	
+public:	
 	UFUNCTION(NetMulticast,Reliable)
 	void NetMulticast_ApplyRagdollImpulse(FVector Impulse, FName BoneName);
+	UFUNCTION(NetMulticast,Reliable)
+	void NetMulticast_SetFullRagdollEnable(bool bEnable);
+	
+
+	FORCEINLINE FName GetRagdollStartBone() const {return RagdollStartBone;}
+	FORCEINLINE FVector GetLastHitImpulseDirection() const {return LastHitImpulseDirection;}
+	FORCEINLINE void SetLastHitImpulseDirection(const FVector& Direction){LastHitImpulseDirection = Direction;}
+private: 
+	FVector LastHitImpulseDirection = FVector::ZeroVector;
+	FVector DefaultMeshRelativeLocation = FVector::ZeroVector;
+	FRotator DefaultMeshRelativeRotation = FRotator::ZeroRotator;
 #pragma endregion 
 };
