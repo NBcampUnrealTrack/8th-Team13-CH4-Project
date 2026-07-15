@@ -14,6 +14,6 @@ class GANG_SQUIRREL_API IGA_AttackTraceInterface
 {
 	GENERATED_BODY()
 public:
-	virtual void OnAttackTraceHit(AActor* HitActor) = 0;
+	virtual void OnAttackTraceHit(AActor* HitActor, const FHitResult& Hit) = 0;
 	virtual void OnComboWindowOpen() = 0;
 };
