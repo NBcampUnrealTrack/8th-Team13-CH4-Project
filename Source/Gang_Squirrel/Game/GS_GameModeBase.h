@@ -69,6 +69,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Match")
 	uint8 bMatchEnd : 1;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Match")
+	FName ResultLevelName = TEXT("/Game/ProjectFile/Level/Result/L_Result");
+
 private:
 	//Match Timer
 	FTimerHandle MatchTimerHandle;
