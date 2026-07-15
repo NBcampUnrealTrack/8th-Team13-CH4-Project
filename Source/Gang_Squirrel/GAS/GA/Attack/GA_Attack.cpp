@@ -158,7 +158,14 @@ void UGA_Attack::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Ta
 					const FName HitBone = (HitResultPtr && HitResultPtr->BoneName != NAME_None) ? HitResultPtr->BoneName : TargetCharacter->GetRagdollStartBone();
 					const FVector ImpulseDir = (HitResultPtr && !HitResultPtr->ImpactNormal.IsNearlyZero()) ? -HitResultPtr->ImpactNormal : GetAvatarActorFromActorInfo()->GetActorForwardVector();
 					
-					TargetCharacter->NetMulticast_ApplyRagdollImpulse(ImpulseDir * HitImpulseStrength, HitBone);
+					if (bIsSecondCombo)
+					{
+						TargetCharacter->Applyknockdown(ImpulseDir * StrongHitImpulseStrength, HitBone, KnockdownDuration);
+					}
+					else
+					{
+						TargetCharacter->NetMulticast_ApplyRagdollImpulse(ImpulseDir * HitImpulseStrength, HitBone);
+					}
 				}
 				
 			}

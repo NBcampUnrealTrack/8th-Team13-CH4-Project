@@ -49,6 +49,10 @@ protected:
 	
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="PhysicsReaction")
 	float HitImpulseStrength = 20.f;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="PhysicsReaction")
+	float StrongHitImpulseStrength = 100.f;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="PhysicsReaction")
+	float KnockdownDuration = 1.5f;
 	
 private:
 	void OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& TargetData, FGameplayTag ActivationTag);
