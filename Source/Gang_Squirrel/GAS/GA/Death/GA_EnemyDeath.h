@@ -17,11 +17,6 @@ protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 	
-protected:
-	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Animation|Death")
-	TObjectPtr<UAnimMontage> AM_Death;
-	
-private:
-	UFUNCTION()
-	void HandleDeathBlendOut();
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Death|Ragdoll")
+	float DeathImpulseStrength = 300.f;
 };
