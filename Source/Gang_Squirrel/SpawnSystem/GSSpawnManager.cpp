@@ -72,7 +72,7 @@ void AGSSpawnManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-// Called every frame
+
 void AGSSpawnManager::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -81,54 +81,70 @@ void AGSSpawnManager::Tick(float DeltaTime)
 
 void AGSSpawnManager::Spawn()
 {
-	if (!HasAuthority()) return;
-	
-	int32 RetryCount = 0;
-	for (AGSSpawnPoint* SpawnPoint : SpawnPoints)
-	{
-		if (!IsValid(SpawnPoint))
-		{
-			UE_LOG(LogTemp, Warning, TEXT("SpawnPoint null"));
-			continue;
-		}
-		for (int i = 0; i < SpawnPoint->MaxSpawnAmount; ++i)
-		{
-			if (RetryCount > 50)
-			{
-				break;
-			}
-			if (SpawnPoint->MaxSpawnAmount > SpawnPoint->CurrentFoodCount)
-			{
-				FVector CurrentLocation = SpawnPoint->GetRandomLocation();
-				if (bCheckArround(CurrentLocation))
-				{
-					RetryCount++;
-					continue;
-				}
-				
-				AGSFoodBase* Food = PoolSubsystem->GetFood();
-				if (!IsValid(Food))
-				{
-					// UE_LOG(LogTemp, Warning, TEXT("Food Null"));
-					return;
-				}
-			
-				UGSFoodPrimaryDataAsset* CurrentFoodData = Food->FoodData;
-				CurrentLocation.Z += CurrentFoodData->MeshZ;
-				Food->SetActorLocation(CurrentLocation);
-				Food->Activate();
-			
-				// UE_LOG(LogTemp, Warning, TEXT("Spawn Actor"));
-			
-				SpawnPoint->CurrentFoodCount+=1;
-			}
-			else
-			{
-				continue;
-			}
-		}
-	}
-	UE_LOG(LogTemp, Warning, TEXT("Spawn Work"));
+    if (!HasAuthority()) return;
+    if (!IsValid(PoolSubsystem)) return;
+    
+    for (AGSSpawnPoint* SpawnPoint : SpawnPoints)
+    {
+       if (!IsValid(SpawnPoint))
+       {
+          UE_LOG(LogTemp, Warning, TEXT("SpawnPoint null"));
+          continue;
+       }
+
+       int32 DesiredSpawnAmount = SpawnPoint->MaxSpawnAmount - SpawnPoint->CurrentFoodCount;
+       if (DesiredSpawnAmount <= 0) continue;
+
+       for (int32 SpawnIdx = 0; SpawnIdx < DesiredSpawnAmount; ++SpawnIdx)
+       {
+          FVector SpawnLocation = FVector::ZeroVector;
+          bool bFoundLocation = false;
+          int32 LocationRetryCount = 0;
+          
+          while (LocationRetryCount < 10)
+          {
+             FVector TargetLoc = SpawnPoint->GetRandomLocation();
+        
+             if (!bCheckArround(TargetLoc))
+             {
+                SpawnLocation = TargetLoc;
+                bFoundLocation = true;
+                break;
+             }
+             LocationRetryCount++;
+          }
+
+          if (!bFoundLocation)
+          {
+             UE_LOG(LogTemp, Log, TEXT("SpawnPoint [%s] failed to find clear location"), *SpawnPoint->GetName());
+             continue; 
+          }
+       	
+          AGSFoodBase* Food = PoolSubsystem->GetFood(SpawnPoint->Floor);
+       	
+          if (!IsValid(Food)) 
+          {
+             UE_LOG(LogTemp, Warning, TEXT("Pool Subsystem returned null food for Floor %d"), SpawnPoint->Floor);
+             break;
+          }
+       	
+          if (!IsValid(Food->FoodData))
+          {
+             UE_LOG(LogTemp, Error, TEXT("Food 오브젝트의 FoodData가 nullptr입니다!"));
+             continue; 
+          }
+       	
+          UGSFoodPrimaryDataAsset* CurrentFoodData = Food->FoodData;
+          SpawnLocation.Z += CurrentFoodData->MeshZ;
+          
+          Food->SetActorLocation(SpawnLocation);
+          Food->Activate();
+          
+          SpawnPoint->CurrentFoodCount += 1;
+       }
+    }
+    
+    UE_LOG(LogTemp, Warning, TEXT("Spawn Work Completed"));
 }
 
 bool AGSSpawnManager::bCheckArround(const FVector& CheckLocation) const

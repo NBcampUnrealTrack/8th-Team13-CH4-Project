@@ -37,4 +37,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float MeshZ = 0.1f;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 CurrentFloor = 1;
+	
 };

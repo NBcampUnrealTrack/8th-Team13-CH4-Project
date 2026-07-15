@@ -23,7 +23,7 @@ protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 	// InterFace PureVirtual
-	virtual void OnAttackTraceHit(AActor* HitActor) override;
+	virtual void OnAttackTraceHit(AActor* HitActor, const FHitResult& Hit) override;
 	virtual void OnComboWindowOpen() override;
 	
 #pragma region CombatAnim
@@ -46,6 +46,13 @@ private:
 protected:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="GameplayEffect")
 	TSubclassOf<UGameplayEffect> GE_Damage;
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="PhysicsReaction")
+	float HitImpulseStrength = 20.f;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="PhysicsReaction")
+	float StrongHitImpulseStrength = 100.f;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="PhysicsReaction")
+	float KnockdownDuration = 1.5f;
 	
 private:
 	void OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& TargetData, FGameplayTag ActivationTag);
