@@ -72,6 +72,8 @@ void AGS_Enemy::BeginPlay()
 	DefaultMeshRelativeLocation = GetMesh()->GetRelativeLocation();
 	DefaultMeshRelativeRotation = GetMesh()->GetRelativeRotation();
 	
+	SetupUpperBodyRagdoll();
+	
 	HomeLocation = GetActorLocation();
 	
 	if (const FGS_EnemyDataTable* Row = EnemyDataRow.GetRow<FGS_EnemyDataTable>(TEXT("GS_Enemy:BeginPlay")))
@@ -182,7 +184,7 @@ void AGS_Enemy::SetRotationTarget(const FVector& NewLocation, float NewInterpSpe
 
 void AGS_Enemy::OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount)
 {
-	SetActorEnableCollision(NewCount <= 0);
+	GetCapsuleComponent()->SetCollisionEnabled(NewCount <= 0 ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
 }
 
 void AGS_Enemy::SetKillerPlayerState(AGS_PlayerState* InKiller)
