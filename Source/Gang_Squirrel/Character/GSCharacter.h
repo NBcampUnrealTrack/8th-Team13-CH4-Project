@@ -386,6 +386,10 @@ protected:
 	//Side Widget
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Component")
 	TObjectPtr<UWidgetComponent> StaminaBarWidget;
+	
+	//Sound Component
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Component")
+	TObjectPtr<UAudioComponent> AudioComponent;
 
 #pragma endregion
 
