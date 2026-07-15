@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
 #include "GameFramework/Character.h"
+#include "Gang_Squirrel/Character/Interface/GS_RagdollReactorInterface.h"
 #include "Gang_Squirrel/DataBase/DataTable/DT_Enemy.h"
 #include "GS_Enemy.generated.h"
 
@@ -17,7 +18,7 @@ class UGS_PlayerAttributeSet;
 class AGS_PlayerState;
 
 UCLASS()
-class GANG_SQUIRREL_API AGS_Enemy : public ACharacter, public IAbilitySystemInterface
+class GANG_SQUIRREL_API AGS_Enemy : public ACharacter, public IAbilitySystemInterface, public IGS_RagdollReactorInterface
 {
 	GENERATED_BODY()
 
@@ -118,5 +119,35 @@ private:
 	TObjectPtr<AGS_PlayerState> KillerPlayerState;
 
 #pragma endregion
+	
+#pragma region PhysicsAnim
+	UPROPERTY(EditDefaultsOnly,Category="Ragdoll|UpperBody")
+	FName RagdollStartBone = TEXT("Spine02");
+	UPROPERTY(EditDefaultsOnly,Category="Ragdoll|UpperBody")
+	FName RagdollCollisionProfile = TEXT("Ragdoll");
+	
+	void SetupUpperBodyRagdoll();
+	
+public:	
+	UFUNCTION(NetMulticast,Reliable)
+	void NetMulticast_ApplyRagdollImpulse(FVector Impulse, FName BoneName) override;
+	UFUNCTION(NetMulticast,Reliable)
+	void NetMulticast_SetFullRagdollEnable(bool bEnable) override;
+
+	void Applyknockdown(FVector Impulse, FName BoneName, float Duration) override;
+
+	FORCEINLINE FName GetRagdollStartBone() const override {return RagdollStartBone;}
+	FORCEINLINE FVector GetLastHitImpulseDirection() const override {return LastHitImpulseDirection;}
+	FORCEINLINE void SetLastHitImpulseDirection(const FVector& Direction) override {LastHitImpulseDirection = Direction;}
+private: 
+	FVector LastHitImpulseDirection = FVector::ZeroVector;
+	FVector DefaultMeshRelativeLocation = FVector::ZeroVector;
+	FRotator DefaultMeshRelativeRotation = FRotator::ZeroRotator;
+	
+	FTimerHandle KnockdownRecoveryTimerHandle;
+
+	void RecoverFromKnockdown();
+	void RepositionCapsuleToRagdoll();
+#pragma endregion 
 };
 
