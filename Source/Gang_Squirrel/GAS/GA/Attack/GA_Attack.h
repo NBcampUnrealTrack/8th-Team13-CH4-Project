@@ -47,6 +47,9 @@ protected:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="GameplayEffect")
 	TSubclassOf<UGameplayEffect> GE_Damage;
 	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="PhysicsReaction")
+	float HitImpulseStrength = 20.f;
+	
 private:
 	void OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& TargetData, FGameplayTag ActivationTag);
 	

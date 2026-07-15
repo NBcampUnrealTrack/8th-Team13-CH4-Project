@@ -89,8 +89,7 @@ void UGA_Attack::OnAttackTraceHit(AActor* HitActor, const FHitResult& Hit)
 	HitActors.Add(HitActor);
 	
 	FGameplayAbilityTargetDataHandle TargetDataHandle;
-	FGameplayAbilityTargetData_ActorArray* TargetData = new FGameplayAbilityTargetData_ActorArray();
-	TargetData->TargetActorArray.Add(HitActor);
+	FGameplayAbilityTargetData_SingleTargetHit* TargetData = new FGameplayAbilityTargetData_SingleTargetHit(Hit);
 	TargetDataHandle.Add(TargetData);
 	
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
@@ -110,7 +109,6 @@ void UGA_Attack::OnComboWindowOpen()
 // Server Outgoing to GE
 void UGA_Attack::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& TargetData, FGameplayTag ActivationTag)
 {
-	// UE_LOG(LogTemp, Warning, TEXT("[GA_Attack][Server] OnTargetDataReceived"));
 	GetAbilitySystemComponentFromActorInfo()->ConsumeClientReplicatedTargetData(GetCurrentAbilitySpecHandle(),GetCurrentActivationInfo().GetActivationPredictionKey());
 	
 	if (!GE_Damage)
@@ -135,6 +133,9 @@ void UGA_Attack::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Ta
 		{
 			continue;
 		}
+		
+		const FHitResult* HitResultPtr = Data->GetHitResult();
+
 		for (TWeakObjectPtr<AActor> TargetActor : Data->GetActors())
 		{
 			if (!TargetActor.IsValid())
@@ -146,11 +147,20 @@ void UGA_Attack::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Ta
 			
 			if (TargetASC)
 			{
-				if (IsSameTeam(GetAvatarActorFromActorInfo(), TargetActor.Get()))
+				if (IsSameTeam(GetAvatarActorFromActorInfo(),TargetActor.Get()))
 				{
 					continue;
 				}
-				SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(),TargetASC);
+				SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+				
+				if (AGSCharacter* TargetCharacter = Cast<AGSCharacter>(TargetActor.Get()))
+				{
+					const FName HitBone = (HitResultPtr && HitResultPtr->BoneName != NAME_None) ? HitResultPtr->BoneName : TargetCharacter->GetRagdollStartBone();
+					const FVector ImpulseDir = (HitResultPtr && !HitResultPtr->ImpactNormal.IsNearlyZero()) ? -HitResultPtr->ImpactNormal : GetAvatarActorFromActorInfo()->GetActorForwardVector();
+					
+					TargetCharacter->NetMulticast_ApplyRagdollImpulse(ImpulseDir * HitImpulseStrength, HitBone);
+				}
+				
 			}
 		}
 		
