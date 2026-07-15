@@ -14,38 +14,49 @@ UGA_Attack::UGA_Attack()
 	ActivationBlockedTags.AddTag(StateTag::TAG_State_Dead);
 }
 
+void UGA_Attack::RequestComboInput()
+{
+	if (!CurrentMontageTask || !bComboWindowOpen)
+	{
+		return;
+	}
+	
+	bIsSecondCombo = !bIsSecondCombo;
+	bComboWindowOpen = false;
+	HitActors.Empty();
+	
+	const FName NextSection = bIsSecondCombo ? ComboSection_Second : ComboSection_First;
+	GetAbilitySystemComponentFromActorInfo()->CurrentMontageJumpToSection(NextSection);
+}
+
 void UGA_Attack::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
-	const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+                                 const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 	
 	AGSCharacter* Character = Cast<AGSCharacter>(GetAvatarActorFromActorInfo());
-	if (!Character)
+	if (!Character || !AM_Attack)
 	{
 		EndAbility(Handle,ActorInfo,ActivationInfo,true,true);
 		return;
 	}
-	
+
+	// 1타 콤보
+	bIsSecondCombo = false;
+	bComboWindowOpen = false;
 	HitActors.Empty();
 	
 	// Server
 	if (ActorInfo->IsNetAuthority())
 	{
-		// UE_LOG(LogTemp, Warning, TEXT("[GA_Attack][Server] ActivateAbility - Delegate Binding"));
-		GetAbilitySystemComponentFromActorInfo()->AbilityTargetDataSetDelegate(Handle,ActivationInfo.GetActivationPredictionKey()).AddUObject(this, &UGA_Attack::OnTargetDataReceived);
+		GetAbilitySystemComponentFromActorInfo()->AbilityTargetDataSetDelegate(Handle,ActivationInfo.GetActivationPredictionKey()).AddUObject(this,&UGA_Attack::OnTargetDataReceived);
 	}
 	
-	// AnimMontage Logic
-	if (AM_Attack)
-	{
-		UAbilityTask_PlayMontageAndWait* TaskMontage = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this,NAME_None,AM_Attack);
-		
-		TaskMontage->OnCompleted.AddDynamic(this, &UGA_Attack::K2_EndAbility);
-		TaskMontage->OnCancelled.AddDynamic(this, &UGA_Attack::K2_EndAbility);
-		TaskMontage->OnInterrupted.AddDynamic(this, &UGA_Attack::K2_EndAbility);
-		
-		TaskMontage->ReadyForActivation();
-	}
+	CurrentMontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this,NAME_None,AM_Attack,1.f,ComboSection_First);
+	CurrentMontageTask->OnCompleted.AddDynamic(this,&UGA_Attack::K2_EndAbility);
+	CurrentMontageTask->OnInterrupted.AddDynamic(this,&UGA_Attack::K2_EndAbility);
+	CurrentMontageTask->OnCancelled.AddDynamic(this,&UGA_Attack::K2_EndAbility);
+	CurrentMontageTask->ReadyForActivation();
 }
 
 void UGA_Attack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
@@ -60,6 +71,10 @@ void UGA_Attack::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGame
 	}
 	
 	HitActors.Empty();
+	
+	CurrentMontageTask = nullptr;
+	bIsSecondCombo = false;
+	bComboWindowOpen = false;
 	
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
@@ -85,6 +100,11 @@ void UGA_Attack::OnAttackTraceHit(AActor* HitActor)
 	}
 	ASC->CallServerSetReplicatedTargetData(
 		GetCurrentAbilitySpecHandle(),GetCurrentActivationInfo().GetActivationPredictionKey(),TargetDataHandle,FGameplayTag::EmptyTag,ASC->ScopedPredictionKey);
+}
+
+void UGA_Attack::OnComboWindowOpen()
+{
+	bComboWindowOpen = true;
 }
 
 // Server Outgoing to GE
