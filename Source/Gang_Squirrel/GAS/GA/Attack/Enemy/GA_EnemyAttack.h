@@ -5,6 +5,7 @@
 #include "Gang_Squirrel/GAS/GA/Attack/IGA_AttackTraceInterface.h"
 #include "GA_EnemyAttack.generated.h"
 
+class UAbilityTask_PlayMontageAndWait;
 class AGS_Enemy;
 
 UCLASS()
@@ -21,15 +22,33 @@ protected:
 	virtual void OnAttackTraceHit(AActor* HitActor, const FHitResult& Hit) override;
 	virtual void OnComboWindowOpen() override;
 	
-	
-	//TODO:: Refac to DataAssets
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Animation|Combat")
 	TObjectPtr<UAnimMontage> AM_Attack;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Animation|Combat")
+	FName ComboSection_First = TEXT("Attack1");
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Animation|Combat")
+	FName ComboSection_Second = TEXT("Attack2");
+	
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="GameplayEffect")
 	TSubclassOf<UGameplayEffect> GE_Damage;
 	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="PhysicsReaction")
+	float HitImpulseStrength = 20.f;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="PhysicsReaction")
+	float StrongHitImpulseStrength = 100.f;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="PhysicsReaction")
+	float KnockdownDuration = 1.5f;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="PhysicsReaction",meta=(ClampMin = "0.0", ClampMax = "1.0"))
+	float ComboContinueChance = 0.3f;
+	
 private:
-	void ApplyDamageToTarget(AActor* TargetActor);
+	void ApplyDamageToTarget(AActor* TargetActor, const FHitResult& Hit);
+	
+	UPROPERTY()
+	TObjectPtr<UAbilityTask_PlayMontageAndWait> CurrentMontageTask;
+	
+	bool bIsSecondCombo = false;
+	bool bWillComboToSecondAttack = false;
 	
 	UPROPERTY()
 	TSet<AActor*> HitActors;

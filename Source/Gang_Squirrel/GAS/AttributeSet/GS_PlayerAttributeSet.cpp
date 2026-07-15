@@ -82,12 +82,13 @@ void UGS_PlayerAttributeSet::PostGameplayEffectExecute(const struct FGameplayEff
 
 			if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
 			{
-				if (AGSCharacter* PlayerCharacter = Cast<AGSCharacter>(ASC->GetAvatarActor()))
+				AActor* AvatarActor = ASC->GetAvatarActor();
+				if (IGS_RagdollReactorInterface* DyingReactor = Cast<IGS_RagdollReactorInterface>(AvatarActor))
 				{
 					if (AActor* Instigator = Data.EffectSpec.GetEffectContext().GetOriginalInstigator())
 					{
-						const FVector HitDir = (PlayerCharacter->GetActorLocation() - Instigator->GetActorLocation()).GetSafeNormal().GetSafeNormal();
-						PlayerCharacter->SetLastHitImpulseDirection(HitDir);
+						const FVector HitDir = (AvatarActor->GetActorLocation() - Instigator->GetActorLocation()).GetSafeNormal().GetSafeNormal();
+						DyingReactor->SetLastHitImpulseDirection(HitDir);
 					}
 				}
 
@@ -117,6 +118,7 @@ void UGS_PlayerAttributeSet::OnRep_SlowSpeedMultiplier(const FGameplayAttributeD
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(ThisClass,SlowSpeedMultiplier,OldSlowSpeedMultiplier);
 }
+
 void UGS_PlayerAttributeSet::OnRep_Stamina(const FGameplayAttributeData& OldStamina)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(ThisClass, Stamina, OldStamina);

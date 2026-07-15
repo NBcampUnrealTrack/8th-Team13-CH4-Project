@@ -11,6 +11,7 @@
 #include "Gang_Squirrel/DataAsset/GSFoodPrimaryDataAsset.h"
 #include "Gang_Squirrel/Character/GSCharacter.h"
 #include "Gang_Squirrel/GAS/AttributeSet/GS_PlayerAttributeSet.h"
+#include "Gang_Squirrel/EOS/GS_GameInstance.h"
 
 AGS_GameModeBase::AGS_GameModeBase()
 {
@@ -78,6 +79,12 @@ void AGS_GameModeBase::EndMatch()
 	}
 
 	//UE_LOG(LogTemp, Log, TEXT("[Server] Match Ended."))
+
+	// 모든 플레이어를 Result 레벨로 이동시킴
+	if (UGS_GameInstance* GSInst = GetGameInstance<UGS_GameInstance>())
+	{
+		GSInst->StartGame(ResultLevelName);
+	}
 }
 
 void AGS_GameModeBase::NotifyPlayerReady()

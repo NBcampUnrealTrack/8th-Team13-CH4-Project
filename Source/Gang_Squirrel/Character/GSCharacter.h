@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
 #include "GameplayEffectTypes.h"
+#include "Interface/GS_RagdollReactorInterface.h"
 #include "GSCharacter.generated.h"
 
 class UGSSlideWidget;
@@ -29,7 +30,7 @@ class UGSFoodWidget;
 class UGameplayEffect;
 
 UCLASS()
-class GANG_SQUIRREL_API AGSCharacter : public ACharacter ,public IAbilitySystemInterface
+class GANG_SQUIRREL_API AGSCharacter : public ACharacter ,public IAbilitySystemInterface, public IGS_RagdollReactorInterface
 {
 	GENERATED_BODY()
 
@@ -209,6 +210,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Grab")
 	TObjectPtr<UAnimMontage> AM_Grab;
+
 
 	UFUNCTION(Server, Reliable)
 	void ServerCancelGrabAbility();
@@ -442,6 +444,13 @@ private:
 
 
 #pragma endregion 
+
+public:
+	void PlayVictoryMontage();
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Victory")
+	TObjectPtr<UAnimMontage> AM_Victory;
 	
 #pragma region PhysicsAnim
 	UPROPERTY(EditDefaultsOnly,Category="Ragdoll|UpperBody")
@@ -453,17 +462,17 @@ private:
 	
 public:	
 	UFUNCTION(NetMulticast,Reliable)
-	void NetMulticast_ApplyRagdollImpulse(FVector Impulse, FName BoneName);
+	void NetMulticast_ApplyRagdollImpulse(FVector Impulse, FName BoneName) override;
 	UFUNCTION(NetMulticast,Reliable)
-	void NetMulticast_SetFullRagdollEnable(bool bEnable);
+	void NetMulticast_SetFullRagdollEnable(bool bEnable) override;
 	UFUNCTION(NetMulticast,Reliable)
 	void NetMulticast_SetCameraFollowRagdoll(bool bEnable);
 
-	void Applyknockdown(FVector Impulse, FName BoneName, float Duration);
+	void Applyknockdown(FVector Impulse, FName BoneName, float Duration) override;
 
-	FORCEINLINE FName GetRagdollStartBone() const {return RagdollStartBone;}
-	FORCEINLINE FVector GetLastHitImpulseDirection() const {return LastHitImpulseDirection;}
-	FORCEINLINE void SetLastHitImpulseDirection(const FVector& Direction){LastHitImpulseDirection = Direction;}
+	FORCEINLINE FName GetRagdollStartBone() const override {return RagdollStartBone;}
+	FORCEINLINE FVector GetLastHitImpulseDirection() const override {return LastHitImpulseDirection;}
+	FORCEINLINE void SetLastHitImpulseDirection(const FVector& Direction) override {LastHitImpulseDirection = Direction;}
 private: 
 	FVector LastHitImpulseDirection = FVector::ZeroVector;
 	FVector DefaultMeshRelativeLocation = FVector::ZeroVector;
