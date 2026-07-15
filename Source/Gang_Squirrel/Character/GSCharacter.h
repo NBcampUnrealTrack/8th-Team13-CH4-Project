@@ -210,6 +210,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Grab")
 	TObjectPtr<UAnimMontage> AM_Grab;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Victory")
+	TObjectPtr<UAnimMontage> AM_Victory;
+
 	UFUNCTION(Server, Reliable)
 	void ServerCancelGrabAbility();
 
@@ -438,4 +441,7 @@ private:
 
 
 #pragma endregion 
+
+	public:
+		void PlayVictoryMontage();
 };
