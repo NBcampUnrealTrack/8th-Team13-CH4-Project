@@ -3,9 +3,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
-#include "Components/SphereComponent.h"
 #include "Gang_Squirrel/Character/GSCharacter.h"
-#include "Gang_Squirrel/Gang_Squirrel.h"
 #include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 
 UGA_Attack::UGA_Attack()
@@ -153,18 +151,18 @@ void UGA_Attack::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Ta
 				}
 				SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 				
-				if (AGSCharacter* TargetCharacter = Cast<AGSCharacter>(TargetActor.Get()))
+				if (IGS_RagdollReactorInterface* TargetReactor = Cast<IGS_RagdollReactorInterface>(TargetActor.Get()))
 				{
-					const FName HitBone = (HitResultPtr && HitResultPtr->BoneName != NAME_None) ? HitResultPtr->BoneName : TargetCharacter->GetRagdollStartBone();
+					const FName HitBone = (HitResultPtr && HitResultPtr->BoneName != NAME_None) ? HitResultPtr->BoneName : TargetReactor->GetRagdollStartBone();
 					const FVector ImpulseDir = (HitResultPtr && !HitResultPtr->ImpactNormal.IsNearlyZero()) ? -HitResultPtr->ImpactNormal : GetAvatarActorFromActorInfo()->GetActorForwardVector();
 					
 					if (bIsSecondCombo)
 					{
-						TargetCharacter->Applyknockdown(ImpulseDir * StrongHitImpulseStrength, HitBone, KnockdownDuration);
+						TargetReactor->Applyknockdown(ImpulseDir * StrongHitImpulseStrength, HitBone, KnockdownDuration);
 					}
 					else
 					{
-						TargetCharacter->NetMulticast_ApplyRagdollImpulse(ImpulseDir * HitImpulseStrength, HitBone);
+						TargetReactor->NetMulticast_ApplyRagdollImpulse(ImpulseDir * HitImpulseStrength, HitBone);
 					}
 				}
 				
