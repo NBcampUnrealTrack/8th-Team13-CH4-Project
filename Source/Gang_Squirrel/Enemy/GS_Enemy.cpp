@@ -1,6 +1,9 @@
 #include "GS_Enemy.h"
 
 #include "AbilitySystemComponent.h"
+#include "AIController.h"
+#include "BrainComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -37,7 +40,7 @@ AGS_Enemy::AGS_Enemy()
 	
 #pragma region AnimNotify
 	// for AnimNotifyTick Func
-	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickMontagesAndRefreshBonesWhenPlayingMontages;
+	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
 #pragma endregion 
 	
 #pragma region MovementSettings
@@ -58,11 +61,16 @@ AGS_Enemy::AGS_Enemy()
 	HPBarWidget->SetRelativeLocation(FVector(0.f,0.f,120.f));
 	HPBarWidget->SetWidgetSpace(EWidgetSpace::World);
 #pragma endregion 
+	
+	
 }
 
 void AGS_Enemy::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	DefaultMeshRelativeLocation = GetMesh()->GetRelativeLocation();
+	DefaultMeshRelativeRotation = GetMesh()->GetRelativeRotation();
 	
 	HomeLocation = GetActorLocation();
 	
@@ -198,4 +206,122 @@ void AGS_Enemy::RefreshHPBar()
 void AGS_Enemy::OnHealthAttributeChanged(const FOnAttributeChangeData& Data)
 {
 	RefreshHPBar();
+}
+
+void AGS_Enemy::SetupUpperBodyRagdoll()
+{
+	if (GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
+	
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (!MeshComp)
+	{
+		return;
+	}
+	
+	MeshComp->SetCollisionProfileName(RagdollCollisionProfile);
+	MeshComp->RecreatePhysicsState();
+	MeshComp->SetAllBodiesBelowSimulatePhysics(RagdollStartBone,true,true);
+}
+
+void AGS_Enemy::NetMulticast_ApplyRagdollImpulse_Implementation(FVector Impulse, FName BoneName)
+{
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		MeshComp->AddImpulseAtLocation(Impulse, MeshComp->GetBoneLocation(BoneName),BoneName);
+	}
+}
+
+void AGS_Enemy::NetMulticast_SetFullRagdollEnable_Implementation(bool bEnable)
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (!MeshComp)
+	{
+		return;
+	}
+	
+	if (bEnable)
+	{
+		MeshComp->SetAllBodiesSimulatePhysics(true);
+		MeshComp->WakeAllRigidBodies();
+	}
+	else
+	{
+		MeshComp->SetAllBodiesSimulatePhysics(false);
+		MeshComp->SetRelativeLocationAndRotation(DefaultMeshRelativeLocation,DefaultMeshRelativeRotation);
+		SetupUpperBodyRagdoll();
+	}
+}
+
+void AGS_Enemy::Applyknockdown(FVector Impulse, FName BoneName, float Duration)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+	
+	if (AAIController* AIController = Cast<AAIController>(GetController()))
+	{
+		if (UBrainComponent* BrainComp = AIController->GetBrainComponent())
+		{
+			BrainComp->PauseLogic(TEXT("Enemy Knockdown"));
+		}
+	}
+	
+	NetMulticast_SetFullRagdollEnable(true);
+	NetMulticast_ApplyRagdollImpulse(Impulse,BoneName);
+	
+	GetWorld()->GetTimerManager().SetTimer(KnockdownRecoveryTimerHandle,this,&AGS_Enemy::RecoverFromKnockdown,Duration,false);
+}
+
+void AGS_Enemy::RecoverFromKnockdown()
+{
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+	{
+		if (ASC->HasMatchingGameplayTag(StateTag::TAG_State_Dead))
+		{
+			return;
+		}
+	}
+	
+	RepositionCapsuleToRagdoll();
+	NetMulticast_SetFullRagdollEnable(false);
+	
+	if (AAIController* AIController = Cast<AAIController>(GetController()))
+	{
+		if (UBrainComponent* BrainComp = AIController->GetBrainComponent())
+		{
+			BrainComp->ResumeLogic(TEXT("Enemy Knockdown Recovered"));
+		}
+	}
+}
+
+void AGS_Enemy::RepositionCapsuleToRagdoll()
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	UCapsuleComponent* CapsuleComp = GetCapsuleComponent();
+	
+	if (!MeshComp || !CapsuleComp)
+	{
+		return;
+	}
+	
+	const FVector PelvisLocation = MeshComp->GetBoneLocation(TEXT("Pelvis"));
+	
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+	
+	FHitResult FloorHit;
+	FVector NewLocation = PelvisLocation;
+	
+	if (GetWorld()->LineTraceSingleByChannel(FloorHit, PelvisLocation, PelvisLocation - FVector(0.f,0.f,500.f),ECC_Visibility,QueryParams))
+	{
+		NewLocation = FloorHit.ImpactPoint + FVector(0.f,0.f,CapsuleComp->GetScaledCapsuleHalfHeight());
+	}
+	
+	const FRotator NewRotation(0.f, MeshComp->GetSocketRotation(TEXT("Pelvis")).Yaw, 0.f);
+	
+	SetActorLocationAndRotation(NewLocation,NewRotation,false,nullptr,ETeleportType::TeleportPhysics);
 }
