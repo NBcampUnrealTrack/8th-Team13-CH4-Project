@@ -144,45 +144,62 @@ private:
 	UPROPERTY()
 	FVector LastMoveInputWorldDirection = FVector::ZeroVector;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab", meta = (AllowPrivateAccess = "true"))
-	float GrabPullStrength = 8.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab", meta = (AllowPrivateAccess = "true"))
-	float MaxGrabResistance = 0.75f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab", meta = (AllowPrivateAccess = "true"))
-	float GrabResistanceSpeedPenalty = 0.5f;
-
-	UPROPERTY()
-	FVector LastGrabberLocation = FVector::ZeroVector;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab|Push", meta = (AllowPrivateAccess = "true"))
-	float GrabPushDistanceMultiplier = 1.0f;
-
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_SetGrabAnimation(bool bGrab);
 
-	float CurrentGrabResistance = 0.f;
+	// 두 캐릭터의 캡슐 사이에 추가로 둘 간격
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab|Follow",
+		meta = (AllowPrivateAccess = "true"))
+	float GrabContactGap = 3.f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab|Push", meta = (AllowPrivateAccess = "true"))
-	float GrabPushContactDistance = 18.f;
+	// 목표 위치에서 이 거리 이내면 위치 보정을 하지 않음
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab|Follow",
+		meta = (AllowPrivateAccess = "true"))
+	float GrabPositionDeadZone = 5.f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab|Push", meta = (AllowPrivateAccess = "true"))
-	float GrabAlignmentStrength = 8.f;
+	// 멀어진 상대를 목표 위치로 되돌리는 힘
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab|Follow",
+		meta = (AllowPrivateAccess = "true"))
+	float GrabFollowCorrectionStrength = 4.f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab|Push", meta = (AllowPrivateAccess = "true"))
-	float MaxGrabCorrectionSpeed = 120.f;
+	// 위치 보정으로 추가할 수 있는 최대 속도
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab|Follow",
+		meta = (AllowPrivateAccess = "true"))
+	float MaxGrabFollowCorrectionSpeed = 100.f;
 
-	UFUNCTION(Server, Unreliable)
-	void ServerSetMoveInputDirection(FVector_NetQuantizeNormal InMoveDirection);
+	// 잡히기 전 이동 설정을 복원하기 위한 캐시
+	float CachedGrabbedGroundFriction = 0.f;
+	float CachedGrabbedBrakingDeceleration = 0.f;
+	float CachedGrabbedMaxAcceleration = 0.f;
+
+	// 현재 잡힌 플레이어를 밀고 있는 안정화된 방향
+	UPROPERTY()
+	FVector CurrentGrabPushDirection = FVector::ForwardVector;
+
+	// 새로운 이동 방향으로 얼마나 빠르게 회전할지
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab|Follow",
+		meta = (AllowPrivateAccess = "true"))
+	float GrabDirectionInterpSpeed = 8.f;
+
+	// 이 속도보다 느리면 방향을 새로 갱신하지 않음
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab|Follow",
+		meta = (AllowPrivateAccess = "true"))
+	float GrabDirectionUpdateMinSpeed = 20.f;
+
+	bool bCachedGrabbedMovementSettings = false;
 
 protected:
 
 	UPROPERTY(Replicated)
 	uint8 bIsGrabbing : 1 = false;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_IsGrabbed)
 	uint8 bIsGrabbed : 1 = false;
+
+	UFUNCTION()
+	void OnRep_IsGrabbed();
+
+	void SetGrabbedMovementState(bool bNewGrabbed);
 
 	UPROPERTY(Replicated)
 	TObjectPtr<AGSCharacter> GrabbedTarget;
@@ -200,10 +217,6 @@ protected:
 
 public:
 
-	FVector GetLastMoveInputWorldDirection() const { return LastMoveInputWorldDirection; }
-
-	float GetGrabResistanceAgainst(const FVector& PushDirection) const;
-
 	void UpdateGrabTargetPosition(float DeltaTime);
 
 	bool IsGrabbing() const { return bIsGrabbing; }
@@ -211,9 +224,6 @@ public:
 
 	void StartGrabTarget(AGSCharacter* TargetCharacter);
 	void StopGrab();
-
-	float GetCurrentGrabResistance() const { return CurrentGrabResistance; }
-
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Grab|Push", meta = (AllowPrivateAccess = "true"))
 	float MinGrabPushMultiplier = 0.25f;
@@ -422,7 +432,34 @@ protected:
 	// GA_Death CallBack Func
 private:
 	void OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount);
+	// Combo Attack
+	UFUNCTION(Server,Reliable)
+	void ServerRequestComboAttack();
 
 
+#pragma endregion 
+	
+#pragma region PhysicsAnim
+	UPROPERTY(EditDefaultsOnly,Category="Ragdoll|UpperBody")
+	FName RagdollStartBone = TEXT("Spine02");
+	UPROPERTY(EditDefaultsOnly,Category="Ragdoll|UpperBody")
+	FName RagdollCollisionProfile = TEXT("Ragdoll");
+	
+	void SetupUpperBodyRagdoll();
+	
+public:	
+	UFUNCTION(NetMulticast,Reliable)
+	void NetMulticast_ApplyRagdollImpulse(FVector Impulse, FName BoneName);
+	UFUNCTION(NetMulticast,Reliable)
+	void NetMulticast_SetFullRagdollEnable(bool bEnable);
+	
+
+	FORCEINLINE FName GetRagdollStartBone() const {return RagdollStartBone;}
+	FORCEINLINE FVector GetLastHitImpulseDirection() const {return LastHitImpulseDirection;}
+	FORCEINLINE void SetLastHitImpulseDirection(const FVector& Direction){LastHitImpulseDirection = Direction;}
+private: 
+	FVector LastHitImpulseDirection = FVector::ZeroVector;
+	FVector DefaultMeshRelativeLocation = FVector::ZeroVector;
+	FRotator DefaultMeshRelativeRotation = FRotator::ZeroRotator;
 #pragma endregion 
 };

@@ -20,18 +20,14 @@ void UGA_PlayerDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-
-	UE_LOG(LogGAS, Warning, TEXT("[GA_PlayerDeath] ActivateAbility called - Player:%s, AM_Death:%s"), *GetNameSafe(GetAvatarActorFromActorInfo()), AM_Death ? TEXT("valid") : TEXT("NULL"));
+	
 
 	AGSCharacter* PlayerCharacter = Cast<AGSCharacter>(GetAvatarActorFromActorInfo());
 	if (!PlayerCharacter)
 	{
-		UE_LOG(LogGAS, Error, TEXT("[GA_PlayerDeath] Cast to AGSCharacter FAILED"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
-
-	UE_LOG(LogGAS, Warning, TEXT("[GA_PlayerDeath] IsNetAuthority:%s"), ActorInfo->IsNetAuthority() ? TEXT("true") : TEXT("false"));
 
 	if (ActorInfo->IsNetAuthority())
 	{
@@ -52,31 +48,18 @@ void UGA_PlayerDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 			bFoundPlayerStart = true;
 			break;
 		}
-		UE_LOG(LogGAS, Warning, TEXT("[GA_PlayerDeath] PlayerStart found:%s, CachedRespawnLocation:%s"), bFoundPlayerStart ? TEXT("true") : TEXT("false"), *CachedRespawnLocation.ToString());
+		
+		PlayerCharacter->NetMulticast_SetFullRagdollEnable(true);
+		PlayerCharacter->NetMulticast_ApplyRagdollImpulse(PlayerCharacter->GetLastHitImpulseDirection() * DeathImpulseStrength, PlayerCharacter->GetRagdollStartBone());
 	}
 	
-	if (AM_Death)
-	{
-		UAbilityTask_PlayMontageAndWait* TaskMontage = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this,NAME_None,AM_Death);
-		TaskMontage->OnCompleted.AddDynamic(this,&UGA_PlayerDeath::K2_EndAbility);
-		TaskMontage->OnInterrupted.AddDynamic(this,&UGA_PlayerDeath::K2_EndAbility);
-		TaskMontage->OnCancelled.AddDynamic(this,&UGA_PlayerDeath::K2_EndAbility);
-		TaskMontage->OnBlendOut.AddDynamic(this,&UGA_PlayerDeath::HandleDeathBlendOut);
-		
-		TaskMontage->ReadyForActivation();
-	}
-	else
-	{
-		EndAbility(Handle,ActorInfo,ActivationInfo,true,false);
-	}
+	EndAbility(Handle,ActorInfo,ActivationInfo,true,false);
 }
 
 void UGA_PlayerDeath::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 	const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	UE_LOG(LogGAS, Warning, TEXT("[GA_PlayerDeath] EndAbility called - Player:%s, IsNetAuthority:%s, bWasCancelled:%s"),
-		*GetNameSafe(GetAvatarActorFromActorInfo()), ActorInfo->IsNetAuthority() ? TEXT("true") : TEXT("false"), bWasCancelled ? TEXT("true") : TEXT("false"));
-
+	
 	if (AGSCharacter* PlayerCharacter = Cast<AGSCharacter>(GetAvatarActorFromActorInfo()))
 	{
 		if (ActorInfo->IsNetAuthority())
@@ -113,7 +96,7 @@ void UGA_PlayerDeath::HandleRespawn()
 		return;
 	}
 	
-	PlayerCharacter->NetMulticast_SetDeathPoseFrozen(false);
+	PlayerCharacter->NetMulticast_SetFullRagdollEnable(false);
 	PlayerChar->SetActorLocation(CachedRespawnLocation);
 	PlayerChar->SetActorRotation(CachedRespawnRotation);
 	PlayerChar->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
@@ -122,9 +105,7 @@ void UGA_PlayerDeath::HandleRespawn()
 	{
 		ASC->RemoveLooseGameplayTag(StateTag::TAG_State_Dead);
 		ASC->RemoveReplicatedLooseGameplayTag(StateTag::TAG_State_Dead);
-
-		UE_LOG(LogGAS, Warning, TEXT("[GA_PlayerDeath] HandleRespawn - GE_Respawn:%s"), GE_Respawn ? *GE_Respawn->GetName() : TEXT("NULL"));
-
+		
 		if (GE_Respawn)
 		{
 			FGameplayEffectContextHandle ContextHandle = ASC->MakeEffectContext();
@@ -133,26 +114,8 @@ void UGA_PlayerDeath::HandleRespawn()
 			if (SpecHandle.IsValid())
 			{
 				FActiveGameplayEffectHandle AppliedHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-				UE_LOG(LogGAS, Warning, TEXT("[GA_PlayerDeath] HandleRespawn - GE_Respawn applied, WasSuccessfullyApplied:%s"), AppliedHandle.WasSuccessfullyApplied() ? TEXT("true") : TEXT("false"));
+				
 			}
 		}
 	}
-
-}
-
-void UGA_PlayerDeath::HandleDeathBlendOut()
-{
-	UE_LOG(LogGAS, Warning, TEXT("[GA_PlayerDeath] HandleDeathBlendOut called - IsNetAuthority:%s"),               
-		CurrentActorInfo && CurrentActorInfo->IsNetAuthority() ? TEXT("true") : TEXT("false"));
-	
-	if (!CurrentActorInfo || !CurrentActorInfo->IsNetAuthority())
-	{
-		return;
-	}
-	
-	if (AGSCharacter* OwnerChar = Cast<AGSCharacter>(GetAvatarActorFromActorInfo()))
-	{
-		OwnerChar->NetMulticast_SetDeathPoseFrozen(true);
-	}
-	K2_EndAbility();
 }
