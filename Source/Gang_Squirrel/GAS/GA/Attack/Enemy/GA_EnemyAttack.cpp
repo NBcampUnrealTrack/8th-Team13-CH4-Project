@@ -52,7 +52,7 @@ void UGA_EnemyAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, const 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void UGA_EnemyAttack::OnAttackTraceHit(AActor* HitActor)
+void UGA_EnemyAttack::OnAttackTraceHit(AActor* HitActor, const FHitResult& Hit)
 {
 	if (!HitActor || HitActor == GetAvatarActorFromActorInfo() || HitActors.Contains(HitActor))
 	{
