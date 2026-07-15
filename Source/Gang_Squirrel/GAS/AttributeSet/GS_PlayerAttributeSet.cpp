@@ -1,6 +1,7 @@
 #include "GS_PlayerAttributeSet.h"
 
 #include "GameplayEffectExtension.h"
+#include "Gang_Squirrel/Character/GSCharacter.h"
 #include "Net/UnrealNetwork.h"
 #include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 #include "Gang_Squirrel/Enemy/GS_Enemy.h"
@@ -81,6 +82,15 @@ void UGS_PlayerAttributeSet::PostGameplayEffectExecute(const struct FGameplayEff
 
 			if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
 			{
+				if (AGSCharacter* PlayerCharacter = Cast<AGSCharacter>(ASC->GetAvatarActor()))
+				{
+					if (AActor* Instigator = Data.EffectSpec.GetEffectContext().GetOriginalInstigator())
+					{
+						const FVector HitDir = (PlayerCharacter->GetActorLocation() - Instigator->GetActorLocation()).GetSafeNormal().GetSafeNormal();
+						PlayerCharacter->SetLastHitImpulseDirection(HitDir);
+					}
+				}
+
 				ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag::TAG_Ability_Death));
 			}
 		}

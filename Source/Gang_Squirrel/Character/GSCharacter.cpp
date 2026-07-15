@@ -81,7 +81,7 @@ AGSCharacter::AGSCharacter()
 	StaminaBarWidget->SetHiddenInGame(true);
 	StaminaBarWidget->SetUsingAbsoluteLocation(true);
 	// for AnimNotifyTick Func
-	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickMontagesAndRefreshBonesWhenPlayingMontages;
+	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
 }
 
 void AGSCharacter::Tick(float DeltaTime)
@@ -110,6 +110,11 @@ void AGSCharacter::Tick(float DeltaTime)
 void AGSCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	DefaultMeshRelativeLocation = GetMesh()->GetRelativeLocation();
+	DefaultMeshRelativeRotation = GetMesh()->GetRelativeRotation();
+	
+	SetupUpperBodyRagdoll();
 
 	if (IsLocallyControlled())
 	{
@@ -800,7 +805,7 @@ void AGSCharacter::PossessedBy(AController* NewController)
 	{
 		// Init ASC
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS,this);
-		PS->GetAbilitySystemComponent()->AddLooseGameplayTag(TeamTag::TAG_Team_Player);
+		// PS->GetAbilitySystemComponent()->AddLooseGameplayTag(TeamTag::TAG_Team_Player);
 
 		BindMovementSpeedDelegates();
 		//Give Ability
@@ -908,7 +913,7 @@ void AGSCharacter::ResetTempScore()
 // GA_Death Callback Func : Temp Logic
 void AGSCharacter::OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount)
 {
-	SetActorEnableCollision(NewCount <= 0);
+	GetCapsuleComponent()->SetCollisionEnabled(NewCount <= 0 ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
 	
 	TempScore = 0;
 	CurrentCheekSize = 0;
@@ -1507,3 +1512,51 @@ void AGSCharacter::UpdateSlideWidget(int32 Value)
 	}
 }
 
+void AGSCharacter::SetupUpperBodyRagdoll()
+{
+	if (GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
+	
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (!MeshComp)
+	{
+		return;
+	}
+	
+	MeshComp->SetCollisionProfileName(RagdollCollisionProfile);
+	
+	MeshComp->RecreatePhysicsState();
+	
+	MeshComp->SetAllBodiesBelowSimulatePhysics(RagdollStartBone,true,true);
+}
+
+void AGSCharacter::NetMulticast_ApplyRagdollImpulse_Implementation(FVector Impulse, FName BoneName)
+{
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		MeshComp->AddImpulseAtLocation(Impulse,MeshComp->GetBoneLocation(BoneName),BoneName);
+	}
+}
+
+void AGSCharacter::NetMulticast_SetFullRagdollEnable_Implementation(bool bEnable)
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (!MeshComp)
+	{
+		return;
+	}
+	
+	if (bEnable)
+	{
+		MeshComp->SetAllBodiesSimulatePhysics(true);
+		MeshComp->WakeAllRigidBodies();
+	}
+	else
+	{
+		MeshComp->SetAllBodiesSimulatePhysics(false);
+		MeshComp->SetRelativeLocationAndRotation(DefaultMeshRelativeLocation,DefaultMeshRelativeRotation);
+		SetupUpperBodyRagdoll();
+	}
+}
