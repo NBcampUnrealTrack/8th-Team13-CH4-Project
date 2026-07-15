@@ -28,20 +28,18 @@ void UGSPoolSubsystem::InitializePool(TArray<FFoodSpawnInfo> DataAssets)
 			FoodPool.Add(Food);
 			// UE_LOG(LogTemp, Warning, TEXT("Spawn Food!!Actor"));
 		}
-			
 	}
+	
 	Algo::RandomShuffle(FoodPool);
 }
 
-AGSFoodBase* UGSPoolSubsystem::GetFood() const
+AGSFoodBase* UGSPoolSubsystem::GetFood(int32 TargetFloor)
 {
 	if (FoodPool.IsEmpty()) return nullptr;
 	
 	for (AGSFoodBase* Food : FoodPool)
 	{
-		if (!IsValid(Food)) continue;
-		
-		if (!Food->bIsActive) return Food;
+		if (!Food->bIsActive && IsValid(Food) && Food->FoodData->CurrentFloor == TargetFloor) return Food;
 	}
 	
 	return nullptr;

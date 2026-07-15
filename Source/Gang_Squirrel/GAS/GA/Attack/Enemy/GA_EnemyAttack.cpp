@@ -28,17 +28,19 @@ void UGA_EnemyAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	}
 	
 	HitActors.Empty();
+	bIsSecondCombo = false;
+	bWillComboToSecondAttack = FMath::FRand() < ComboContinueChance;
 	
 	
 	if (AM_Attack)
 	{
-		UAbilityTask_PlayMontageAndWait* TaskMontage = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this,NAME_None,AM_Attack);
+		CurrentMontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this,NAME_None,AM_Attack,1.f,ComboSection_First);
 		
-		TaskMontage->OnCompleted.AddDynamic(this,&UGA_EnemyAttack::K2_EndAbility);
-		TaskMontage->OnCancelled.AddDynamic(this,&UGA_EnemyAttack::K2_EndAbility);
-		TaskMontage->OnInterrupted.AddDynamic(this,&UGA_EnemyAttack::K2_EndAbility);
+		CurrentMontageTask->OnCompleted.AddDynamic(this,&UGA_EnemyAttack::K2_EndAbility);
+		CurrentMontageTask->OnCancelled.AddDynamic(this,&UGA_EnemyAttack::K2_EndAbility);
+		CurrentMontageTask->OnInterrupted.AddDynamic(this,&UGA_EnemyAttack::K2_EndAbility);
 		
-		TaskMontage->ReadyForActivation();
+		CurrentMontageTask->ReadyForActivation();
 	}
 }
 
@@ -48,11 +50,14 @@ void UGA_EnemyAttack::EndAbility(const FGameplayAbilitySpecHandle Handle, const 
 	AGS_Enemy* Enemy = Cast<AGS_Enemy>(GetAvatarActorFromActorInfo());
 	
 	HitActors.Empty();
+	CurrentMontageTask = nullptr;
+	bIsSecondCombo = false;
+	bWillComboToSecondAttack = false;
 	
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void UGA_EnemyAttack::OnAttackTraceHit(AActor* HitActor)
+void UGA_EnemyAttack::OnAttackTraceHit(AActor* HitActor, const FHitResult& Hit)
 {
 	if (!HitActor || HitActor == GetAvatarActorFromActorInfo() || HitActors.Contains(HitActor))
 	{
@@ -60,18 +65,24 @@ void UGA_EnemyAttack::OnAttackTraceHit(AActor* HitActor)
 	}
 	
 	HitActors.Add(HitActor);
-	ApplyDamageToTarget(HitActor);
+	ApplyDamageToTarget(HitActor,Hit);
 }
 
 void UGA_EnemyAttack::OnComboWindowOpen()
 {
-	UE_LOG(LogTemp,Warning,TEXT("None"));
+	if (!bWillComboToSecondAttack || !CurrentMontageTask || bIsSecondCombo)
+	{
+		return;
+	}
+	
+	bIsSecondCombo = true;
+	HitActors.Empty();
+	
+	GetAbilitySystemComponentFromActorInfo()->CurrentMontageJumpToSection(ComboSection_Second);
 }
 
-void UGA_EnemyAttack::ApplyDamageToTarget(AActor* TargetActor)
+void UGA_EnemyAttack::ApplyDamageToTarget(AActor* TargetActor, const FHitResult& Hit)
 {
-	UE_LOG(LogGAS, Warning, TEXT("[GA_EnemyAttack] ApplyDamageToTarget - Target:%s, GE_Damage:%s"), *GetNameSafe(TargetActor), GE_Damage ? *GE_Damage->GetName() : TEXT("NULL"));
-
 	if (!GE_Damage || !TargetActor)
 	{
 		return;
@@ -84,8 +95,6 @@ void UGA_EnemyAttack::ApplyDamageToTarget(AActor* TargetActor)
 
 	FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(GE_Damage,1.f,GEContextHandle);
 
-	UE_LOG(LogGAS, Warning, TEXT("[GA_EnemyAttack] ApplyDamageToTarget - SpecHandle.IsValid:%s"), SpecHandle.IsValid() ? TEXT("true") : TEXT("false"));
-
 	if (!SpecHandle.IsValid())
 	{
 		return;
@@ -97,12 +106,27 @@ void UGA_EnemyAttack::ApplyDamageToTarget(AActor* TargetActor)
 	{
 		return;
 	}
-
-	UE_LOG(LogGAS, Warning, TEXT("[GA_EnemyAttack] ApplyDamageToTarget - TargetASC:%s"), TargetASC ? TEXT("valid") : TEXT("NULL"));
-
+	
 	if (TargetActor && TargetASC)
 	{
 		FActiveGameplayEffectHandle AppliedHandle = SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(),TargetASC);
-		UE_LOG(LogGAS, Warning, TEXT("[GA_EnemyAttack] ApplyDamageToTarget - AppliedHandle.WasSuccessfullyApplied:%s"), AppliedHandle.WasSuccessfullyApplied() ? TEXT("true") : TEXT("false"));
+		
+		if (AppliedHandle.WasSuccessfullyApplied())
+		{
+			if (IGS_RagdollReactorInterface* TargetReactor = Cast<IGS_RagdollReactorInterface>(TargetActor))
+			{
+				const FName HitBone = (Hit.BoneName != NAME_None) ? Hit.BoneName : TargetReactor->GetRagdollStartBone();
+				const FVector ImpulseDir = !Hit.ImpactNormal.IsNearlyZero() ? -Hit.ImpactNormal : GetAvatarActorFromActorInfo()->GetActorForwardVector();
+				
+				if (bIsSecondCombo)
+				{
+					TargetReactor->Applyknockdown(ImpulseDir * StrongHitImpulseStrength, HitBone, KnockdownDuration);
+				}
+				else
+				{
+					TargetReactor->NetMulticast_ApplyRagdollImpulse(ImpulseDir * HitImpulseStrength, HitBone);
+				}
+			}
+		}
 	}
 }

@@ -6,6 +6,7 @@
 
 class UGS_GameEndWidget;
 class AGSCharacter;
+class UGS_HUDWidget;
 
 UCLASS()
 class GANG_SQUIRREL_API AGSPlayerController : public APlayerController
@@ -42,7 +43,7 @@ private:
 protected:
 	
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<UUserWidget> HUDWidgetClass;
+	TSubclassOf<UGS_HUDWidget> HUDWidgetClass;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UGS_GameEndWidget> GameEndWidgetClass;
@@ -53,8 +54,8 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UGS_GameEndWidget> GameEndWidgetInstance;
 
-	UPROPERTY()
-	TObjectPtr<UUserWidget> HUDWidgetInstance;
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
+	TObjectPtr<UGS_HUDWidget> HUDWidgetInstance;
 
 #pragma region Debugging
 public:

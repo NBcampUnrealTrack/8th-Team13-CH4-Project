@@ -28,6 +28,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Gang_Squirrel/EOS/GS_GameInstance.h"
 #include "Gang_Squirrel/Food/Score/GSSlideWidget.h"
+#include "Components/AudioComponent.h"
 
 
 AGSCharacter::AGSCharacter()
@@ -53,6 +54,10 @@ AGSCharacter::AGSCharacter()
 	SpringArm->SetRelativeRotation(FRotator(-18.f, 0.f, 0.f));
 	SpringArm->bUsePawnControlRotation = true;
 	SpringArm->bDoCollisionTest = true;
+	//Camera Lag Settings
+	SpringArm->CameraLagSpeed = 10.f;
+	SpringArm->bEnableCameraRotationLag = true;
+	SpringArm->CameraRotationLagSpeed = 10.f;
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm);
@@ -80,8 +85,13 @@ AGSCharacter::AGSCharacter()
 	StaminaBarWidget->SetVisibility(false);
 	StaminaBarWidget->SetHiddenInGame(true);
 	StaminaBarWidget->SetUsingAbsoluteLocation(true);
+	
+	//Audio Component
+	AudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("AudioComponent"));
+	AudioComponent->SetupAttachment(GetRootComponent());
+	AudioComponent->SetVolumeMultiplier(0.4);
 	// for AnimNotifyTick Func
-	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickMontagesAndRefreshBonesWhenPlayingMontages;
+	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
 }
 
 void AGSCharacter::Tick(float DeltaTime)
@@ -110,6 +120,15 @@ void AGSCharacter::Tick(float DeltaTime)
 void AGSCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	DefaultMeshRelativeLocation = GetMesh()->GetRelativeLocation();
+	DefaultMeshRelativeRotation = GetMesh()->GetRelativeRotation();
+	DefaultSpringArmRelativeLocation = SpringArm->GetRelativeLocation();
+	DefaultSpringArmRelativeRotation = SpringArm->GetRelativeRotation();
+	
+	AudioComponent->Stop();
+	
+	SetupUpperBodyRagdoll();
 
 	if (IsLocallyControlled())
 	{
@@ -279,6 +298,7 @@ void AGSCharacter::IAInteract(const FInputActionValue& InValue)
 	if (AM_Eat)
 	{
 		PlayAnimMontage(AM_Eat);
+		AudioComponent->Play();
 	}
 
 	Server_SetEating(true);
@@ -296,6 +316,7 @@ void AGSCharacter::IAStopInteract(const FInputActionValue& InValue)
 	if (AM_Eat)
 	{
 		StopAnimMontage(AM_Eat);
+		AudioComponent->Stop();
 	}
 
 	Server_SetEating(false);
@@ -800,7 +821,7 @@ void AGSCharacter::PossessedBy(AController* NewController)
 	{
 		// Init ASC
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS,this);
-		PS->GetAbilitySystemComponent()->AddLooseGameplayTag(TeamTag::TAG_Team_Player);
+		// PS->GetAbilitySystemComponent()->AddLooseGameplayTag(TeamTag::TAG_Team_Player);
 
 		BindMovementSpeedDelegates();
 		//Give Ability
@@ -908,7 +929,7 @@ void AGSCharacter::ResetTempScore()
 // GA_Death Callback Func : Temp Logic
 void AGSCharacter::OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount)
 {
-	SetActorEnableCollision(NewCount <= 0);
+	GetCapsuleComponent()->SetCollisionEnabled(NewCount <= 0 ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
 	
 	TempScore = 0;
 	CurrentCheekSize = 0;
@@ -1515,3 +1536,126 @@ void AGSCharacter::UpdateSlideWidget(int32 Value)
 	}
 }
 
+void AGSCharacter::SetupUpperBodyRagdoll()
+{
+	if (GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
+	
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (!MeshComp)
+	{
+		return;
+	}
+	
+	MeshComp->SetCollisionProfileName(RagdollCollisionProfile);
+	
+	MeshComp->RecreatePhysicsState();
+	
+	MeshComp->SetAllBodiesBelowSimulatePhysics(RagdollStartBone,true,true);
+}
+
+void AGSCharacter::Applyknockdown(FVector Impulse, FName BoneName, float Duration)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+	
+	NetMulticast_SetFullRagdollEnable(true);
+	NetMulticast_ApplyRagdollImpulse(Impulse,BoneName);
+	NetMulticast_SetCameraFollowRagdoll(true);
+	
+	GetWorld()->GetTimerManager().SetTimer(KnockdownRecoveryTimerHandle,this,&AGSCharacter::RecoverFromKnockdown,Duration,false);
+}
+
+void AGSCharacter::RecoverFromKnockdown()
+{
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+	{
+		if (ASC->HasMatchingGameplayTag(StateTag::TAG_State_Dead))
+		{
+			return;
+		}
+	}
+	
+	RepositionCapsuleToRagdoll();
+	NetMulticast_SetCameraFollowRagdoll(false);
+	NetMulticast_SetFullRagdollEnable(false);
+}
+
+void AGSCharacter::RepositionCapsuleToRagdoll()
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	UCapsuleComponent* CapsuleComp = GetCapsuleComponent();
+	
+	if (!MeshComp || !CapsuleComp)
+	{
+		return;
+	}
+	
+	const FVector PelvisLocation = MeshComp->GetBoneLocation(TEXT("Pelvis"));
+	
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+	
+	FHitResult FloorHit;
+	FVector NewLocation = PelvisLocation;
+	
+	if (GetWorld()->LineTraceSingleByChannel(FloorHit, PelvisLocation, PelvisLocation - FVector(0.f,0.f,500.f),ECC_Visibility,QueryParams))
+	{
+		NewLocation = FloorHit.ImpactPoint + FVector(0.f,0.f,CapsuleComp->GetScaledCapsuleHalfHeight());
+	}
+	
+	const FRotator NewRotation(0.f, MeshComp->GetSocketRotation(TEXT("Pelvis")).Yaw, 0.f);
+	
+	SetActorLocationAndRotation(NewLocation, NewRotation,false,nullptr,ETeleportType::TeleportPhysics);
+}
+
+void AGSCharacter::NetMulticast_ApplyRagdollImpulse_Implementation(FVector Impulse, FName BoneName)
+{
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		MeshComp->AddImpulseAtLocation(Impulse,MeshComp->GetBoneLocation(BoneName),BoneName);
+	}
+}
+
+void AGSCharacter::NetMulticast_SetFullRagdollEnable_Implementation(bool bEnable)
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (!MeshComp)
+	{
+		return;
+	}
+	
+	if (bEnable)
+	{
+		MeshComp->SetAllBodiesSimulatePhysics(true);
+		MeshComp->WakeAllRigidBodies();
+	}
+	else
+	{
+		MeshComp->SetAllBodiesSimulatePhysics(false);
+		MeshComp->SetRelativeLocationAndRotation(DefaultMeshRelativeLocation,DefaultMeshRelativeRotation);
+		SetupUpperBodyRagdoll();
+	}
+}
+
+void AGSCharacter::NetMulticast_SetCameraFollowRagdoll_Implementation(bool bEnable)
+{
+	if (!IsLocallyControlled() || !SpringArm)
+	{
+		return;
+	}
+	
+	if (bEnable)
+	{
+		SpringArm->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepWorldTransform, RagdollStartBone);
+	}
+	else
+	{
+		SpringArm->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+		SpringArm->SetRelativeLocationAndRotation(DefaultSpringArmRelativeLocation,DefaultSpringArmRelativeRotation);
+	}
+}

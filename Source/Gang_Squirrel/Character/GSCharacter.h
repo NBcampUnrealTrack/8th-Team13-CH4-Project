@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
 #include "GameplayEffectTypes.h"
+#include "Interface/GS_RagdollReactorInterface.h"
 #include "GSCharacter.generated.h"
 
 class UGSSlideWidget;
@@ -29,7 +30,7 @@ class UGSFoodWidget;
 class UGameplayEffect;
 
 UCLASS()
-class GANG_SQUIRREL_API AGSCharacter : public ACharacter ,public IAbilitySystemInterface
+class GANG_SQUIRREL_API AGSCharacter : public ACharacter ,public IAbilitySystemInterface, public IGS_RagdollReactorInterface
 {
 	GENERATED_BODY()
 
@@ -386,6 +387,10 @@ protected:
 	//Side Widget
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Component")
 	TObjectPtr<UWidgetComponent> StaminaBarWidget;
+	
+	//Sound Component
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Component")
+	TObjectPtr<UAudioComponent> AudioComponent;
 
 #pragma endregion
 
@@ -446,4 +451,39 @@ public:
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation|Victory")
 	TObjectPtr<UAnimMontage> AM_Victory;
+	
+#pragma region PhysicsAnim
+	UPROPERTY(EditDefaultsOnly,Category="Ragdoll|UpperBody")
+	FName RagdollStartBone = TEXT("Spine02");
+	UPROPERTY(EditDefaultsOnly,Category="Ragdoll|UpperBody")
+	FName RagdollCollisionProfile = TEXT("Ragdoll");
+	
+	void SetupUpperBodyRagdoll();
+	
+public:	
+	UFUNCTION(NetMulticast,Reliable)
+	void NetMulticast_ApplyRagdollImpulse(FVector Impulse, FName BoneName) override;
+	UFUNCTION(NetMulticast,Reliable)
+	void NetMulticast_SetFullRagdollEnable(bool bEnable) override;
+	UFUNCTION(NetMulticast,Reliable)
+	void NetMulticast_SetCameraFollowRagdoll(bool bEnable);
+
+	void Applyknockdown(FVector Impulse, FName BoneName, float Duration) override;
+
+	FORCEINLINE FName GetRagdollStartBone() const override {return RagdollStartBone;}
+	FORCEINLINE FVector GetLastHitImpulseDirection() const override {return LastHitImpulseDirection;}
+	FORCEINLINE void SetLastHitImpulseDirection(const FVector& Direction) override {LastHitImpulseDirection = Direction;}
+private: 
+	FVector LastHitImpulseDirection = FVector::ZeroVector;
+	FVector DefaultMeshRelativeLocation = FVector::ZeroVector;
+	FRotator DefaultMeshRelativeRotation = FRotator::ZeroRotator;
+	// For Follow Ragdoll
+	FVector DefaultSpringArmRelativeLocation = FVector::ZeroVector;
+	FRotator DefaultSpringArmRelativeRotation = FRotator::ZeroRotator;
+	
+	FTimerHandle KnockdownRecoveryTimerHandle;
+
+	void RecoverFromKnockdown();
+	void RepositionCapsuleToRagdoll();
+#pragma endregion 
 };

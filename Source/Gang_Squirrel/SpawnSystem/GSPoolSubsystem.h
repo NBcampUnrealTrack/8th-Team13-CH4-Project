@@ -24,6 +24,6 @@ public:
 	
 	void InitializePool(TArray<FFoodSpawnInfo> DataAssets);
 	
-	AGSFoodBase* GetFood() const;
+	AGSFoodBase* GetFood(int32 TargetFloor);
 	
 };

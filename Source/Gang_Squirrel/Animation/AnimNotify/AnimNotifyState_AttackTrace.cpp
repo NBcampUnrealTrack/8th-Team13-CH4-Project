@@ -99,7 +99,7 @@ void UAnimNotifyState_AttackTrace::NotifyTick(USkeletalMeshComponent* MeshComp, 
 		if (AActor* HitActor = Hit.GetActor())
 		{
 			// UE_LOG(LogGAS, Warning, TEXT("[AttackTrace] NotifyTick - OnAttackTraceHit calling with HitActor:%s"), *GetNameSafe(HitActor));
-			TraceInstigator->OnAttackTraceHit(HitActor);
+			TraceInstigator->OnAttackTraceHit(HitActor, Hit);
 		}
 	}
 

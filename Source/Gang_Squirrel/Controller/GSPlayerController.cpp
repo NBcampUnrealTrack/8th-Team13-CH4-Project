@@ -7,6 +7,7 @@
 #include "Gang_Squirrel/Game/GS_GameModeBase.h"
 #include "Gang_Squirrel/Game/GS_GameState.h"
 #include "Gang_Squirrel/UI/GS_GameEndWidget.h"
+#include "Gang_Squirrel/UI/HUD/GS_HUDWidget.h"
 #include "GameFramework/GameStateBase.h"
 #include "Gang_Squirrel/EOS/GS_GameInstance.h"
 #include "Gang_Squirrel/Character/GSCharacter.h"
@@ -62,10 +63,11 @@ void AGSPlayerController::BeginPlay()
 
 	if (HUDWidgetClass)
 	{
-		UUserWidget* HUDWidget = CreateWidget<UUserWidget>(this, HUDWidgetClass);
-		if (HUDWidget)
+		HUDWidgetInstance = CreateWidget<UGS_HUDWidget>(this, HUDWidgetClass);
+		
+		if (IsValid(HUDWidgetInstance))
 		{
-			HUDWidget->AddToViewport();
+			HUDWidgetInstance->AddToViewport();
 		}
 	}
 	

@@ -1,6 +1,7 @@
 #include "GS_PlayerAttributeSet.h"
 
 #include "GameplayEffectExtension.h"
+#include "Gang_Squirrel/Character/GSCharacter.h"
 #include "Net/UnrealNetwork.h"
 #include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 #include "Gang_Squirrel/Enemy/GS_Enemy.h"
@@ -81,6 +82,16 @@ void UGS_PlayerAttributeSet::PostGameplayEffectExecute(const struct FGameplayEff
 
 			if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
 			{
+				AActor* AvatarActor = ASC->GetAvatarActor();
+				if (IGS_RagdollReactorInterface* DyingReactor = Cast<IGS_RagdollReactorInterface>(AvatarActor))
+				{
+					if (AActor* Instigator = Data.EffectSpec.GetEffectContext().GetOriginalInstigator())
+					{
+						const FVector HitDir = (AvatarActor->GetActorLocation() - Instigator->GetActorLocation()).GetSafeNormal().GetSafeNormal();
+						DyingReactor->SetLastHitImpulseDirection(HitDir);
+					}
+				}
+
 				ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag::TAG_Ability_Death));
 			}
 		}
@@ -107,6 +118,7 @@ void UGS_PlayerAttributeSet::OnRep_SlowSpeedMultiplier(const FGameplayAttributeD
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(ThisClass,SlowSpeedMultiplier,OldSlowSpeedMultiplier);
 }
+
 void UGS_PlayerAttributeSet::OnRep_Stamina(const FGameplayAttributeData& OldStamina)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(ThisClass, Stamina, OldStamina);
