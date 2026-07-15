@@ -46,6 +46,21 @@ void AGS_PlayerState::BeginPlay()
 	StartStaminaRegen();
 }
 
+void AGS_PlayerState::CopyProperties(APlayerState* PlayerState)
+{
+	//PlayerState가 기본적으로 가져가는 프로터티 외 우리가 추가로 추가한 프로퍼티들은 ServerTravel시 엔진이 인식X
+	//CopyProperty로 추가 프로퍼티를 가져감
+	Super::CopyProperties(PlayerState);
+
+	if (AGS_PlayerState* NewPS = Cast<AGS_PlayerState>(PlayerState))
+	{
+		NewPS->PlayerNickname = PlayerNickname;
+		NewPS->PlayerScore = PlayerScore;
+		NewPS->KillCount = KillCount;
+		NewPS->bIsHost = bIsHost;
+	}
+}
+
 void AGS_PlayerState::SetPlayerNickname(const FString& NewName)
 {
 	PlayerNickname = NewName;

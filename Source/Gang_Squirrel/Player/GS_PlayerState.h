@@ -27,6 +27,9 @@ protected:
 	
 	virtual void BeginPlay() override;
 
+	//메인에서 결과레벨로 넘어갈때 가져갈 프로퍼티
+	virtual void CopyProperties(APlayerState* PlayerState) override;
+
 private:
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComp;

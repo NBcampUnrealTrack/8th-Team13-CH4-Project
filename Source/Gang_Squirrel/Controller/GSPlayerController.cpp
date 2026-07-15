@@ -10,6 +10,8 @@
 #include "Gang_Squirrel/UI/HUD/GS_HUDWidget.h"
 #include "GameFramework/GameStateBase.h"
 #include "Gang_Squirrel/EOS/GS_GameInstance.h"
+#include "Gang_Squirrel/Character/GSCharacter.h"
+#include "Kismet/GameplayStatics.h"
 
 void AGSPlayerController::BeginPlay()
 {
@@ -28,23 +30,23 @@ void AGSPlayerController::BeginPlay()
 		GSInst->SetScreenBrightness(GSInst->ScreenBrightness);
 	}
 
-	bGameEndUIShown = false;
+	// bGameEndUIShown = false;
 
-	if (IsValid(GameEndWidgetInstance))
-	{
-		GameEndWidgetInstance->RemoveFromParent();
-		GameEndWidgetInstance = nullptr;
-	}
+	//if (IsValid(GameEndWidgetInstance))
+	//{
+	//	GameEndWidgetInstance->RemoveFromParent();
+	//	GameEndWidgetInstance = nullptr;
+	//}
 
-	GetWorldTimerManager().ClearTimer(MatchEndCheckTimerHandle);
-
-	GetWorldTimerManager().SetTimer(
-		MatchEndCheckTimerHandle,
-		this,
-		&AGSPlayerController::CheckMatchEndByTime,
-		0.2f,
-		true
-	);
+	//GetWorldTimerManager().ClearTimer(MatchEndCheckTimerHandle);
+	//
+	//GetWorldTimerManager().SetTimer(
+	//	MatchEndCheckTimerHandle,
+	//	this,
+	//	&AGSPlayerController::CheckMatchEndByTime,
+	//	0.2f,
+	//	true
+	//);
 
 	//UE_LOG(LogTemp, Warning, TEXT("[GSPlayerController] HUDClass: %d / NicknameClass: %d"),
 	//	HUDWidgetClass != nullptr,
@@ -81,6 +83,55 @@ void AGSPlayerController::BeginPlay()
 	}
 	
 	ServerSetNickname(DisplayName);
+}
+
+void AGSPlayerController::ClientShowResultStage_Implementation()
+{
+	UE_LOG(LogTemp, Warning, TEXT("[Result] GameEndWidgetClass=%s"),
+		GameEndWidgetClass ? TEXT("Valid") : TEXT("NULL"));
+
+	if (GameEndWidgetClass)
+	{
+		GameEndWidgetInstance = CreateWidget<UGS_GameEndWidget>(this, GameEndWidgetClass);
+
+		UE_LOG(LogTemp, Warning, TEXT("[Result] GameEndWidgetInstance=%s"),
+			IsValid(GameEndWidgetInstance) ? TEXT("Valid") : TEXT("NULL"));
+
+		if (IsValid(GameEndWidgetInstance))
+		{
+			GameEndWidgetInstance->SetGameEndResult();
+			GameEndWidgetInstance->AddToViewport(100);
+
+			UE_LOG(LogTemp, Warning, TEXT("[Result] AddToViewport called"));
+
+			SetShowMouseCursor(true);
+			FInputModeUIOnly InputMode;
+			InputMode.SetWidgetToFocus(GameEndWidgetInstance->TakeWidget());
+			SetInputMode(InputMode);
+		}
+	}
+
+	TArray<AActor*> FoundCameras;
+	UGameplayStatics::GetAllActorsWithTag(GetWorld(), VictoryStageCameraTag, FoundCameras);
+
+	if (FoundCameras.Num() > 0)
+	{
+		SetViewTargetWithBlend(FoundCameras[0], 0.5f);
+	}
+
+	TArray<AActor*> FoundSlots;
+	UGameplayStatics::GetAllActorsWithTag(GetWorld(), VictoryStageSlotTag, FoundSlots);
+	if (FoundSlots.Num() > 0 && VictoryDisplayCharacterClass)
+	{
+		AGSCharacter* DisplayCharacter = GetWorld()->SpawnActor<AGSCharacter>(
+			VictoryDisplayCharacterClass,
+			FoundSlots[0]->GetActorTransform()
+		);
+		if (IsValid(DisplayCharacter))
+		{
+			DisplayCharacter->PlayVictoryMontage();
+		}
+	}
 }
 
 void AGSPlayerController::RequestRestartGame()
@@ -152,46 +203,46 @@ void AGSPlayerController::ServerSetNickname_Implementation(const FString& Nickna
 	}
 }
 
-void AGSPlayerController::ClientShowGameEndUI_Implementation()
-{
-	ShowGameEndUILocal();
-}
+//void AGSPlayerController::ClientShowGameEndUI_Implementation()
+//{
+//	ShowGameEndUILocal();
+//}
 
-void AGSPlayerController::ShowGameEndUILocal()
-{
-	if (IsLocalController() == false)
-	{
-		return;
-	}
-
-	if (GameEndWidgetClass == nullptr)
-	{
-		// UE_LOG(LogTemp, Warning, TEXT("GameEndWidgetClass is nullptr."));
-		return;
-	}
-
-	if (GameEndWidgetInstance == nullptr)
-	{
-		GameEndWidgetInstance = CreateWidget<UGS_GameEndWidget>(
-			this,
-			GameEndWidgetClass
-		);
-	}
-
-	if (IsValid(GameEndWidgetInstance))
-	{
-		TArray<FGSLeaderboardEntry> EmptyLeaderboard;
-		GameEndWidgetInstance->SetGameEndResult();
-
-		GameEndWidgetInstance->AddToViewport(100);
-
-		SetShowMouseCursor(true);
-
-		FInputModeUIOnly InputMode;
-		InputMode.SetWidgetToFocus(GameEndWidgetInstance->TakeWidget());
-		SetInputMode(InputMode);
-	}
-}
+//void AGSPlayerController::ShowGameEndUILocal()
+//{
+//	if (IsLocalController() == false)
+//	{
+//		return;
+//	}
+//
+//	if (GameEndWidgetClass == nullptr)
+//	{
+//		// UE_LOG(LogTemp, Warning, TEXT("GameEndWidgetClass is nullptr."));
+//		return;
+//	}
+//
+//	if (GameEndWidgetInstance == nullptr)
+//	{
+//		GameEndWidgetInstance = CreateWidget<UGS_GameEndWidget>(
+//			this,
+//			GameEndWidgetClass
+//		);
+//	}
+//
+//	if (IsValid(GameEndWidgetInstance))
+//	{
+//		TArray<FGSLeaderboardEntry> EmptyLeaderboard;
+//		GameEndWidgetInstance->SetGameEndResult();
+//
+//		GameEndWidgetInstance->AddToViewport(100);
+//
+//		SetShowMouseCursor(true);
+//
+//		FInputModeUIOnly InputMode;
+//		InputMode.SetWidgetToFocus(GameEndWidgetInstance->TakeWidget());
+//		SetInputMode(InputMode);
+//	}
+//}
 
 void AGSPlayerController::Debug_GiveReward(int32 RewardType)
 {
@@ -217,32 +268,32 @@ void AGSPlayerController::ServerDebugGiveReward_Implementation(int32 RewardType)
 //	UE_LOG(LogTemp, Log, TEXT("[Debug] GiveSpecificReward called: %d"), RewardType);
 }
 
-void AGSPlayerController::CheckMatchEndByTime()
-{
-	if (bGameEndUIShown)
-	{
-		return;
-	}
-
-	AGS_GameState* GS = GetWorld() ? GetWorld()->GetGameState<AGS_GameState>() : nullptr;
-	if (IsValid(GS) == false)
-	{
-		return;
-	}
-
-	if (GS->MatchEndTime <= 0.f)
-	{
-		return;
-	}
-
-	if (GS->GetRemainingTime() > 0.f)
-	{
-		return;
-	}
-
-	bGameEndUIShown = true;
-
-	GetWorldTimerManager().ClearTimer(MatchEndCheckTimerHandle);
-
-	ShowGameEndUILocal();
-}
+//void AGSPlayerController::CheckMatchEndByTime()
+//{
+//	if (bGameEndUIShown)
+//	{
+//		return;
+//	}
+//
+//	AGS_GameState* GS = GetWorld() ? GetWorld()->GetGameState<AGS_GameState>() : nullptr;
+//	if (IsValid(GS) == false)
+//	{
+//		return;
+//	}
+//
+//	if (GS->MatchEndTime <= 0.f)
+//	{
+//		return;
+//	}
+//
+//	if (GS->GetRemainingTime() > 0.f)
+//	{
+//		return;
+//	}
+//
+//	bGameEndUIShown = true;
+//
+//	GetWorldTimerManager().ClearTimer(MatchEndCheckTimerHandle);
+//
+//	ShowGameEndUILocal();
+//}

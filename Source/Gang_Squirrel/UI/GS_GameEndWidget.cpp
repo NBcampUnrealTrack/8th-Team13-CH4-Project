@@ -153,9 +153,9 @@ void UGS_GameEndWidget::SetGameEndResult()
 	{
 		TXT_Winner->SetText(
 			FText::FromString(
-				FString::Printf(
-					TEXT("우승: %s"),
-					*WinnerEntry.PlayerName
+				FString::Printf(TEXT("%s Win! (%d점)"), 
+					*WinnerEntry.PlayerName, 
+						WinnerEntry.Score
 				)
 			)
 		);
