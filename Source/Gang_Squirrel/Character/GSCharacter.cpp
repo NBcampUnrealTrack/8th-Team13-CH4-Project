@@ -81,7 +81,7 @@ AGSCharacter::AGSCharacter()
 	StaminaBarWidget->SetHiddenInGame(true);
 	StaminaBarWidget->SetUsingAbsoluteLocation(true);
 	// for AnimNotifyTick Func
-	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickMontagesAndRefreshBonesWhenPlayingMontages;
+	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
 }
 
 void AGSCharacter::Tick(float DeltaTime)
@@ -110,6 +110,8 @@ void AGSCharacter::Tick(float DeltaTime)
 void AGSCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	SetupUpperBodyRagdoll();
 
 	if (IsLocallyControlled())
 	{
@@ -914,7 +916,7 @@ void AGSCharacter::OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount
 	CurrentCheekSize = 0;
 	Multicast_InflateCheeks(0.f);
 }
-
+\
 // GA_Attack ComboAttackWindow
 void AGSCharacter::ServerRequestComboAttack_Implementation()
 {
@@ -1507,3 +1509,30 @@ void AGSCharacter::UpdateSlideWidget(int32 Value)
 	}
 }
 
+void AGSCharacter::SetupUpperBodyRagdoll()
+{
+	if (GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
+	
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (!MeshComp)
+	{
+		return;
+	}
+	
+	MeshComp->SetCollisionProfileName(RagdollCollisionProfile);
+	
+	MeshComp->RecreatePhysicsState();
+	
+	MeshComp->SetAllBodiesBelowSimulatePhysics(RagdollStartBone,true,true);
+}
+
+void AGSCharacter::NetMulticast_ApplyRagdollImpulse_Implementation(FVector Impulse, FName BoneName)
+{
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		MeshComp->AddImpulseAtLocation(Impulse,MeshComp->GetBoneLocation(BoneName),BoneName);
+	}
+}
