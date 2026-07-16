@@ -755,7 +755,6 @@ void AGSCharacter::UpdateMaxWalkSpeedFromAttribute()
 
 	GetCharacterMovement()->MaxWalkSpeed = FinalSpeed;
 
-	);
 }
 
 void AGSCharacter::StartRolling(const FVector& InRollingDirection)
