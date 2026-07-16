@@ -728,14 +728,19 @@ float AGSCharacter::GetFinalMoveSpeedMultiplier() const
 void AGSCharacter::UpdateMaxWalkSpeedFromAttribute()
 {
 	const float SafeMoveSpeed = FMath::Max(CachedMoveSpeed, 0.f);
-	const float SafeSlowMultiplier = FMath::Clamp(CachedSlowSpeedMultiplier, 0.1f, 1.f);
+	const float SafeSlowMultiplier =
+		FMath::Clamp(CachedSlowSpeedMultiplier, 0.1f, 1.f);
+
+	const float FinalMultiplier = GetFinalMoveSpeedMultiplier();
 
 	const float FinalSpeed =
 		SafeMoveSpeed *
 		SafeSlowMultiplier *
-		GetFinalMoveSpeedMultiplier();
+		FinalMultiplier;
 
 	GetCharacterMovement()->MaxWalkSpeed = FinalSpeed;
+
+	);
 }
 
 void AGSCharacter::StartRolling(const FVector& InRollingDirection)
