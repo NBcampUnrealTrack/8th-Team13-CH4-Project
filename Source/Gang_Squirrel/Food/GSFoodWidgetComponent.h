@@ -24,4 +24,12 @@ protected:
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	
 	virtual void BeginPlay() override;
+	
+private:
+	
+	UPROPERTY()
+	TObjectPtr<APlayerController> CachedPlayerController;
+	
+	UPROPERTY()
+	TObjectPtr<APlayerCameraManager> CachedCameraManager;
 };
