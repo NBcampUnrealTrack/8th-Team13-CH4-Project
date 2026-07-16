@@ -18,7 +18,6 @@ protected:
 	
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Animation|Death")
 	TObjectPtr<UAnimMontage> AM_Death;
-	//TODO:: TempLogic -> Refac to Respawn Logic
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Death|Respawn")
 	float RespawnDelay = 10.f;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Death|Respawn")
@@ -29,7 +28,6 @@ protected:
 	float DeathImpulseStrength = 300.f;
 	
 private:
-	//TODO:: TempLogic -> Refac to Respawn Logic
 	void HandleRespawn();
 	
 	FVector CachedRespawnLocation = FVector::ZeroVector;

@@ -58,6 +58,7 @@ void AGS_PlayerState::CopyProperties(APlayerState* PlayerState)
 		NewPS->PlayerScore = PlayerScore;
 		NewPS->KillCount = KillCount;
 		NewPS->bIsHost = bIsHost;
+		NewPS->LobbySlotIndex = LobbySlotIndex;
 	}
 }
 

@@ -5,6 +5,7 @@
 
 #include "Components/BoxComponent.h"
 #include "Gang_Squirrel/Character/GSCharacter.h"
+#include "Gang_Squirrel/Player/GS_PlayerState.h"
 
 
 AGSHideoutPoint::AGSHideoutPoint()
@@ -46,6 +47,12 @@ void AGSHideoutPoint::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, A
 	}
 
 	if (CurrentCharacter->IsLocallyControlled() == false)
+	{
+		return;
+	}
+	
+	const AGS_PlayerState* PS = CurrentCharacter->GetPlayerState<AGS_PlayerState>();
+	if (!PS || PS->GetLobbySlotIndex() != SlotIndex)
 	{
 		return;
 	}
