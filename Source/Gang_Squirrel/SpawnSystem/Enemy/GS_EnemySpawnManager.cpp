@@ -2,6 +2,7 @@
 
 #include "NavigationSystem.h"
 #include "Components/BoxComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "NavMesh/NavMeshBoundsVolume.h"
@@ -123,7 +124,15 @@ AGS_Enemy* AGS_EnemySpawnManager::SpawnEnemyAtRandomLocation()
 	{
 		return nullptr;
 	}
-	
+
+	if (EnemyClass)
+	{
+		if (const AGS_Enemy* DefaultEnemy = EnemyClass.GetDefaultObject())
+		{
+			RandomLocation.Z += DefaultEnemy->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+		}
+	}
+
 	return SpawnEnemy(RandomLocation, FRotator::ZeroRotator);
 }
 
