@@ -3,7 +3,6 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Gang_Squirrel/GAS/GA/Attack/IGA_AttackTraceInterface.h"
-#include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 #include "Gang_Squirrel/Gang_Squirrel.h"
 
 void UAnimNotifyState_AttackTrace::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
@@ -78,7 +77,7 @@ void UAnimNotifyState_AttackTrace::NotifyTick(USkeletalMeshComponent* MeshComp, 
 		// UE_LOG(LogGAS, Warning, TEXT("[AttackTrace] NotifyTick - Checking Spec Ability:%s, IsActive:%s"),
 		// 	Spec.Ability ? *Spec.Ability->GetClass()->GetName() : TEXT("NULL"), Spec.IsActive() ? TEXT("true") : TEXT("false"));
 
-		if (Spec.IsActive() && Spec.Ability && Spec.Ability->AbilityTags.HasTag(AbilityTag::TAG_Ability_Attack))
+		if (Spec.IsActive() && Spec.Ability && Spec.Ability->GetClass()->ImplementsInterface(UGA_AttackTraceInterface::StaticClass()))
 		{
 			ActiveAttackAbility = Spec.GetPrimaryInstance();
 			break;

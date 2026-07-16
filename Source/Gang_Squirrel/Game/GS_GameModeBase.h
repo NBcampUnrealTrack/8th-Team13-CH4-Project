@@ -103,4 +103,8 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Reward|SpeedBoost")
 	TSubclassOf<UGameplayEffect> GE_MoveSpeedRewardClass;
+	
+// Choose PlayerStart
+protected:
+	virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override;
 };

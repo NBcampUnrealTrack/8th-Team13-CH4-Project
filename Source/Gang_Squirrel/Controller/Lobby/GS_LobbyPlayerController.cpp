@@ -153,6 +153,8 @@ void AGS_LobbyPlayerController::RefreshCharacterDisplay()
 			{
 				continue;
 			}
+			
+			CandidatePS->SetLobbySlotIndex(SlotIndex);
 		
 			if (!DisplayCharacters.IsValidIndex(SlotIndex) || !IsValid(DisplayCharacters[SlotIndex]))
 			{

@@ -102,4 +102,15 @@ public:
 	UFUNCTION()
 	void OnRep_IsHost();
 #pragma endregion 
+	
+#pragma region LobbySpawn
+	
+private:
+	int32 LobbySlotIndex = -1;
+	
+public:
+	FORCEINLINE void SetLobbySlotIndex(int32 NewIndex) {LobbySlotIndex = NewIndex;}
+	FORCEINLINE int32 GetLobbySlotIndex() const {return LobbySlotIndex;}
+	
+#pragma endregion 
 };

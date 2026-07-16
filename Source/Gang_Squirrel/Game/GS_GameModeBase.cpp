@@ -12,6 +12,8 @@
 #include "Gang_Squirrel/Character/GSCharacter.h"
 #include "Gang_Squirrel/GAS/AttributeSet/GS_PlayerAttributeSet.h"
 #include "Gang_Squirrel/EOS/GS_GameInstance.h"
+#include "Gang_Squirrel/GameObjects/GS_PlayerStart.h"
+#include "Gang_Squirrel/SpawnSystem/Enemy/GS_EnemySpawnManager.h"
 
 AGS_GameModeBase::AGS_GameModeBase()
 {
@@ -69,6 +71,16 @@ void AGS_GameModeBase::StartMatch()
 		}
 	
 	//UE_LOG(LogTemp, Log, TEXT("[Server] Match Started. %.1f sec"), MatchTimeLimit)
+	
+	// SpawnEnemy
+	for (TActorIterator<AGS_EnemySpawnManager> It(GetWorld()); It; ++It)
+	{
+		AGS_EnemySpawnManager* EnemySpawnManager = *It;
+		if (IsValid(EnemySpawnManager))
+		{
+			EnemySpawnManager->StartSpawnEnemy();
+		}
+	}
 }
 
 void AGS_GameModeBase::EndMatch()
@@ -88,6 +100,16 @@ void AGS_GameModeBase::EndMatch()
 		if (IsValid(HazardManager))
 		{
 			HazardManager->StopSpawnFallingHazard();
+		}
+	}
+	
+	// SpawnEnemy
+	for (TActorIterator<AGS_EnemySpawnManager> It(GetWorld()); It; ++It)
+	{
+		AGS_EnemySpawnManager* EnemySpawnManager = *It;
+		if (IsValid(EnemySpawnManager))
+		{
+			EnemySpawnManager->StopSpawnEnemy();
 		}
 	}
 
@@ -222,4 +244,23 @@ void AGS_GameModeBase::GiveSpeedBoostReward(AGS_PlayerState* PS)
 			ASC->GetNumericAttribute(UGS_PlayerAttributeSet::GetMoveSpeedAttribute()));
 	}
 
+}
+
+AActor* AGS_GameModeBase::ChoosePlayerStart_Implementation(AController* Player)
+{
+	if (const AGS_PlayerState* PS = Player ? Player->GetPlayerState<AGS_PlayerState>() : nullptr)
+	{
+		if (PS->GetLobbySlotIndex() >= 0)
+		{
+			for (TActorIterator<AGS_PlayerStart> It(GetWorld()); It; ++It)
+			{
+				if (It->SlotIndex == PS->GetLobbySlotIndex())
+				{
+					return *It;
+				}
+			}
+		}
+	}
+	
+	return Super::ChoosePlayerStart_Implementation(Player);
 }
