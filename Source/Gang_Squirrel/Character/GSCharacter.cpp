@@ -164,6 +164,12 @@ void AGSCharacter::BeginPlay()
 		{
 			UpdateNameTag(PS->PlayerNickname);
 		}
+		
+		if (!PS->OnPlayerReadyChanged.IsAlreadyBound(this, &ThisClass::UpdateReadyCheck))
+		{
+			PS->OnPlayerReadyChanged.AddDynamic(this, &ThisClass::UpdateReadyCheck);
+		}
+		UpdateReadyCheck(PS->bIsReady);
 	}
 
 	BindMovementSpeedDelegates();
@@ -585,6 +591,15 @@ void AGSCharacter::UpdateNameTag(const FString& Newname)
 	}
 }
 
+void AGSCharacter::UpdateReadyCheck(bool bReady)
+{
+	UGSPlayerNameTag* NameTag = Cast<UGSPlayerNameTag>(PlayerNameTagWidget->GetWidget());
+	if (NameTag)
+	{
+		NameTag->SetReadyState(bReady);
+	}
+}
+
 void AGSCharacter::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
@@ -916,6 +931,13 @@ void AGSCharacter::OnRep_PlayerState()
 		{
 			UpdateNameTag(PS->PlayerNickname);
 		}
+		
+		if (!PS->OnPlayerReadyChanged.IsAlreadyBound(this, &ThisClass::UpdateReadyCheck))
+		{
+			PS->OnPlayerReadyChanged.AddDynamic(this, &ThisClass::UpdateReadyCheck);
+		}
+		UpdateReadyCheck(PS->bIsReady);
+		
 		
 		// When State.Dead Tag Was Attached or Detached Call to Func
 		PS->GetAbilitySystemComponent()->RegisterGameplayTagEvent(StateTag::TAG_State_Dead, EGameplayTagEventType::NewOrRemoved).AddUObject(this,&AGSCharacter::OnDeathStateTagChanged);

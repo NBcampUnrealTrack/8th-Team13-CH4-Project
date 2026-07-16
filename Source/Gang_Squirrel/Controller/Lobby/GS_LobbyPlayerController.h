@@ -33,6 +33,17 @@ public:
 private:
 	UFUNCTION(Server,Reliable)
 	void ServerRequestStartGame();
+#pragma region ReadySystem
+	
+public:
+	UFUNCTION(BlueprintCallable,Category="Lobby")
+	void RequestToggleReady();
+private:
+	UFUNCTION(Server,Reliable)
+	void ServerToggleReady();
+	
+#pragma endregion 
+	
 	UFUNCTION()
 	void OnLoginCompleteForHost(bool bWasSuccessful);
 	UFUNCTION(Server,Reliable)

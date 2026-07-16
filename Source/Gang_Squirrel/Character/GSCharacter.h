@@ -84,6 +84,8 @@ private:
 public:
 	UFUNCTION()
 	void UpdateNameTag(const FString& Newname);
+	UFUNCTION()
+	void UpdateReadyCheck(bool bReady);
 
 protected:
 
