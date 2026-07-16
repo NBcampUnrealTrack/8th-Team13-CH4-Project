@@ -13,7 +13,9 @@ class GANG_SQUIRREL_API AGS_EnemyAIController : public AAIController
 	GENERATED_BODY()
 public:
 	AGS_EnemyAIController();
-	
+
+	void RestartBehaviorTree();
+
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void Tick(float DeltaSeconds) override;

@@ -63,7 +63,7 @@ void UGA_EnemyDeath::EndAbility(const FGameplayAbilitySpecHandle Handle, const F
 	{
 		if (ActorInfo->IsNetAuthority())
 		{
-			Enemy->SetLifeSpan(6.f);
+			Enemy->ScheduleReturnToPool(6.f);
 		}
 
 		if (AGS_PlayerState* KillerPS = Enemy->GetKillerPlayerState())

@@ -7,6 +7,7 @@
 #include "Gang_Squirrel/DataBase/DataTable/DT_Enemy.h"
 #include "GS_Enemy.generated.h"
 
+class AGS_EnemySpawnManager;
 struct FOnAttributeChangeData;
 class UWidgetComponent;
 struct FGameplayTag;
@@ -148,6 +149,32 @@ private:
 
 	void RecoverFromKnockdown();
 	void RepositionCapsuleToRagdoll();
+#pragma endregion 
+	
+#pragma region Pooling
+public:
+	void ActivateEnemy(const FVector& SpawnLocation, const FRotator& SpawnRotation);
+	void DeactivateEnemy();
+	void ScheduleReturnToPool(float Delay);
+	
+	FORCEINLINE bool IsPoolActive() const {return bIsPoolActive;}
+	void SetOwningSpawnManager(AGS_EnemySpawnManager* InManager);
+	
+private:
+	UPROPERTY(ReplicatedUsing = OnRep_IsPoolActive)
+	bool bIsPoolActive = false;
+	
+	UFUNCTION()
+	void OnRep_IsPoolActive();
+	
+	void InitializeFromDataTable();
+	bool bAbilitiesGranted = false;
+	
+	UPROPERTY()
+	TWeakObjectPtr<AGS_EnemySpawnManager> OwningSpawnManager;
+	
+	FTimerHandle ReturnToPoolTimerHandle;
+	void ReturnToPoolDeferred();
 #pragma endregion 
 };
 
