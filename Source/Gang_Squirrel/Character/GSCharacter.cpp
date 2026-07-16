@@ -959,13 +959,8 @@ void AGSCharacter::OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount
 
 	if (IsLocallyControlled())
 	{
-		// NewCount > 0 이면 사망 상태이므로 1.0(흑백), <= 0 이면 부활 상태이므로 0.0(컬러 복구)
 		float TargetGrayValue = (NewCount > 0) ? 1.0f : 0.0f;
-
-		// 에디터 콘텐츠 브라우저에 파둔 MPC_ScreenEffects 글로벌 방송국 주소를 완벽하게 로드합니다.
 		static UMaterialParameterCollection* MyMPC = Cast<UMaterialParameterCollection>(StaticLoadObject(UMaterialParameterCollection::StaticClass(), nullptr, TEXT("/Script/Engine.MaterialParameterCollection'/Game/ExternalContent/LevelPrototyping/Materials/MPC_ScreenEffects.MPC_ScreenEffects'")));
-
-		// 방송국 채널 조준이 완료되었다면 허공에 대고 GrayAlpha 파라미터를 1.0 또는 0.0으로 쾅 찍어줍니다!
 		if (MyMPC)
 		{
 			UKismetMaterialLibrary::SetScalarParameterValue(GetWorld(), MyMPC, FName("GrayAlpha"), TargetGrayValue);
