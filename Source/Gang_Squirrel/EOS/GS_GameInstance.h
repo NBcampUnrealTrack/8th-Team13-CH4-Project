@@ -88,6 +88,10 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnGSJoinSessionComplete OnGSJoinSessionComplete;
 
+	//인트로 재생 기록
+	UPROPERTY(BlueprintReadWrite, Category = "Intro")
+	bool bHasPlayedIntro = false;
+
 	//인게임 설정 세팅(Setting 버튼 연동)
 	//감도
 	UPROPERTY(BlueprintReadOnly, Category = "Settings")
