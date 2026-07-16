@@ -8,14 +8,24 @@
 #include "Gang_Squirrel/SpawnSystem/GSSpawnManager.h"
 #include "Algo/RandomShuffle.h"
 
-void UGSPoolSubsystem::InitializePool(TArray<FFoodSpawnInfo> DataAssets)
+void UGSPoolSubsystem::InitializePool(const TArray<FFoodSpawnInfo>& DataAssets)
 {
 	FoodPool.Empty();
+	
+	int32 TotalCount = 0;
+	
+	for (const FFoodSpawnInfo&  SpawnInfo : DataAssets)
+	{
+		TotalCount += SpawnInfo.SpawnAmount;
+	}
+	
+	FoodPool.Reserve(TotalCount);
+	
 	for (const FFoodSpawnInfo& SpawnInfo : DataAssets)
 	{
 		UGSFoodPrimaryDataAsset* CurrentDataAsset = SpawnInfo.FoodData;
 		int32 CurrentSpawnAmount = SpawnInfo.SpawnAmount;
-		if (!CurrentDataAsset && !CurrentSpawnAmount) continue;
+		if (!CurrentDataAsset || !CurrentSpawnAmount) continue;
 		
 		for (int32 j = 0; j < CurrentSpawnAmount; ++j)
 		{
@@ -23,11 +33,11 @@ void UGSPoolSubsystem::InitializePool(TArray<FFoodSpawnInfo> DataAssets)
 			if (!IsValid(Food)) continue;
 			
 			Food->Init(CurrentDataAsset);
-			
 			Food->Deactivate();
 			FoodPool.Add(Food);
 			// UE_LOG(LogTemp, Warning, TEXT("Spawn Food!!Actor"));
 		}
+		
 	}
 	
 	Algo::RandomShuffle(FoodPool);

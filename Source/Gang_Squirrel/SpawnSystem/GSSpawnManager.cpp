@@ -8,6 +8,7 @@
 #include "Gang_Squirrel/SpawnSystem/GSPoolSubsystem.h"
 #include "Gang_Squirrel/Food/GSFoodBase.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/OverlapResult.h"
 
 // Sets default values
 AGSSpawnManager::AGSSpawnManager()
@@ -15,7 +16,7 @@ AGSSpawnManager::AGSSpawnManager()
 	bReplicates = true;
 	
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 }
 
@@ -23,6 +24,9 @@ AGSSpawnManager::AGSSpawnManager()
 void AGSSpawnManager::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldDynamic));
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
 	
 	SpawnPoints.Empty();
 	
@@ -105,7 +109,7 @@ void AGSSpawnManager::Spawn()
           {
              FVector TargetLoc = SpawnPoint->GetRandomLocation();
         
-             if (!bCheckArround(TargetLoc))
+             if (!bCheckAround(TargetLoc))
              {
                 SpawnLocation = TargetLoc;
                 bFoundLocation = true;
@@ -147,14 +151,8 @@ void AGSSpawnManager::Spawn()
     UE_LOG(LogTemp, Warning, TEXT("Spawn Work Completed"));
 }
 
-bool AGSSpawnManager::bCheckArround(const FVector& CheckLocation) const
+bool AGSSpawnManager::bCheckAround(const FVector& CheckLocation)
 {
-	TArray<AActor*> OverlappingActors;
-	TArray<AActor*> IgnoreActors;
-	
-	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldDynamic));
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
 	
 	bool bOverlap = UKismetSystemLibrary::SphereOverlapActors(
 		GetWorld(),
@@ -165,6 +163,11 @@ bool AGSSpawnManager::bCheckArround(const FVector& CheckLocation) const
 		IgnoreActors,
 		OverlappingActors
 		);
+	
+
+	
+	IgnoreActors.Reset();
+	OverlappingActors.Reset();
 	
 	if (!bOverlap)
 	{

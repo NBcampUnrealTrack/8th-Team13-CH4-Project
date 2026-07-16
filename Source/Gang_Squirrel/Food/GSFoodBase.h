@@ -11,6 +11,7 @@ class UGSFoodPrimaryDataAsset;
 class USphereComponent;
 class UGSFoodWidgetComponent;
 class AGSCharacter;
+class UGSFoodWidget;
 
 UCLASS()
 class GANG_SQUIRREL_API AGSFoodBase : public AActor
@@ -92,6 +93,9 @@ private:
 	AGSCharacter* CurrentCharacter = nullptr;
 	
 	bool bIsStartEating = true;
+	
+	UPROPERTY()
+	TObjectPtr<UGSFoodWidget> CurrentFoodWidget;
 	
 	
 };

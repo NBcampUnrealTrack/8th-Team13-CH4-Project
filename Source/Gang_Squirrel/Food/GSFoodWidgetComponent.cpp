@@ -32,26 +32,19 @@ UGSFoodWidgetComponent::UGSFoodWidgetComponent()
 	SetPivot(FVector2D(0.5f, 0.5f));
     
 	PrimaryComponentTick.bCanEverTick = true;
-	
-	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bStartWithTickEnabled = false;
 }
 
 void UGSFoodWidgetComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	
-	APlayerController* PC = GetWorld()->GetFirstPlayerController();
-	if (!PC)
-	{
-		return;
-	}
-
-	if (!PC->PlayerCameraManager)
+	if (!CachedPlayerController || !CachedCameraManager)
 	{
 		return;
 	}
 	
-	FVector CameraLocation = PC->PlayerCameraManager->GetCameraLocation();
+	FVector CameraLocation = CachedCameraManager->GetCameraLocation();
 
 	FRotator Rotation =
 		(CameraLocation - GetComponentLocation()).Rotation();
@@ -65,4 +58,11 @@ void UGSFoodWidgetComponent::TickComponent(float DeltaTime, enum ELevelTick Tick
 void UGSFoodWidgetComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	CachedPlayerController  = GetWorld()->GetFirstPlayerController();
+	
+	if (CachedPlayerController)
+	{
+		CachedCameraManager = CachedPlayerController->PlayerCameraManager;
+	}
 }
