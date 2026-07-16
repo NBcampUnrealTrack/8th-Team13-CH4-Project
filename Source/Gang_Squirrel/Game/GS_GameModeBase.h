@@ -35,6 +35,8 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	virtual void PostLogin(APlayerController* NewPlayer) override;
+
 public:
 	UFUNCTION(BlueprintCallable, Category = "Match")
 	void StartMatch();

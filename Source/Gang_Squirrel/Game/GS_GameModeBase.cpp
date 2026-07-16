@@ -28,6 +28,19 @@ void AGS_GameModeBase::BeginPlay()
 	SpawnSpawnManager();
 }
 
+void AGS_GameModeBase::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+
+	if (AGS_PlayerState* PS = NewPlayer ? NewPlayer->GetPlayerState<AGS_PlayerState>() : nullptr)
+	{
+		if (NewPlayer->IsLocalController())
+		{
+			PS->bIsHost = true;
+		}
+	}
+}
+
 void AGS_GameModeBase::StartMatch()
 {
 	bMatchEnd = false;
