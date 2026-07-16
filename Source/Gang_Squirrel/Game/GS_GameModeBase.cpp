@@ -12,6 +12,7 @@
 #include "Gang_Squirrel/Character/GSCharacter.h"
 #include "Gang_Squirrel/GAS/AttributeSet/GS_PlayerAttributeSet.h"
 #include "Gang_Squirrel/EOS/GS_GameInstance.h"
+#include "Gang_Squirrel/GameObjects/GS_PlayerStart.h"
 #include "Gang_Squirrel/SpawnSystem/Enemy/GS_EnemySpawnManager.h"
 
 AGS_GameModeBase::AGS_GameModeBase()
@@ -230,4 +231,23 @@ void AGS_GameModeBase::GiveSpeedBoostReward(AGS_PlayerState* PS)
 			ASC->GetNumericAttribute(UGS_PlayerAttributeSet::GetMoveSpeedAttribute()));
 	}
 
+}
+
+AActor* AGS_GameModeBase::ChoosePlayerStart_Implementation(AController* Player)
+{
+	if (const AGS_PlayerState* PS = Player ? Player->GetPlayerState<AGS_PlayerState>() : nullptr)
+	{
+		if (PS->GetLobbySlotIndex() >= 0)
+		{
+			for (TActorIterator<AGS_PlayerStart> It(GetWorld()); It; ++It)
+			{
+				if (It->SlotIndex == PS->GetLobbySlotIndex())
+				{
+					return *It;
+				}
+			}
+		}
+	}
+	
+	return Super::ChoosePlayerStart_Implementation(Player);
 }
