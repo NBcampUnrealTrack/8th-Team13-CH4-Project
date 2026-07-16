@@ -2,6 +2,7 @@
 
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Gang_Squirrel/Enemy/GS_Enemy.h"
+#include "Gang_Squirrel/GAS/GA/GA_AbilityBase.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AIPerceptionTypes.h"
 #include "Perception/AISenseConfig_Sight.h"
@@ -61,11 +62,24 @@ void AGS_EnemyAIController::OnPossess(APawn* InPawn)
 	}
 }
 
+void AGS_EnemyAIController::RestartBehaviorTree()
+{
+	if (BT_Enemy)
+	{
+		RunBehaviorTree(BT_Enemy);
+	}
+}
+
 // When Sight Sense Updated(Lose,Detection...)
 void AGS_EnemyAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
 	UBlackboardComponent* BB = GetBlackboardComponent();
 	if (!BB)
+	{
+		return;
+	}
+
+	if (UGA_AbilityBase::IsSameTeam(GetPawn(), Actor))
 	{
 		return;
 	}
