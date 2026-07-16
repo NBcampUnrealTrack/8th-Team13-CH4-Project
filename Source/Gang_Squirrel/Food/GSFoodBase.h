@@ -83,6 +83,8 @@ public:
 	
 	void StopWidgetAnim();
 	
+	FORCEINLINE void  SetCurrentCharacter(AGSCharacter* InCharacter)  {CurrentCharacter = InCharacter;};
+	
 protected:
 	
 	FTimerHandle UIDelayTimerHandle;
