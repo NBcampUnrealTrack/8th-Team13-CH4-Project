@@ -990,6 +990,7 @@ void AGSCharacter::OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount
 	
 	TempScore = 0;
 	CurrentCheekSize = 0;
+	MaxFallSpeedDuringFall = 0.f; // 낙하 가속도 0으로 초기화
 	Multicast_InflateCheeks(0.f);
 
 	if (IsLocallyControlled())
