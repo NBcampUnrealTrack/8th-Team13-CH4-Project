@@ -10,32 +10,15 @@
 AGSSpawnPoint::AGSSpawnPoint()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 	
 	SpawnArea = CreateDefaultSubobject<UBoxComponent>(("SpawnArea"));
 	RootComponent = SpawnArea;
 
 }
 
-// Called when the game starts or when spawned
-void AGSSpawnPoint::BeginPlay()
-{
-	Super::BeginPlay();
-	
-}
-
-// Called every frame
-void AGSSpawnPoint::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
-
 FVector AGSSpawnPoint::GetRandomLocation() const
 {
-	
-	
-	
 	const FVector Origin = SpawnArea->GetComponentLocation();
 	const FVector Extent = SpawnArea->GetScaledBoxExtent();
 	

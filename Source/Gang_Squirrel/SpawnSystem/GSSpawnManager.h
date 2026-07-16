@@ -37,6 +37,15 @@ public:
 	
 	UPROPERTY(EditAnywhere)
 	TArray<FFoodSpawnInfo> DataAssets;
+	
+	UPROPERTY()
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	
+	UPROPERTY()
+	TArray<AActor*> OverlappingActors;
+	
+	UPROPERTY()
+	TArray<AActor*> IgnoreActors;
 
 
 protected:
@@ -52,7 +61,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	
 	void Spawn();
-	bool bCheckArround(const FVector& CheckLocation) const;
+	bool bCheckAround(const FVector& CheckLocation);
 	
 private:
 	
