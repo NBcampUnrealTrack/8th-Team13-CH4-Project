@@ -30,6 +30,9 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
 	void StopWidget();
 	
+	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
+	void UpdateProgress(float Alpha);
+	
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	
 protected:

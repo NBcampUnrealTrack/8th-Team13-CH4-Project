@@ -22,7 +22,7 @@ class GANG_SQUIRREL_API UGSPoolSubsystem : public UWorldSubsystem
 	
 public:
 	
-	void InitializePool(TArray<FFoodSpawnInfo> DataAssets);
+	void InitializePool(const TArray<FFoodSpawnInfo>& DataAssets);
 	
 	AGSFoodBase* GetFood(int32 TargetFloor);
 	

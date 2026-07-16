@@ -63,6 +63,16 @@ void AGSFoodBase::BeginPlay()
 		// Set StencilValue -> 1 
 		StaticMeshComponent->SetCustomDepthStencilValue(1);
 	}
+	
+	UUserWidget* UserWidget = FoodWidgetComponent->GetUserWidgetObject();
+	if (UserWidget)
+	{
+		UGSFoodWidget* FoodWidget = Cast<UGSFoodWidget>(UserWidget);
+		if (FoodWidget)
+		{
+			CurrentFoodWidget = FoodWidget;
+		}
+	}
 
 	// UE_LOG(LogTemp, Warning, TEXT("[Before] WidgetClass = %s"), *GetNameSafe(FoodWidgetComponent->GetWidgetClass()));
     
@@ -117,13 +127,7 @@ void AGSFoodBase::Tick(float DeltaTime)
 		
 		float Alpha = FMath::Clamp(CurrentEatenTime / FinalTime, 0.f, 1.f );
 		
-		UUserWidget* UserWidget = FoodWidgetComponent->GetUserWidgetObject();
-		if (UserWidget)
-		{
-			FOutputDeviceNull ar;
-			FString Cmd = FString::Printf(TEXT("UpdateProgress %f"), Alpha);
-			UserWidget->CallFunctionByNameWithArguments(*Cmd, ar, nullptr, true);
-		}
+		CurrentFoodWidget->UpdateProgress(Alpha);
 		
 		if (Alpha >= 0.190f)
 		{
@@ -302,15 +306,7 @@ void AGSFoodBase::StartWidgetAnime()
 {
 	if  (FoodWidgetComponent)
 	{
-		UUserWidget* UserWidget = FoodWidgetComponent->GetUserWidgetObject();
-		if (UserWidget)
-		{
-			UGSFoodWidget* CurrentFoodWidget =  Cast<UGSFoodWidget>(UserWidget);
-			if (CurrentFoodWidget)
-			{
-				CurrentFoodWidget->UpdateWidget();
-			}
-		}
+		CurrentFoodWidget->UpdateWidget();
 	}
 }
 
@@ -318,15 +314,7 @@ void AGSFoodBase::StopWidgetAnim()
 {
 	if  (FoodWidgetComponent)
 	{
-		UUserWidget* UserWidget = FoodWidgetComponent->GetUserWidgetObject();
-		if (UserWidget)
-		{
-			UGSFoodWidget* CurrentFoodWidget =  Cast<UGSFoodWidget>(UserWidget);
-			if (CurrentFoodWidget)
-			{
-				CurrentFoodWidget->StopWidget();
-			}
-		}
+		CurrentFoodWidget->StopWidget();
 	}
 }
 
