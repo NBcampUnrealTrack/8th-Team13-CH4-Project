@@ -12,6 +12,7 @@
 #include "Gang_Squirrel/Character/GSCharacter.h"
 #include "Gang_Squirrel/GAS/AttributeSet/GS_PlayerAttributeSet.h"
 #include "Gang_Squirrel/EOS/GS_GameInstance.h"
+#include "Gang_Squirrel/SpawnSystem/Enemy/GS_EnemySpawnManager.h"
 
 AGS_GameModeBase::AGS_GameModeBase()
 {
@@ -56,6 +57,16 @@ void AGS_GameModeBase::StartMatch()
 		}
 	
 	//UE_LOG(LogTemp, Log, TEXT("[Server] Match Started. %.1f sec"), MatchTimeLimit)
+	
+	// SpawnEnemy
+	for (TActorIterator<AGS_EnemySpawnManager> It(GetWorld()); It; ++It)
+	{
+		AGS_EnemySpawnManager* EnemySpawnManager = *It;
+		if (IsValid(EnemySpawnManager))
+		{
+			EnemySpawnManager->StartSpawnEnemy();
+		}
+	}
 }
 
 void AGS_GameModeBase::EndMatch()
@@ -75,6 +86,16 @@ void AGS_GameModeBase::EndMatch()
 		if (IsValid(HazardManager))
 		{
 			HazardManager->StopSpawnFallingHazard();
+		}
+	}
+	
+	// SpawnEnemy
+	for (TActorIterator<AGS_EnemySpawnManager> It(GetWorld()); It; ++It)
+	{
+		AGS_EnemySpawnManager* EnemySpawnManager = *It;
+		if (IsValid(EnemySpawnManager))
+		{
+			EnemySpawnManager->StopSpawnEnemy();
 		}
 	}
 
