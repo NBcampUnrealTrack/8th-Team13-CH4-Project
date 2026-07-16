@@ -1012,18 +1012,21 @@ void AGSCharacter::OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount
 	
 	TempScore = 0;
 	CurrentCheekSize = 0;
+	MaxFallSpeedDuringFall = 0.f; // 낙하 가속도 0으로 초기화
 	Multicast_InflateCheeks(0.f);
 
 	if (IsLocallyControlled())
 	{
-		float TargetGrayValue = (NewCount > 0) ? 1.0f : 0.0f;
-		static UMaterialParameterCollection* MyMPC = Cast<UMaterialParameterCollection>(StaticLoadObject(UMaterialParameterCollection::StaticClass(), nullptr, TEXT("/Script/Engine.MaterialParameterCollection'/Game/ExternalContent/LevelPrototyping/Materials/MPC_ScreenEffects.MPC_ScreenEffects'")));
-		if (MyMPC)
+		float TargetGrayValue = (NewCount > 0) ? 1.0f : 0.0f; //포스트 프로세스 머티리얼 파라미터 변수
+		UMaterialParameterCollection* MyMPC = Cast<UMaterialParameterCollection>(
+			StaticLoadObject(UMaterialParameterCollection::StaticClass(), nullptr, TEXT(
+				"/Script/Engine.MaterialParameterCollection'/Game/ExternalContent/LevelPrototyping/Materials/MPC_ScreenEffects.MPC_ScreenEffects'")));
+		
+		if (GetWorld() && MyMPC) //방어 코드
 		{
 			UKismetMaterialLibrary::SetScalarParameterValue(GetWorld(), MyMPC, FName("GrayAlpha"), TargetGrayValue);
 		}
 	}
-	
 }
 
 void AGSCharacter::PlayVictoryMontage()
