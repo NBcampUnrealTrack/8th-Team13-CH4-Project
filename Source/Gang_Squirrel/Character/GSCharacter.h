@@ -252,7 +252,7 @@ public:
 	
 	//Food
 	UFUNCTION(Server, Reliable)
-	void Server_NotifyFoodEaten(AGSFoodBase* EatenFood);
+	void Server_NotifyFoodEaten(AGSFoodBase* EatenFood, AGSCharacter* EatingCharacter);
 	
 	UFUNCTION(Server, Reliable)
 	void Server_NotifyAddScore(int32 Value);
@@ -285,6 +285,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Score")
 	TSubclassOf<UGSSlideWidget> SlideWidgetRewardClass;
 	
+	UFUNCTION(Server, Reliable)
+	void Server_AddTempScore(int32 Amount);
+	
 protected:
 	
 	//Food
@@ -312,7 +315,7 @@ private:
 	UPROPERTY(ReplicatedUsing = OnRep_CheekSize)
 	float MaxCheekSize = 1.f;
 	
-	UPROPERTY()
+	UPROPERTY(Replicated)
 	int32 TempScore = 0;
 
 	UFUNCTION()

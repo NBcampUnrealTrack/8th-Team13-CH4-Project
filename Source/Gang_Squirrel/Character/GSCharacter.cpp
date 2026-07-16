@@ -32,6 +32,7 @@
 #include "Kismet/KismetMaterialLibrary.h"
 #include "Materials/MaterialParameterCollection.h"
 #include "Components/AudioComponent.h"
+#include "Gang_Squirrel/DataAsset/GSFoodPrimaryDataAsset.h"
 
 
 AGSCharacter::AGSCharacter()
@@ -227,6 +228,7 @@ void AGSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME(AGSCharacter, bIsGrabbed);
 	DOREPLIFETIME(AGSCharacter, GrabbedTarget);
 	DOREPLIFETIME(AGSCharacter, GrabOwner);
+	DOREPLIFETIME(AGSCharacter, TempScore);
 
 	
 }
@@ -336,7 +338,7 @@ void AGSCharacter::Server_SetEating_Implementation(bool bEating)
 
 void AGSCharacter::InflateCheeks(float Value)
 {
-	if (HasAuthority())
+	if (HasAuthority() || IsLocallyControlled())
 	{
 		Multicast_InflateCheeks(Value);
 	}
@@ -931,9 +933,16 @@ UAbilitySystemComponent* AGSCharacter::GetAbilitySystemComponent() const
 	return PS ? PS->GetAbilitySystemComponent() : nullptr;
 }
 
-void AGSCharacter::Server_NotifyFoodEaten_Implementation(AGSFoodBase* EatenFood)
+void AGSCharacter::Server_NotifyFoodEaten_Implementation(AGSFoodBase* EatenFood, AGSCharacter*  EatingCharacter)
 {
-	if (!EatenFood) return;
+	if (!IsValid(EatenFood) || !IsValid(EatingCharacter)) return;
+	
+	if (IsValid(EatenFood->FoodData))
+	{
+		EatingCharacter->InflateCheeks(EatenFood->FoodData->SquirrelScale);
+	}
+	
+	EatenFood->SetCurrentCharacter(EatingCharacter);
 	
 	EatenFood->Eaten();
 }
@@ -955,6 +964,13 @@ void AGSCharacter::Server_NotifyAddScore_Implementation(int32 Score)
 		
 		// UE_LOG(LogTemp, Warning, TEXT("UpdateScore"));
 	}
+}
+
+void AGSCharacter::Server_AddTempScore_Implementation(int32 Amount)
+{
+	AddTempScore(Amount);
+	
+	UE_LOG(LogTemp, Log, TEXT("[Server] 캐릭터 %s의 임시 점수가 %d 더해졌습니다. (현재 TempScore: %d)"), *GetName(), Amount, TempScore);
 }
 
 void AGSCharacter::AddTempScore(int32 Value)
