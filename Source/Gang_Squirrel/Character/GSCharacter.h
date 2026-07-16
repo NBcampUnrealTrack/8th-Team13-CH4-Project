@@ -14,6 +14,7 @@ class UGSSlideWidget;
 class UGA_PlayerDeath;
 struct FGameplayTag;
 class UGA_Attack;
+class UGA_DropKick;
 class UGA_Roll;
 class UGA_Sprint;
 class UGA_Grab;
@@ -135,6 +136,8 @@ private:
 	TSubclassOf<UGameplayEffect> GE_FallDamage;
 
 	float MaxFallSpeedDuringFall = 0.f;
+
+	bool bHasDropKickedThisJump = false;
 
 #pragma endregion
 #pragma region FallingHazardWarining
@@ -443,6 +446,8 @@ public:
 protected:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="GameplayAbility")
 	TSubclassOf<UGA_Attack> GA_Attack;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="GameplayAbility")
+	TSubclassOf<UGA_DropKick> GA_DropKick;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GameplayAbility")
 	TSubclassOf<UGA_Roll> GA_Roll;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="GameplayAbility")

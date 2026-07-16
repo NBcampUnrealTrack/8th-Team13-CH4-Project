@@ -14,6 +14,7 @@
 #include "Components/SphereComponent.h"
 #include "Gang_Squirrel/GAS/AttributeSet/GS_PlayerAttributeSet.h"
 #include "Gang_Squirrel/GAS/GA/Attack/GA_Attack.h"
+#include "Gang_Squirrel/GAS/GA/Attack/DropKick/GA_DropKick.h"
 #include "Gang_Squirrel/GAS/GA/Roll/GA_Roll.h"
 #include "Gang_Squirrel/GAS/GA/Sprint/GA_Sprint.h"
 #include "Gang_Squirrel/GAS/GA/Grab/GA_Grab.h"
@@ -439,7 +440,19 @@ void AGSCharacter::IAAttack(const FInputActionValue& InValue)
 	{
 		return;
 	}
-	
+
+	if (GetCharacterMovement()->IsFalling())
+	{
+		if (bHasDropKickedThisJump)
+		{
+			return;
+		}
+
+		bHasDropKickedThisJump = true;
+		ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag::TAG_Ability_DropKick));
+		return;
+	}
+
 	for (FGameplayAbilitySpec& Spec : ASC->GetActivatableAbilities())
 	{
 		if (Spec.IsActive() && Spec.Ability && Spec.Ability->AbilityTags.HasTag(AbilityTag::TAG_Ability_Attack))
@@ -571,6 +584,8 @@ void AGSCharacter::UpdateNameTag(const FString& Newname)
 void AGSCharacter::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
+
+	bHasDropKickedThisJump = false;
 
 	if (HasAuthority() == false)
 	{
@@ -864,6 +879,10 @@ void AGSCharacter::PossessedBy(AController* NewController)
 		if (!PS->GetAbilitySystemComponent()->FindAbilitySpecFromClass(UGA_Grab::StaticClass()))
 		{
 			PS->GetAbilitySystemComponent()->GiveAbility(FGameplayAbilitySpec(GA_Grab, 1));
+		}
+		if (!PS->GetAbilitySystemComponent()->FindAbilitySpecFromClass(UGA_DropKick::StaticClass()))
+		{
+			PS->GetAbilitySystemComponent()->GiveAbility(FGameplayAbilitySpec(GA_DropKick, 1));
 		}
 		
 		// When State.Dead Tag Was Attached or Detached Call to Func
