@@ -14,6 +14,7 @@ namespace EventTag
 namespace AbilityTag
 {
 	UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Attack,"Ability.Attack")
+	UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_DropKick,"Ability.DropKick")
 	UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Death,"Ability.Death")
 	UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Sprint, "Ability.Sprint")
 	UE_DEFINE_GAMEPLAY_TAG(TAG_Ability_Roll, "Ability.Roll")

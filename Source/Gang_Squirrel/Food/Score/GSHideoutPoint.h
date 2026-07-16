@@ -29,7 +29,9 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	
-
+	// For Mapping Slot Index(In PlayerState)
+	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="Hideout")
+	int32 SlotIndex = 0;
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

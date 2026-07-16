@@ -2,15 +2,19 @@
 
 #include "AbilitySystemComponent.h"
 #include "AIController.h"
+#include "BehaviorTree/BlackboardComponent.h"
 #include "BrainComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Gang_Squirrel/Enemy/AIController/GS_EnemyAIController.h"
 #include "Gang_Squirrel/GAS/GA/Attack/Enemy/GA_EnemyAttack.h"
 #include "Gang_Squirrel/GAS/GA/Death/GA_EnemyDeath.h"
 #include "Gang_Squirrel/GAS/AttributeSet/GS_PlayerAttributeSet.h"
 #include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
+#include "Gang_Squirrel/Gang_Squirrel.h"
+#include "Gang_Squirrel/SpawnSystem/Enemy/GS_EnemySpawnManager.h"
 #include "Gang_Squirrel/UI/Stat_Widget/GS_HPCountWidget.h"
 #include "Net/UnrealNetwork.h"
 
@@ -76,39 +80,25 @@ void AGS_Enemy::BeginPlay()
 	
 	HomeLocation = GetActorLocation();
 	
-	if (const FGS_EnemyDataTable* Row = EnemyDataRow.GetRow<FGS_EnemyDataTable>(TEXT("GS_Enemy:BeginPlay")))
-	{
-		CachedEnemyData = *Row;
-	}
-	
 	if (HasAuthority())
 	{
 		EnemyAbilitySystemComp->InitAbilityActorInfo(this,this);
 		EnemyAbilitySystemComp->AddLooseGameplayTag(TeamTag::TAG_Team_Enemy);
 		
-		EnemyAttributeSet->InitHealth(CachedEnemyData.Health);
-		EnemyAttributeSet->InitMaxHealth(CachedEnemyData.MaxHealth);
-		EnemyAttributeSet->InitMoveSpeed(CachedEnemyData.MoveSpeed);
-		
-		EnemyAbilitySystemComp->GiveAbility(FGameplayAbilitySpec(GA_Attack,1));
-		EnemyAbilitySystemComp->GiveAbility(FGameplayAbilitySpec(GA_Death,1));
-		
-		for (const TSubclassOf<UGameplayAbility>& ExtraAbility : CachedEnemyData.GrantedAbilities)
-		{
-			if (ExtraAbility)
-			{
-				EnemyAbilitySystemComp->GiveAbility(FGameplayAbilitySpec(ExtraAbility,1));
-			}
-		}
+		InitializeFromDataTable();
 	}
 	
 	EnemyAbilitySystemComp->RegisterGameplayTagEvent(StateTag::TAG_State_Dead,EGameplayTagEventType::NewOrRemoved).AddUObject(this,&AGS_Enemy::OnDeathStateTagChanged);
-	
 	// HPBar Settings
 	EnemyAbilitySystemComp->GetGameplayAttributeValueChangeDelegate(UGS_PlayerAttributeSet::GetHealthAttribute()).AddUObject(this,&AGS_Enemy::OnHealthAttributeChanged);
 	EnemyAbilitySystemComp->GetGameplayAttributeValueChangeDelegate(UGS_PlayerAttributeSet::GetMaxHealthAttribute()).AddUObject(this,&AGS_Enemy::OnHealthAttributeChanged);
 	
 	RefreshHPBar();
+	
+	if (HasAuthority())
+	{
+		DeactivateEnemy();
+	}
 }
 
 void AGS_Enemy::Tick(float DeltaTime)
@@ -165,6 +155,7 @@ void AGS_Enemy::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutL
 	DOREPLIFETIME(AGS_Enemy,RotationInterpSpeed);
 	DOREPLIFETIME(AGS_Enemy,bRotationTargetIsLocation);
 	DOREPLIFETIME(AGS_Enemy,RotationTargetLocation);
+	DOREPLIFETIME(AGS_Enemy,bIsPoolActive);
 }
 
 void AGS_Enemy::SetRotationTarget(AActor* NewTarget, float NewInterpSpeed)
@@ -326,4 +317,150 @@ void AGS_Enemy::RepositionCapsuleToRagdoll()
 	const FRotator NewRotation(0.f, MeshComp->GetSocketRotation(TEXT("Pelvis")).Yaw, 0.f);
 	
 	SetActorLocationAndRotation(NewLocation,NewRotation,false,nullptr,ETeleportType::TeleportPhysics);
+}
+
+void AGS_Enemy::ActivateEnemy(const FVector& SpawnLocation, const FRotator& SpawnRotation)
+{
+	SetActorLocationAndRotation(SpawnLocation,SpawnRotation);
+	HomeLocation = SpawnLocation;
+	
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
+	SetActorTickEnabled(true);
+	
+	RotationTarget = nullptr;
+	bRotationTargetIsLocation = false;
+	
+	if (HasAuthority())
+	{
+		if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+		{
+			if (ASC->HasMatchingGameplayTag(StateTag::TAG_State_Dead))
+			{
+				ASC->RemoveLooseGameplayTag(StateTag::TAG_State_Dead);
+				ASC->RemoveReplicatedLooseGameplayTag(StateTag::TAG_State_Dead);
+			}
+		}
+
+		NetMulticast_SetFullRagdollEnable(false);
+		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+
+		InitializeFromDataTable();
+		RefreshHPBar();
+	}
+
+
+	AGS_EnemyAIController* AIC = Cast<AGS_EnemyAIController>(GetController());
+	if (AIC)
+	{
+		if (UBlackboardComponent* BB = AIC->GetBlackboardComponent())
+		{
+			BB->ClearValue(FName("TargetActor"));
+			BB->SetValueAsBool(FName("bCanAttack"), false);
+		}
+
+		AIC->RestartBehaviorTree();
+
+		if (UBrainComponent* BrainComp = AIC->GetBrainComponent())
+		{
+			if (BrainComp->IsPaused())
+			{
+				BrainComp->ResumeLogic(TEXT("Enemy Pool Reactivated"));
+			}
+		}
+	}
+
+	// TODO:: 진단용 임시 로그 - 원인 확인되면 제거
+	UE_LOG(LogGAS, Warning, TEXT("[ActivateEnemy] %s - DeadTag:%s, Health:%.1f/%.1f, Controller:%s, Brain:%s, Paused:%s"),
+		*GetName(),
+		(GetAbilitySystemComponent() && GetAbilitySystemComponent()->HasMatchingGameplayTag(StateTag::TAG_State_Dead)) ? TEXT("true") : TEXT("false"),
+		EnemyAttributeSet ? EnemyAttributeSet->GetHealth() : -1.f,
+		EnemyAttributeSet ? EnemyAttributeSet->GetMaxHealth() : -1.f,
+		AIC ? TEXT("valid") : TEXT("NULL"),
+		(AIC && AIC->GetBrainComponent()) ? TEXT("valid") : TEXT("NULL"),
+		(AIC && AIC->GetBrainComponent()) ? (AIC->GetBrainComponent()->IsPaused() ? TEXT("true") : TEXT("false")) : TEXT("N/A"));
+
+	bIsPoolActive = true;
+	OnRep_IsPoolActive();
+}
+
+void AGS_Enemy::DeactivateEnemy()
+{
+	GetWorld()->GetTimerManager().ClearTimer(ReturnToPoolTimerHandle);
+	GetWorld()->GetTimerManager().ClearTimer(KnockdownRecoveryTimerHandle);
+
+	if (AAIController* AIC = Cast<AAIController>(GetController()))
+	{
+		if (AIC->GetBrainComponent())
+		{
+			AIC->GetBrainComponent()->StopLogic(TEXT("Pooled"));
+		}
+	}
+	
+	RotationTarget = nullptr;
+	bRotationTargetIsLocation = false;
+	
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
+	SetActorTickEnabled(false);
+	
+	bIsPoolActive = false;
+	OnRep_IsPoolActive();
+}
+
+void AGS_Enemy::OnRep_IsPoolActive()
+{
+	SetActorHiddenInGame(!bIsPoolActive);
+	SetActorEnableCollision(bIsPoolActive);
+}
+
+void AGS_Enemy::InitializeFromDataTable()
+{
+	if (const FGS_EnemyDataTable* Row = EnemyDataRow.GetRow<FGS_EnemyDataTable>(TEXT("GS_Enemy:InitializeFromDataTable")))
+	{
+		CachedEnemyData = *Row;
+	}
+	
+	EnemyAttributeSet->InitHealth(CachedEnemyData.Health);
+	EnemyAttributeSet->InitMaxHealth(CachedEnemyData.MaxHealth);
+	EnemyAttributeSet->InitMoveSpeed(CachedEnemyData.MoveSpeed);
+	
+	if (!bAbilitiesGranted)
+	{
+		EnemyAbilitySystemComp->GiveAbility(FGameplayAbilitySpec(GA_Attack, 1));
+		EnemyAbilitySystemComp->GiveAbility(FGameplayAbilitySpec(GA_Death,1));
+		
+		for (const TSubclassOf<UGameplayAbility>& ExtraAbility : CachedEnemyData.GrantedAbilities)
+		{
+			if (ExtraAbility)
+			{
+				EnemyAbilitySystemComp->GiveAbility(FGameplayAbilitySpec(ExtraAbility,1));
+			}
+		}
+		
+		bAbilitiesGranted = true;
+	}
+	
+}
+
+void AGS_Enemy::SetOwningSpawnManager(AGS_EnemySpawnManager* InManager)
+{
+	OwningSpawnManager = InManager;
+}
+
+void AGS_Enemy::ScheduleReturnToPool(float Delay)
+{
+	GetWorld()->GetTimerManager().SetTimer(ReturnToPoolTimerHandle,this,&AGS_Enemy::ReturnToPoolDeferred,Delay,false);
+}
+
+void AGS_Enemy::ReturnToPoolDeferred()
+{
+	if (AGS_EnemySpawnManager* Manager = OwningSpawnManager.Get())
+	{
+		Manager->ReturnEnemyToPool(this);
+	}
+	else
+	{
+		DeactivateEnemy();
+	}
 }
