@@ -8,6 +8,8 @@
 #include "Gang_Squirrel/Character/GSCharacter.h"
 #include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 #include "Gang_Squirrel/Gang_Squirrel.h"
+#include "Gang_Squirrel/GameObjects/GS_PlayerStart.h"
+#include "Gang_Squirrel/Player/GS_PlayerState.h"
 
 UGA_PlayerDeath::UGA_PlayerDeath()
 {
@@ -39,14 +41,33 @@ void UGA_PlayerDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 			ASC->AddReplicatedLooseGameplayTag(StateTag::TAG_State_Dead);
 		}
 
-		// TempLogic
-		bool bFoundPlayerStart = false;
-		for (TActorIterator<APlayerStart> It(GetWorld()); It; ++It)
+		AActor* MatchedPlayerStart = nullptr;
+		
+		if (const AGS_PlayerState* PS = Cast<AGS_PlayerState>(GetOwningActorFromActorInfo()))
 		{
-			CachedRespawnLocation = It->GetActorLocation();
-			CachedRespawnRotation = It->GetActorRotation();
-			bFoundPlayerStart = true;
-			break;
+			for (TActorIterator<AGS_PlayerStart> It(GetWorld()); It; ++It)
+			{
+				if (It->SlotIndex == PS->GetLobbySlotIndex())
+				{
+					MatchedPlayerStart = *It;
+					break;
+				}
+			}
+		}
+		
+		if (!MatchedPlayerStart)
+		{
+			for (TActorIterator<APlayerStart> It(GetWorld()); It; ++It)
+			{
+				MatchedPlayerStart = *It;
+				break;
+			}
+		}
+		
+		if (MatchedPlayerStart)
+		{
+			CachedRespawnLocation = MatchedPlayerStart ->GetActorLocation();
+			CachedRespawnRotation = MatchedPlayerStart->GetActorRotation();
 		}
 		
 		PlayerCharacter->NetMulticast_SetFullRagdollEnable(true);

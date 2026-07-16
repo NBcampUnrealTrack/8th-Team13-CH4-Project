@@ -8,6 +8,7 @@ AGS_LobbyGameMode::AGS_LobbyGameMode()
 {
 	GameStateClass = AGS_GameState::StaticClass();
 	DefaultPawnClass = nullptr;
+	bUseSeamlessTravel = true;
 }
 
 void AGS_LobbyGameMode::PostLogin(APlayerController* NewPlayer)
