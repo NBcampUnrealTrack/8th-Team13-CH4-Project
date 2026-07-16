@@ -29,6 +29,8 @@
 #include "Net/UnrealNetwork.h"
 #include "Gang_Squirrel/EOS/GS_GameInstance.h"
 #include "Gang_Squirrel/Food/Score/GSSlideWidget.h"
+#include "Kismet/KismetMaterialLibrary.h"
+#include "Materials/MaterialParameterCollection.h"
 #include "Components/AudioComponent.h"
 
 
@@ -973,6 +975,17 @@ void AGSCharacter::OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount
 	TempScore = 0;
 	CurrentCheekSize = 0;
 	Multicast_InflateCheeks(0.f);
+
+	if (IsLocallyControlled())
+	{
+		float TargetGrayValue = (NewCount > 0) ? 1.0f : 0.0f;
+		static UMaterialParameterCollection* MyMPC = Cast<UMaterialParameterCollection>(StaticLoadObject(UMaterialParameterCollection::StaticClass(), nullptr, TEXT("/Script/Engine.MaterialParameterCollection'/Game/ExternalContent/LevelPrototyping/Materials/MPC_ScreenEffects.MPC_ScreenEffects'")));
+		if (MyMPC)
+		{
+			UKismetMaterialLibrary::SetScalarParameterValue(GetWorld(), MyMPC, FName("GrayAlpha"), TargetGrayValue);
+		}
+	}
+	
 }
 
 void AGSCharacter::PlayVictoryMontage()
