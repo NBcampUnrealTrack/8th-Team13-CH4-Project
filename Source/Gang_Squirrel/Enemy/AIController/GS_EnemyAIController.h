@@ -35,4 +35,6 @@ private:
 
 	//Debugging Sight Radius Func
 	void DrawDebug_SightRadius();
+
+	AActor* FindAlternativeTarget(AActor* ExcludeActor) const;
 };

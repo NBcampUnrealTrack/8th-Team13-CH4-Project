@@ -27,6 +27,7 @@
 #include "Gang_Squirrel/Gang_Squirrel.h"
 #include "Gang_Squirrel/Food/GSCheekWidget.h"
 #include "Net/UnrealNetwork.h"
+#include "PhysicsEngine/BodyInstance.h"
 #include "Gang_Squirrel/EOS/GS_GameInstance.h"
 #include "Gang_Squirrel/Food/Score/GSSlideWidget.h"
 #include "Kismet/KismetMaterialLibrary.h"
@@ -59,6 +60,7 @@ AGSCharacter::AGSCharacter()
 	SpringArm->bUsePawnControlRotation = true;
 	SpringArm->bDoCollisionTest = true;
 	//Camera Lag Settings
+	SpringArm->bEnableCameraLag = true;
 	SpringArm->CameraLagSpeed = 10.f;
 	SpringArm->bEnableCameraRotationLag = true;
 	SpringArm->CameraRotationLagSpeed = 10.f;
@@ -478,7 +480,7 @@ void AGSCharacter::IAAttack(const FInputActionValue& InValue)
 			return;
 		}
 	}
-	
+
 	ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag::TAG_Ability_Attack));
 }
 
@@ -1728,13 +1730,23 @@ void AGSCharacter::NetMulticast_SetFullRagdollEnable_Implementation(bool bEnable
 	
 	if (bEnable)
 	{
+		MeshComp->RecreatePhysicsState();
 		MeshComp->SetAllBodiesSimulatePhysics(true);
+		for (FBodyInstance* Body : MeshComp->Bodies)
+		{
+			if (Body)
+			{
+				Body->SetUseCCD(true);
+			}
+		}
 		MeshComp->WakeAllRigidBodies();
 	}
 	else
 	{
 		MeshComp->SetAllBodiesSimulatePhysics(false);
 		MeshComp->SetRelativeLocationAndRotation(DefaultMeshRelativeLocation,DefaultMeshRelativeRotation);
+		MeshComp->TickAnimation(0.f, false);
+		MeshComp->RefreshBoneTransforms();
 		SetupUpperBodyRagdoll();
 	}
 }

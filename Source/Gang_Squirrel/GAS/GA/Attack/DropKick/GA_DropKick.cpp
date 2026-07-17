@@ -10,13 +10,17 @@ UGA_DropKick::UGA_DropKick()
 {
 	AbilityTags.AddTag(AbilityTag::TAG_Ability_DropKick);
 	ActivationBlockedTags.AddTag(StateTag::TAG_State_Dead);
+
+	// DropKick has no combo state to preserve (unlike GA_Attack), so it's safe to let GAS
+	// force-end a stuck-active instance and retrigger cleanly instead of silently rejecting reactivation.
+	bRetriggerInstancedAbility = true;
 }
 
 void UGA_DropKick::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 	const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-	
+
 	AGSCharacter* PlayerCharacter = Cast<AGSCharacter>(GetAvatarActorFromActorInfo());
 	
 	if (!PlayerCharacter || !AM_DropKick)
