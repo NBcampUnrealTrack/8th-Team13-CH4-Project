@@ -53,11 +53,11 @@ void AGSHideoutPoint::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, A
 	int32 TempScore = CurrentCharacter->GetTempScore();
 	if (TempScore <= 0)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[Hideout] 서버의 TempScore가 0이라 강제로 10점을 추가합니다."));
-		TempScore = 10;
+		return;
 	}
 	
 	CurrentCharacter->Server_NotifyAddScore(TempScore);
+	CurrentCharacter->ShowSlideWidget(CurrentCharacter, TempScore);
 	
 	CurrentCharacter->ResetTempScore();
 	CurrentCharacter->ResetCheekSize();

@@ -273,6 +273,7 @@ public:
 	
 	void ResetTempScore();
 	
+	UFUNCTION(Client, Reliable)
 	void UpdateSlideWidget(int32 Value);
 	
 	FORCEINLINE int32 GetTempScore() { return TempScore; }
@@ -287,6 +288,8 @@ public:
 	
 	UFUNCTION(Server, Reliable)
 	void Server_AddTempScore(int32 Amount);
+	
+	void ShowSlideWidget(AGSCharacter* CurrentCharacter, int32 Score) const;
 	
 protected:
 	
@@ -320,6 +323,7 @@ private:
 
 	UFUNCTION()
 	void OnRep_CheekSize();
+	
 
 	bool bCheekFullTutorialShown = false;
 	
