@@ -12,7 +12,7 @@ UGS_PlayerAttributeSet::UGS_PlayerAttributeSet()
 	//TODO::Refac to DataTable,Asset
 	InitHealth(3.f);
 	InitMaxHealth(3.f);
-	InitMoveSpeed(20.f);
+	InitMoveSpeed(40.f);
 	InitSlowSpeedMultiplier(1.f);
 	InitStamina(100.f);
 	InitMaxStamina(100.f);

@@ -345,7 +345,7 @@ public:
 
 private:	
 	// Don't trust this Values. Go to AttributeSet
-	float CachedMoveSpeed = 20.f;
+	float CachedMoveSpeed = 40.f;
 	float CachedSlowSpeedMultiplier = 1.f;
 
 	bool bMovementSpeedDelegateBound = false;
