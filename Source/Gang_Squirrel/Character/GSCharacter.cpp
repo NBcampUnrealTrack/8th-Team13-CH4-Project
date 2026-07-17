@@ -135,6 +135,11 @@ void AGSCharacter::BeginPlay()
 	AudioComponent->Stop();
 	
 	SetupUpperBodyRagdoll();
+	
+	if (ULocalPlayer* LocalViewer = GetGameInstance() ? GetGameInstance()->GetFirstGamePlayer() : nullptr)
+	{
+		PlayerNameTagWidget->SetOwnerPlayer(LocalViewer);
+	}
 
 	if (IsLocallyControlled())
 	{
@@ -910,6 +915,14 @@ void AGSCharacter::PossessedBy(AController* NewController)
 			PS->GetAbilitySystemComponent()->GiveAbility(FGameplayAbilitySpec(GA_DropKick, 1));
 		}
 		
+		if (PS->OnPlayerNameChanged.IsAlreadyBound(this, &ThisClass::UpdateNameTag) == false)
+		{
+			PS->OnPlayerNameChanged.AddDynamic(this, &ThisClass::UpdateNameTag);
+		}
+		if (PS->PlayerNickname.IsEmpty() == false)
+		{
+			UpdateNameTag(PS->PlayerNickname);
+		}
 		// When State.Dead Tag Was Attached or Detached Call to Func
 		PS->GetAbilitySystemComponent()->RegisterGameplayTagEvent(StateTag::TAG_State_Dead, EGameplayTagEventType::NewOrRemoved).AddUObject(this,&AGSCharacter::OnDeathStateTagChanged);
 	}
