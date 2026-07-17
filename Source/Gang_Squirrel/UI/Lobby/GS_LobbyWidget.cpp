@@ -3,6 +3,7 @@
 #include "GS_LobbySlotWidget.h"
 #include "Components/Button.h"
 #include "Components/PanelWidget.h"
+#include "Components/TextBlock.h"
 #include "Friend/GS_FriendListWidget.h"
 #include "Gang_Squirrel/Controller/Lobby/GS_LobbyPlayerController.h"
 #include "Gang_Squirrel/Game/GS_GameState.h"
@@ -48,7 +49,24 @@ bool UGS_LobbyWidget::IsLocalPlayerHost() const
 bool UGS_LobbyWidget::CanStartGame() const
 {
 	const AGS_GameState* GS = GetWorld()->GetGameState<AGS_GameState>();
-	return GS && GS->PlayerArray.Num() >= MinPlayersToStart;
+	if (!GS || GS->PlayerArray.Num() < MinPlayersToStart)
+	{
+		return false;
+	}
+
+	for (APlayerState* PS : GS->PlayerArray)
+	{
+		const AGS_PlayerState* CandidatePS = Cast<AGS_PlayerState>(PS);
+		if (!CandidatePS || CandidatePS->bIsHost)
+		{
+			continue;
+		}
+		if (!CandidatePS->bIsReady)
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 void UGS_LobbyWidget::CreateSlotPool()
@@ -112,17 +130,46 @@ void UGS_LobbyWidget::RefreshStartButton()
 	{
 		return;
 	}
-
-	const bool bShowButton = IsLocalPlayerHost() && CanStartGame();
-	Button_Start->SetVisibility(bShowButton? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-	Button_Start->SetIsEnabled(bShowButton);
+	
+	Button_Start->SetVisibility(ESlateVisibility::Visible);
+	
+	if (IsLocalPlayerHost())
+	{
+		const bool bCanStart = CanStartGame();
+		Button_Start->SetIsEnabled(bCanStart);
+		
+		if (Text_ButtonStart)
+		{
+			Text_ButtonStart->SetText(FText::FromString(TEXT("게임 시작")));
+		}
+	}
+	else
+	{
+		const AGS_PlayerState* PS = GetOwningPlayerState<AGS_PlayerState>();
+		const bool bReady = PS && PS->bIsReady;
+		Button_Start->SetIsEnabled(true);
+		if (Text_ButtonStart)
+		{
+			Text_ButtonStart->SetText(FText::FromString(bReady ? TEXT("준비 완료") : TEXT("준비")));
+		}
+	}
 }
 
 void UGS_LobbyWidget::OnStartButtonClicked()
 {
-	if (AGS_LobbyPlayerController* PC = Cast<AGS_LobbyPlayerController>(GetOwningPlayer()))
+	AGS_LobbyPlayerController* PC = Cast<AGS_LobbyPlayerController>(GetOwningPlayer());
+	if (!PC)
+	{
+		return;
+	}
+	
+	if (IsLocalPlayerHost())
 	{
 		PC->RequestStartGame();
+	}
+	else
+	{
+		PC->RequestToggleReady();
 	}
 }
 

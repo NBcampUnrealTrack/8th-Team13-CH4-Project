@@ -56,6 +56,21 @@ void AGS_LobbyPlayerController::RequestStartGame()
 	ServerRequestStartGame();
 }
 
+void AGS_LobbyPlayerController::RequestToggleReady()
+{
+	ServerToggleReady();
+}
+
+void AGS_LobbyPlayerController::ServerToggleReady_Implementation()
+{
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (!PS || PS->bIsHost)
+	{
+		return;
+	}
+	PS->SetReady(!PS->bIsReady);
+}
+
 void AGS_LobbyPlayerController::ServerRequestStartGame_Implementation()
 {
 	if (AGS_LobbyGameMode* GM = GetWorld()->GetAuthGameMode<AGS_LobbyGameMode>())
@@ -197,6 +212,7 @@ void AGS_LobbyPlayerController::RefreshCharacterDisplay()
 				if (AGSCharacter* GSChar = Cast<AGSCharacter>(GSCharacter))
 				{
 					GSChar->UpdateNameTag(CandidatePS->PlayerNickname);
+					GSChar->UpdateReadyCheck(CandidatePS->bIsReady);
 				}
 				break;
 			}
