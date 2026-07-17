@@ -4,6 +4,7 @@
 #include "Blueprint/UserWidget.h"
 #include "GS_LobbyWidget.generated.h"
 
+class UTextBlock;
 class UGS_FriendListWidget;
 class UButton;
 class UGS_LobbySlotWidget;
@@ -29,6 +30,8 @@ protected:
 	TObjectPtr<UPanelWidget> SlotContainer;
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> Button_Start;
+	UPROPERTY(meta=(BindWidgetOptional))
+	TObjectPtr<UTextBlock> Text_ButtonStart;
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> Button_Invite;
 	UPROPERTY(meta=(BindWidget))

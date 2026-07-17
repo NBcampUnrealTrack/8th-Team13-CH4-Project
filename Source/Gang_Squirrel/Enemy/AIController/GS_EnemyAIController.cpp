@@ -1,11 +1,15 @@
 #include "GS_EnemyAIController.h"
 
+#include "AbilitySystemBlueprintLibrary.h"
+#include "AbilitySystemComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Gang_Squirrel/Enemy/GS_Enemy.h"
 #include "Gang_Squirrel/GAS/GA/GA_AbilityBase.h"
+#include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AIPerceptionTypes.h"
 #include "Perception/AISenseConfig_Sight.h"
+#include "Perception/AISense_Sight.h"
 
 
 AGS_EnemyAIController::AGS_EnemyAIController()
@@ -103,9 +107,55 @@ void AGS_EnemyAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus
 	}
 	else if (BB->GetValueAsObject(FName("TargetActor")) == Actor)
 	{
-		BB->ClearValue(FName("TargetActor"));
+		AActor* Replacement = FindAlternativeTarget(Actor);
+		if (Replacement)
+		{
+			BB->SetValueAsObject(FName("TargetActor"), Replacement);
+		}
+		else
+		{
+			BB->ClearValue(FName("TargetActor"));
+		}
 		BB->SetValueAsBool(FName("bCanAttack"),false);
 	}
+}
+
+AActor* AGS_EnemyAIController::FindAlternativeTarget(AActor* ExcludeActor) const
+{
+	APawn* SelfPawn = GetPawn();
+	if (!PerceptionComp || !SelfPawn)
+	{
+		return nullptr;
+	}
+
+	TArray<AActor*> PerceivedActors;
+	PerceptionComp->GetCurrentlyPerceivedActors(UAISense_Sight::StaticClass(), PerceivedActors);
+
+	AActor* NearestActor = nullptr;
+	float NearestDistSq = TNumericLimits<float>::Max();
+
+	for (AActor* Candidate : PerceivedActors)
+	{
+		if (!Candidate || Candidate == ExcludeActor || UGA_AbilityBase::IsSameTeam(SelfPawn, Candidate))
+		{
+			continue;
+		}
+
+		const UAbilitySystemComponent* CandidateASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Candidate);
+		if (CandidateASC && CandidateASC->HasMatchingGameplayTag(StateTag::TAG_State_Dead))
+		{
+			continue;
+		}
+
+		const float DistSq = FVector::DistSquared(SelfPawn->GetActorLocation(), Candidate->GetActorLocation());
+		if (DistSq < NearestDistSq)
+		{
+			NearestDistSq = DistSq;
+			NearestActor = Candidate;
+		}
+	}
+
+	return NearestActor;
 }
 
 void AGS_EnemyAIController::DrawDebug_SightRadius()

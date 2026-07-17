@@ -47,5 +47,28 @@ void AGS_LobbyGameMode::TryStartGame(APlayerController* Requester)
 
 bool AGS_LobbyGameMode::CanStartGame()
 {
-	return GetNumPlayers() >= MinPlayersToStart;
+	if (GetNumPlayers() < MinPlayersToStart)
+	{
+		return false;
+	}
+	
+	const AGS_GameState* GS = GetGameState<AGS_GameState>();
+	if (!GS)
+	{
+		return false;
+	}
+	
+	for (APlayerState* PS : GS->PlayerArray)
+	{
+		const AGS_PlayerState* CandidatePS = Cast<AGS_PlayerState>(PS);
+		if (!CandidatePS || CandidatePS->bIsHost)
+		{
+			continue;
+		}
+		if (!CandidatePS->bIsReady)
+		{
+			return false;
+		}
+	}
+	return true;
 }

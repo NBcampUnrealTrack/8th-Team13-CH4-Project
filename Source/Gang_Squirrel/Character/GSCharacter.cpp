@@ -27,6 +27,7 @@
 #include "Gang_Squirrel/Gang_Squirrel.h"
 #include "Gang_Squirrel/Food/GSCheekWidget.h"
 #include "Net/UnrealNetwork.h"
+#include "PhysicsEngine/BodyInstance.h"
 #include "Gang_Squirrel/EOS/GS_GameInstance.h"
 #include "Gang_Squirrel/Food/Score/GSSlideWidget.h"
 #include "Kismet/KismetMaterialLibrary.h"
@@ -59,6 +60,7 @@ AGSCharacter::AGSCharacter()
 	SpringArm->bUsePawnControlRotation = true;
 	SpringArm->bDoCollisionTest = true;
 	//Camera Lag Settings
+	SpringArm->bEnableCameraLag = true;
 	SpringArm->CameraLagSpeed = 10.f;
 	SpringArm->bEnableCameraRotationLag = true;
 	SpringArm->CameraRotationLagSpeed = 10.f;
@@ -164,6 +166,12 @@ void AGSCharacter::BeginPlay()
 		{
 			UpdateNameTag(PS->PlayerNickname);
 		}
+		
+		if (!PS->OnPlayerReadyChanged.IsAlreadyBound(this, &ThisClass::UpdateReadyCheck))
+		{
+			PS->OnPlayerReadyChanged.AddDynamic(this, &ThisClass::UpdateReadyCheck);
+		}
+		UpdateReadyCheck(PS->bIsReady);
 	}
 
 	BindMovementSpeedDelegates();
@@ -472,7 +480,7 @@ void AGSCharacter::IAAttack(const FInputActionValue& InValue)
 			return;
 		}
 	}
-	
+
 	ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag::TAG_Ability_Attack));
 }
 
@@ -582,6 +590,15 @@ void AGSCharacter::UpdateNameTag(const FString& Newname)
 	if (NameTag)
 	{
 		NameTag->SetNickname(Newname);
+	}
+}
+
+void AGSCharacter::UpdateReadyCheck(bool bReady)
+{
+	UGSPlayerNameTag* NameTag = Cast<UGSPlayerNameTag>(PlayerNameTagWidget->GetWidget());
+	if (NameTag)
+	{
+		NameTag->SetReadyState(bReady);
 	}
 }
 
@@ -728,14 +745,18 @@ float AGSCharacter::GetFinalMoveSpeedMultiplier() const
 void AGSCharacter::UpdateMaxWalkSpeedFromAttribute()
 {
 	const float SafeMoveSpeed = FMath::Max(CachedMoveSpeed, 0.f);
-	const float SafeSlowMultiplier = FMath::Clamp(CachedSlowSpeedMultiplier, 0.1f, 1.f);
+	const float SafeSlowMultiplier =
+		FMath::Clamp(CachedSlowSpeedMultiplier, 0.1f, 1.f);
+
+	const float FinalMultiplier = GetFinalMoveSpeedMultiplier();
 
 	const float FinalSpeed =
 		SafeMoveSpeed *
 		SafeSlowMultiplier *
-		GetFinalMoveSpeedMultiplier();
+		FinalMultiplier;
 
 	GetCharacterMovement()->MaxWalkSpeed = FinalSpeed;
+
 }
 
 void AGSCharacter::StartRolling(const FVector& InRollingDirection)
@@ -917,6 +938,13 @@ void AGSCharacter::OnRep_PlayerState()
 			UpdateNameTag(PS->PlayerNickname);
 		}
 		
+		if (!PS->OnPlayerReadyChanged.IsAlreadyBound(this, &ThisClass::UpdateReadyCheck))
+		{
+			PS->OnPlayerReadyChanged.AddDynamic(this, &ThisClass::UpdateReadyCheck);
+		}
+		UpdateReadyCheck(PS->bIsReady);
+		
+		
 		// When State.Dead Tag Was Attached or Detached Call to Func
 		PS->GetAbilitySystemComponent()->RegisterGameplayTagEvent(StateTag::TAG_State_Dead, EGameplayTagEventType::NewOrRemoved).AddUObject(this,&AGSCharacter::OnDeathStateTagChanged);
 	
@@ -992,18 +1020,21 @@ void AGSCharacter::OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount
 	
 	TempScore = 0;
 	CurrentCheekSize = 0;
+	MaxFallSpeedDuringFall = 0.f; // 낙하 가속도 0으로 초기화
 	Multicast_InflateCheeks(0.f);
 
 	if (IsLocallyControlled())
 	{
-		float TargetGrayValue = (NewCount > 0) ? 1.0f : 0.0f;
-		static UMaterialParameterCollection* MyMPC = Cast<UMaterialParameterCollection>(StaticLoadObject(UMaterialParameterCollection::StaticClass(), nullptr, TEXT("/Script/Engine.MaterialParameterCollection'/Game/ExternalContent/LevelPrototyping/Materials/MPC_ScreenEffects.MPC_ScreenEffects'")));
-		if (MyMPC)
+		float TargetGrayValue = (NewCount > 0) ? 1.0f : 0.0f; //포스트 프로세스 머티리얼 파라미터 변수
+		UMaterialParameterCollection* MyMPC = Cast<UMaterialParameterCollection>(
+			StaticLoadObject(UMaterialParameterCollection::StaticClass(), nullptr, TEXT(
+				"/Script/Engine.MaterialParameterCollection'/Game/ExternalContent/LevelPrototyping/Materials/MPC_ScreenEffects.MPC_ScreenEffects'")));
+		
+		if (GetWorld() && MyMPC) //방어 코드
 		{
 			UKismetMaterialLibrary::SetScalarParameterValue(GetWorld(), MyMPC, FName("GrayAlpha"), TargetGrayValue);
 		}
 	}
-	
 }
 
 void AGSCharacter::PlayVictoryMontage()
@@ -1701,13 +1732,23 @@ void AGSCharacter::NetMulticast_SetFullRagdollEnable_Implementation(bool bEnable
 	
 	if (bEnable)
 	{
+		MeshComp->RecreatePhysicsState();
 		MeshComp->SetAllBodiesSimulatePhysics(true);
+		for (FBodyInstance* Body : MeshComp->Bodies)
+		{
+			if (Body)
+			{
+				Body->SetUseCCD(true);
+			}
+		}
 		MeshComp->WakeAllRigidBodies();
 	}
 	else
 	{
 		MeshComp->SetAllBodiesSimulatePhysics(false);
 		MeshComp->SetRelativeLocationAndRotation(DefaultMeshRelativeLocation,DefaultMeshRelativeRotation);
+		MeshComp->TickAnimation(0.f, false);
+		MeshComp->RefreshBoneTransforms();
 		SetupUpperBodyRagdoll();
 	}
 }

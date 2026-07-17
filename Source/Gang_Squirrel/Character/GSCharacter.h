@@ -84,6 +84,8 @@ private:
 public:
 	UFUNCTION()
 	void UpdateNameTag(const FString& Newname);
+	UFUNCTION()
+	void UpdateReadyCheck(bool bReady);
 
 protected:
 
@@ -347,7 +349,7 @@ public:
 
 private:	
 	// Don't trust this Values. Go to AttributeSet
-	float CachedMoveSpeed = 50.f;
+	float CachedMoveSpeed = 20.f;
 	float CachedSlowSpeedMultiplier = 1.f;
 
 	bool bMovementSpeedDelegateBound = false;

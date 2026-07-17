@@ -7,6 +7,7 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerNameChanged, const FString&, NewName);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerScoreChanged, int32, NewScore);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerReadyChanged, bool, bIsReady);
 
 class UGameplayEffect;
 class UGS_PlayerAttributeSet;
@@ -98,9 +99,17 @@ private:
 public:
 	UPROPERTY(ReplicatedUsing = OnRep_IsHost, BlueprintReadOnly,Category="Lobby")
 	bool bIsHost = false;
+	UPROPERTY(ReplicatedUsing = OnRep_IsReady, BlueprintReadOnly, Category="Lobby")
+	bool bIsReady = false;
+	
+	FOnPlayerReadyChanged OnPlayerReadyChanged;
 	
 	UFUNCTION()
 	void OnRep_IsHost();
+	UFUNCTION()
+	void OnRep_IsReady();
+	
+	void SetReady(bool bNewReady);
 #pragma endregion 
 	
 #pragma region LobbySpawn
