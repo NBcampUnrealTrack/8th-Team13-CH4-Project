@@ -74,6 +74,7 @@ void UGA_PlayerDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		
 		PlayerCharacter->NetMulticast_SetFullRagdollEnable(true);
 		PlayerCharacter->NetMulticast_ApplyRagdollImpulse(PlayerCharacter->GetLastHitImpulseDirection() * DeathImpulseStrength, PlayerCharacter->GetRagdollStartBone());
+		PlayerCharacter->NetMulticast_SetCameraFollowRagdoll(true);
 	}
 	
 	EndAbility(Handle,ActorInfo,ActivationInfo,true,false);
