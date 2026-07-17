@@ -984,14 +984,16 @@ void AGSCharacter::Server_NotifyAddScore_Implementation(int32 Score)
 	{
 		PS->AddScore(Score);
 		
-		UGSSlideWidget* CurrentSlideWidget = CreateWidget<UGSSlideWidget>(GetWorld(),SlideWidgetClass);
-		
-		CurrentSlideWidget->AddToViewport();
-		CurrentSlideWidget->UpdateSlideWidget(Score);
-		
-		
 		// UE_LOG(LogTemp, Warning, TEXT("UpdateScore"));
 	}
+}
+
+void AGSCharacter::ShowSlideWidget(AGSCharacter* CurrentCharacter, int32 Score) const
+{
+	UGSSlideWidget* CurrentSlideWidget = CreateWidget<UGSSlideWidget>(GetWorld(),SlideWidgetClass);
+		
+	CurrentSlideWidget->AddToViewport();
+	CurrentSlideWidget->UpdateSlideWidget(Score);
 }
 
 void AGSCharacter::Server_AddTempScore_Implementation(int32 Amount)
@@ -1623,7 +1625,7 @@ void AGSCharacter::StopGrab()
 	UpdateMaxWalkSpeedFromAttribute();
 }
 
-void AGSCharacter::UpdateSlideWidget(int32 Value)
+void AGSCharacter::UpdateSlideWidget_Implementation(int32 Value)
 {
 	UGSSlideWidget* CurrentSlideRewardWidget = CreateWidget<UGSSlideWidget>(GetWorld(), SlideWidgetRewardClass);
 	
