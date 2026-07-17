@@ -39,6 +39,8 @@ void UGA_PlayerDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		{
 			ASC->AddLooseGameplayTag(StateTag::TAG_State_Dead);
 			ASC->AddReplicatedLooseGameplayTag(StateTag::TAG_State_Dead);
+
+			ASC->CancelAllAbilities(this);
 		}
 
 		AActor* MatchedPlayerStart = nullptr;
@@ -72,6 +74,7 @@ void UGA_PlayerDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		
 		PlayerCharacter->NetMulticast_SetFullRagdollEnable(true);
 		PlayerCharacter->NetMulticast_ApplyRagdollImpulse(PlayerCharacter->GetLastHitImpulseDirection() * DeathImpulseStrength, PlayerCharacter->GetRagdollStartBone());
+		PlayerCharacter->NetMulticast_SetCameraFollowRagdoll(true);
 	}
 	
 	EndAbility(Handle,ActorInfo,ActivationInfo,true,false);
@@ -117,6 +120,7 @@ void UGA_PlayerDeath::HandleRespawn()
 		return;
 	}
 	
+	PlayerCharacter->NetMulticast_SetCameraFollowRagdoll(false);
 	PlayerCharacter->NetMulticast_SetFullRagdollEnable(false);
 	PlayerChar->SetActorLocation(CachedRespawnLocation);
 	PlayerChar->SetActorRotation(CachedRespawnRotation);
