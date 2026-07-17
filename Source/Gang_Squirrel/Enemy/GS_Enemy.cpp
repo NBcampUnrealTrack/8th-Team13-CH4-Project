@@ -17,6 +17,7 @@
 #include "Gang_Squirrel/SpawnSystem/Enemy/GS_EnemySpawnManager.h"
 #include "Gang_Squirrel/UI/Stat_Widget/GS_HPCountWidget.h"
 #include "Net/UnrealNetwork.h"
+#include "PhysicsEngine/BodyInstance.h"
 
 
 AGS_Enemy::AGS_Enemy()
@@ -237,13 +238,23 @@ void AGS_Enemy::NetMulticast_SetFullRagdollEnable_Implementation(bool bEnable)
 	
 	if (bEnable)
 	{
+		MeshComp->RecreatePhysicsState();
 		MeshComp->SetAllBodiesSimulatePhysics(true);
+		for (FBodyInstance* Body : MeshComp->Bodies)
+		{
+			if (Body)
+			{
+				Body->SetUseCCD(true);
+			}
+		}
 		MeshComp->WakeAllRigidBodies();
 	}
 	else
 	{
 		MeshComp->SetAllBodiesSimulatePhysics(false);
 		MeshComp->SetRelativeLocationAndRotation(DefaultMeshRelativeLocation,DefaultMeshRelativeRotation);
+		MeshComp->TickAnimation(0.f, false);
+		MeshComp->RefreshBoneTransforms();
 		SetupUpperBodyRagdoll();
 	}
 }
