@@ -156,7 +156,13 @@ private:
 	void DoJoinSession();
 	void HandleDestroySessionForJoin(FName SessionName, bool bWasSuccessful);
 #pragma endregion 
-	
+
+	private:
+		void BeginLoadingScreen(const FString& MapName);
+		void EndLoadingScreen(UWorld* LoadedWorld);
+
+		bool bIsMainStageLoading = false;
+
 #if WITH_EDITOR
 	bool bWantsListenServerInPIE = false;
 	int32 PendingPIEListenPort = 0;
