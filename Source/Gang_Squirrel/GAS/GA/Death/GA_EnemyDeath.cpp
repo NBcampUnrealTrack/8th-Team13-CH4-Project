@@ -47,6 +47,8 @@ void UGA_EnemyDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		{
 			ASC->AddLooseGameplayTag(StateTag::TAG_State_Dead);
 			ASC->AddReplicatedLooseGameplayTag(StateTag::TAG_State_Dead);
+
+			ASC->CancelAllAbilities(this);
 		}
 		
 		Enemy->NetMulticast_SetFullRagdollEnable(true);

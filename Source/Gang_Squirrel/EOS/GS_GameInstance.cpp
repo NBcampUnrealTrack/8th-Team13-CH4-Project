@@ -8,10 +8,23 @@
 #include "Engine/PostProcessVolume.h"
 #include "Sound/SoundClass.h"
 #include "Sound/SoundMix.h"
+#include "MoviePlayer.h"
+#include "UObject/UObjectGlobals.h"
 
 void UGS_GameInstance::Init()
 {
 	Super::Init();
+
+	//Loading
+	FCoreUObjectDelegates::PreLoadMap.AddUObject(
+		this,
+		&UGS_GameInstance::BeginLoadingScreen
+	);
+
+	FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(
+		this,
+		&UGS_GameInstance::EndLoadingScreen
+	);
 
 	if (IOnlineSubsystem* OnlineSub = Online::GetSubsystem(GetWorld()))
 	{
@@ -41,6 +54,9 @@ void UGS_GameInstance::Init()
 
 void UGS_GameInstance::Shutdown()
 {
+	FCoreUObjectDelegates::PreLoadMap.RemoveAll(this);
+	FCoreUObjectDelegates::PostLoadMapWithWorld.RemoveAll(this);
+
 	if (IdentityInterface.IsValid())
 	{
 		IdentityInterface->ClearOnLoginCompleteDelegate_Handle(0, LoginCompleteDelegateHandle);
@@ -470,4 +486,70 @@ void UGS_GameInstance::DoJoinSession()
 void UGS_GameInstance::HandleDestroySessionForJoin(FName SessionName, bool bWasSuccessful)
 {
 	DoJoinSession();
+}
+
+//Loading
+void UGS_GameInstance::BeginLoadingScreen(const FString& MapName)
+{
+#if !UE_SERVER
+	if (IsRunningDedicatedServer())
+	{
+		return;
+	}
+
+	const bool bIsMainStage =
+		MapName.Contains(TEXT("/Game/ProjectFile/Level/L_Main_Stage")) ||
+		MapName.Contains(TEXT("L_Main_Stage"));
+
+	if (!bIsMainStage)
+	{
+		return;
+	}
+
+	IGameMoviePlayer* MoviePlayer = GetMoviePlayer();
+	if (!MoviePlayer || !MoviePlayer->IsInitialized())
+	{
+		return;
+	}
+
+	bIsMainStageLoading = true;
+
+	FLoadingScreenAttributes LoadingScreen;
+	LoadingScreen.MinimumLoadingScreenDisplayTime = 5.0f;
+	LoadingScreen.bAutoCompleteWhenLoadingCompletes = true;
+	LoadingScreen.bWaitForManualStop = false;
+	LoadingScreen.bMoviesAreSkippable = false;
+	LoadingScreen.PlaybackType = MT_Looped;
+
+	LoadingScreen.MoviePaths.Add(TEXT("LoadingDancing"));
+
+	MoviePlayer->SetupLoadingScreen(LoadingScreen);
+	MoviePlayer->PlayMovie();
+
+	UE_LOG(
+		LogTemp,
+		Log,
+		TEXT("[LoadingScreen] Started for map: %s"),
+		*MapName
+	);
+#endif
+}
+
+void UGS_GameInstance::EndLoadingScreen(UWorld* LoadedWorld)
+{
+#if !UE_SERVER
+	if (!bIsMainStageLoading)
+	{
+		return;
+	}
+
+	bIsMainStageLoading = false;
+
+	UE_LOG(
+		LogTemp,
+		Log,
+		TEXT("[LoadingScreen] Map load completed: %s"),
+		LoadedWorld ? *LoadedWorld->GetName() : TEXT("Unknown")
+	);
+#endif
 }

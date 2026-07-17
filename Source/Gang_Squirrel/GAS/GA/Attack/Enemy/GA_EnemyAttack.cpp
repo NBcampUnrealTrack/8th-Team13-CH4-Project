@@ -116,7 +116,9 @@ void UGA_EnemyAttack::ApplyDamageToTarget(AActor* TargetActor, const FHitResult&
 			if (IGS_RagdollReactorInterface* TargetReactor = Cast<IGS_RagdollReactorInterface>(TargetActor))
 			{
 				const FName HitBone = (Hit.BoneName != NAME_None) ? Hit.BoneName : TargetReactor->GetRagdollStartBone();
-				const FVector ImpulseDir = !Hit.ImpactNormal.IsNearlyZero() ? -Hit.ImpactNormal : GetAvatarActorFromActorInfo()->GetActorForwardVector();
+				FVector ImpulseDir = !Hit.ImpactNormal.IsNearlyZero() ? -Hit.ImpactNormal : GetAvatarActorFromActorInfo()->GetActorForwardVector();
+				ImpulseDir.Z = 0.f;
+				ImpulseDir = ImpulseDir.GetSafeNormal(UE_KINDA_SMALL_NUMBER, GetAvatarActorFromActorInfo()->GetActorForwardVector());
 				
 				if (bIsSecondCombo)
 				{
