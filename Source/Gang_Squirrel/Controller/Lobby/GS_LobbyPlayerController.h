@@ -5,15 +5,18 @@
 #include "GS_LobbyPlayerController.generated.h"
 
 class AGSCharacter;
+class UInputMappingContext;
+class UInputAction;
 
 UCLASS()
 class GANG_SQUIRREL_API AGS_LobbyPlayerController : public APlayerController
 {
 	GENERATED_BODY()
-	
+
 protected:
 	virtual void BeginPlay() override;
-	
+	virtual void SetupInputComponent() override;
+
 private:
 	UPROPERTY(EditDefaultsOnly,Category="UI")
 	TSubclassOf<UUserWidget> LobbyWidgetClass;
@@ -25,7 +28,15 @@ private:
 	TSubclassOf<AGSCharacter> DisplayCharacterClass;
 	UPROPERTY(EditDefaultsOnly,Category="Lobby|Display")
 	FName LobbyCameraTag = "LobbyCamera";
-	
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputMappingContext> IMC_UI;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> IA_ToggleSettings;
+
+	void HandleToggleSettings();
+
 public:
 	UFUNCTION(BlueprintCallable,Category="Lobby")
 	void RequestStartGame();

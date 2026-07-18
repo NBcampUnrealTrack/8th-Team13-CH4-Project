@@ -59,5 +59,8 @@ void UGS_SettingWidget::OnBrightnessChanged(float Value)
 
 void UGS_SettingWidget::OnCloseClicked()
 {
-    RemoveFromParent();
+    // RemoveFromParent()로 완전히 제거하면 다음에 다시 열 때 AddToViewport가 재호출되면서
+    // NativeConstruct가 다시 실행되어 델리게이트가 중복 바인딩되어 크래시가 난다.
+    // GameInstance::ToggleSettingsWidget과 동일하게 Visibility만 바꿔서 위젯을 유지한다.
+    SetVisibility(ESlateVisibility::Collapsed);
 }
