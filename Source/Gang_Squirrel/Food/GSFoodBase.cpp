@@ -2,8 +2,6 @@
 
 #include "GSFoodBase.h"
 
-#include "NaniteSceneProxy.h"
-#include "SNegativeActionButton.h"
 #include "Gang_Squirrel/DataAsset/GSFoodPrimaryDataAsset.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"

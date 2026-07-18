@@ -114,7 +114,8 @@ void UGS_GameInstance::Login()
 	LoginCompleteDelegateHandle = IdentityInterface->AddOnLoginCompleteDelegate_Handle(
 		0, FOnLoginCompleteDelegate::CreateUObject(this, &UGS_GameInstance::HandleLoginComplete));
 
-	if (!IdentityInterface->AutoLogin(0))
+	const FOnlineAccountCredentials Credentials(TEXT("accountportal"), TEXT(""), TEXT(""));
+	if (!IdentityInterface->Login(0, Credentials))
 	{
 		IdentityInterface->ClearOnLoginCompleteDelegate_Handle(0, LoginCompleteDelegateHandle);
 		OnGSLoginComplete.Broadcast(false);
@@ -374,6 +375,7 @@ int32 UGS_GameInstance::GetPIEInstanceIndexFromCommandLine()
 	}
 	return 0;
 }
+#endif
 
 void UGS_GameInstance::SetMouseSensitivity(float NewValue)
 {
@@ -419,6 +421,7 @@ void UGS_GameInstance::ApplyBrightnessToWorld()
 	}
 }
 
+#if WITH_EDITOR
 FGameInstancePIEResult UGS_GameInstance::StartPlayInEditorGameInstance(ULocalPlayer* LocalPlayer,
 	const FGameInstancePIEParameters& Params)
 {
