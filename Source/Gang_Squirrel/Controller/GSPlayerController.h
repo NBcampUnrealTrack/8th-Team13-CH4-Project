@@ -28,6 +28,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Game")
 	void RequestRestartGame();
 
+protected:
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 private:
 	UFUNCTION(Server, Reliable)
 	void ServerSetNickname(const FString& Nickname);
@@ -85,12 +88,6 @@ private:
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GameEnd|Stage")
 	FName VictoryStageCameraTag = "VictoryStageCamera";
-
-	UPROPERTY(EditDefaultsOnly, Category = "GameEnd|Stage")
-	FName VictoryStageSlotTag = "VictoryStageSlot";
-
-	UPROPERTY(EditDefaultsOnly, Category = "GameEnd|Stage")
-	TSubclassOf<AGSCharacter> VictoryDisplayCharacterClass;
 
 #pragma endregion
 };
