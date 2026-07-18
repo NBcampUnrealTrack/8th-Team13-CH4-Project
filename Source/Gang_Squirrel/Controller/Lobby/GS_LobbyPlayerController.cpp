@@ -17,7 +17,7 @@ void AGS_LobbyPlayerController::BeginPlay()
 	{
 		return;
 	}
-	
+
 	if (UGS_GameInstance* GSInstance =
 		GetGameInstance<UGS_GameInstance>())
 	{
