@@ -511,6 +511,7 @@ void UGS_GameInstance::StartLoadingScreen()
 	LoadingScreen.bAutoCompleteWhenLoadingCompletes = false;
 	LoadingScreen.bWaitForManualStop = true;
 
+	LoadingScreen.bAllowEngineTick = true;
 	LoadingScreen.bMoviesAreSkippable = false;
 	LoadingScreen.PlaybackType = MT_Looped;
 	LoadingScreen.MoviePaths.Add(TEXT("LoadingDancing"));
