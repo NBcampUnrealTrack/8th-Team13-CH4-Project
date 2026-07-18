@@ -292,7 +292,8 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_AddTempScore(int32 Amount);
 	
-	void ShowSlideWidget(AGSCharacter* CurrentCharacter, int32 Score) const;
+	UFUNCTION(Client, Reliable)
+	void ShowSlideWidget(int32 Score);
 	
 protected:
 	
@@ -326,6 +327,9 @@ private:
 
 	UFUNCTION()
 	void OnRep_CheekSize();
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ResetCheeks();
 	
 
 	bool bCheekFullTutorialShown = false;
