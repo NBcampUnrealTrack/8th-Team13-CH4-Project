@@ -10,6 +10,9 @@
 #include "Sound/SoundMix.h"
 #include "MoviePlayer.h"
 #include "UObject/UObjectGlobals.h"
+#include "Blueprint/UserWidget.h"
+#include "GameFramework/PlayerController.h"
+#include "Gang_Squirrel/UI/Lobby/GS_SettingWidget.h"
 
 void UGS_GameInstance::Init()
 {
@@ -384,6 +387,39 @@ void UGS_GameInstance::SetScreenBrightness(float NewValue)
 {
 	ScreenBrightness = FMath::Clamp(NewValue, 0.f, 100.f);
 	ApplyBrightnessToWorld();
+}
+
+UGS_SettingWidget* UGS_GameInstance::ToggleSettingsWidget(APlayerController* OwningPC)
+{
+	if (!IsValid(OwningPC) || !SettingWidgetClass)
+	{
+		return nullptr;
+	}
+
+	// 최초 1회만 생성 + AddToViewport. 이후로는 Visibility만 토글해서
+	// NativeConstruct가 재호출(델리게이트 재바인딩)되는 것을 방지한다.
+	if (!IsValid(SettingWidgetInstance))
+	{
+		SettingWidgetInstance = CreateWidget<UGS_SettingWidget>(OwningPC, SettingWidgetClass);
+		if (IsValid(SettingWidgetInstance))
+		{
+			SettingWidgetInstance->AddToViewport(100);
+		}
+	}
+
+	if (!IsValid(SettingWidgetInstance))
+	{
+		return nullptr;
+	}
+
+	if (SettingWidgetInstance->GetVisibility() == ESlateVisibility::Visible)
+	{
+		SettingWidgetInstance->SetVisibility(ESlateVisibility::Collapsed);
+		return nullptr;
+	}
+
+	SettingWidgetInstance->SetVisibility(ESlateVisibility::Visible);
+	return SettingWidgetInstance;
 }
 
 void UGS_GameInstance::ApplyBrightnessToWorld()

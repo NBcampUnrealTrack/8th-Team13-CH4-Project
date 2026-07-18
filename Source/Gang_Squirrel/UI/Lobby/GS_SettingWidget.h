@@ -21,6 +21,7 @@ class GANG_SQUIRREL_API UGS_SettingWidget : public UUserWidget
 	
 public:
     virtual void NativeConstruct() override;
+    virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 
 protected:
     UPROPERTY(meta = (BindWidget))
@@ -50,4 +51,6 @@ private:
     void OnBrightnessChanged(float Value);
     UFUNCTION()
     void OnCloseClicked();
+    
+    void CloseSettings();
 };

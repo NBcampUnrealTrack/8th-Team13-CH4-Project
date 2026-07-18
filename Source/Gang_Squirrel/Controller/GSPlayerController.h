@@ -7,6 +7,8 @@
 class UGS_GameEndWidget;
 class AGSCharacter;
 class UGS_HUDWidget;
+class UInputMappingContext;
+class UInputAction;
 
 UCLASS()
 class GANG_SQUIRREL_API AGSPlayerController : public APlayerController
@@ -15,7 +17,8 @@ class GANG_SQUIRREL_API AGSPlayerController : public APlayerController
 
 public:
 	virtual void BeginPlay() override;
-	
+	virtual void SetupInputComponent() override;
+
 	//UFUNCTION(Client, Reliable)
 	//void ClientShowGameEndUI();
 
@@ -24,6 +27,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Game")
 	void RequestRestartGame();
+
+protected:
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
 	UFUNCTION(Server, Reliable)
@@ -57,6 +63,15 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UGS_HUDWidget> HUDWidgetInstance;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputMappingContext> IMC_UI;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> IA_ToggleSettings;
+
+public:
+	void HandleToggleSettings();
+
 #pragma region Debugging
 public:
 	UFUNCTION(Exec)
@@ -73,12 +88,6 @@ private:
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GameEnd|Stage")
 	FName VictoryStageCameraTag = "VictoryStageCamera";
-
-	UPROPERTY(EditDefaultsOnly, Category = "GameEnd|Stage")
-	FName VictoryStageSlotTag = "VictoryStageSlot";
-
-	UPROPERTY(EditDefaultsOnly, Category = "GameEnd|Stage")
-	TSubclassOf<AGSCharacter> VictoryDisplayCharacterClass;
 
 #pragma endregion
 };
