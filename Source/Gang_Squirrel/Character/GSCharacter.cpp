@@ -34,6 +34,9 @@
 #include "Materials/MaterialParameterCollection.h"
 #include "Components/AudioComponent.h"
 #include "Gang_Squirrel/DataAsset/GSFoodPrimaryDataAsset.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
+
 
 
 AGSCharacter::AGSCharacter()
@@ -1782,4 +1785,24 @@ void AGSCharacter::NetMulticast_SetCameraFollowRagdoll_Implementation(bool bEnab
 		SpringArm->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 		SpringArm->SetRelativeLocationAndRotation(DefaultSpringArmRelativeLocation,DefaultSpringArmRelativeRotation);
 	}
+}
+
+void AGSCharacter::Client_PlayAttackHitSound_Implementation()
+{
+	if (!AttackHitSound)
+	{
+		return;
+	}
+
+	UGameplayStatics::PlaySound2D(this, AttackHitSound);
+}
+
+void AGSCharacter::Client_PlayScoreReturnSound_Implementation()
+{
+	if (!ScoreReturnSound)
+	{
+		return;
+	}
+
+	UGameplayStatics::PlaySound2D(this, ScoreReturnSound);
 }
