@@ -35,9 +35,12 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> IA_ToggleSettings;
 
+public:
+	// GS_SettingWidget이 ESC-in-widget / 닫기버튼으로 자체 종료할 때도
+	// 재사용할 수 있도록 public으로 노출
 	void HandleToggleSettings();
 
-public:
+
 	UFUNCTION(BlueprintCallable,Category="Lobby")
 	void RequestStartGame();
 	

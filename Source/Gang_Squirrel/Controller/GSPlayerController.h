@@ -66,7 +66,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> IA_ToggleSettings;
 
-private:
+public:
 	void HandleToggleSettings();
 
 #pragma region Debugging

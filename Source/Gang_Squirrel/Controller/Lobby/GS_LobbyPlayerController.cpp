@@ -33,10 +33,7 @@ void AGS_LobbyPlayerController::BeginPlay()
 		{
 			LobbyWidget->AddToViewport();
 			SetShowMouseCursor(true);
-
-			// FInputModeUIOnly는 GameViewportClient::SetIgnoreInput(true)를 호출해서
-			// ESC 등 키 입력이 PlayerController까지 아예 안 넘어온다(GameViewportClient.cpp:695).
-			// UI 클릭은 유지하면서 키 입력도 받아야 하므로 GameAndUI로 전환.
+			
 			FInputModeGameAndUI InputMode;
 			InputMode.SetWidgetToFocus(LobbyWidget->TakeWidget());
 			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
