@@ -158,7 +158,14 @@ void AGSFoodBase::Init(UGSFoodPrimaryDataAsset* InData)
 
 void AGSFoodBase::OnRep_Activate()
 {
+   UE_LOG(LogTemp, Warning, TEXT("AGSFoodBase::OnRep_Activate"));
     this->SetActorHiddenInGame(!bIsActive);
+    if (!bIsActive)
+    {
+    this->SetActorLocation(FVector(0.f,0.f, -1000000.f));
+       UE_LOG(LogTemp, Warning, TEXT("%f"), this->GetActorLocation().Z);
+       
+    }
     this->SetActorEnableCollision(bIsActive);
 }
 
@@ -172,6 +179,7 @@ void AGSFoodBase::Activate()
 void AGSFoodBase::Deactivate()
 {
     if (!HasAuthority()) return;
+   
     
     SetActorTickEnabled(false);
    

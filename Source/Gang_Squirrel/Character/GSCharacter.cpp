@@ -422,13 +422,19 @@ void AGSCharacter::Multicast_InflateCheeks_Implementation(float Value)
 	}
 }
 
-void AGSCharacter::ResetCheekSize()
+void AGSCharacter::Multicast_ResetCheeks_Implementation()
 {
 	CurrentCheekSize = 0.f;
-	
-	Multicast_InflateCheeks(0.f);
-	
-	//UE_LOG(LogTemp, Error, TEXT("ResetCheekSize!"));
+
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		MeshComp->SetMorphTarget(TEXT("CheeksSize"), 0.f);
+	}
+
+	if (CheekWidgetUIInstance)
+	{
+		CheekWidgetUIInstance->SetProgressValue(0.f);
+	}
 }
 
 void AGSCharacter::AddMaxCheekSize(float Value)
@@ -988,12 +994,17 @@ void AGSCharacter::Server_NotifyAddScore_Implementation(int32 Score)
 	}
 }
 
-void AGSCharacter::ShowSlideWidget(AGSCharacter* CurrentCharacter, int32 Score) const
+void AGSCharacter::ShowSlideWidget_Implementation(int32 Score)
 {
+	if (!SlideWidgetClass) return;
+	
 	UGSSlideWidget* CurrentSlideWidget = CreateWidget<UGSSlideWidget>(GetWorld(),SlideWidgetClass);
 		
-	CurrentSlideWidget->AddToViewport();
-	CurrentSlideWidget->UpdateSlideWidget(Score);
+	if (CurrentSlideWidget)
+	{
+		CurrentSlideWidget->AddToViewport();
+		CurrentSlideWidget->UpdateSlideWidget(Score);
+	}
 }
 
 void AGSCharacter::Server_AddTempScore_Implementation(int32 Amount)
