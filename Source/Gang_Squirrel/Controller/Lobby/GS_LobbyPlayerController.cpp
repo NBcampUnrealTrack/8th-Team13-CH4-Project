@@ -18,6 +18,12 @@ void AGS_LobbyPlayerController::BeginPlay()
 		return;
 	}
 	
+	if (UGS_GameInstance* GSInstance =
+		GetGameInstance<UGS_GameInstance>())
+	{
+		GSInstance->StopLoadingScreen();
+	}
+
 	if (LobbyWidgetClass)
 	{
 		UUserWidget* LobbyWidget = CreateWidget<UUserWidget>(this, LobbyWidgetClass);
@@ -69,6 +75,17 @@ void AGS_LobbyPlayerController::ServerToggleReady_Implementation()
 		return;
 	}
 	PS->SetReady(!PS->bIsReady);
+}
+
+void AGS_LobbyPlayerController::ClientStartLoadingScreen_Implementation()
+{
+	UGS_GameInstance* GSInstance = GetGameInstance<UGS_GameInstance>();
+	if (!GSInstance)
+	{
+		return;
+	}
+
+	GSInstance->StartLoadingScreen();
 }
 
 void AGS_LobbyPlayerController::ServerRequestStartGame_Implementation()
