@@ -47,7 +47,8 @@ public:
 	UPROPERTY()
 	TArray<AActor*> IgnoreActors;
 
-
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UMaterialInterface> LinkOverlayMat = nullptr;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -68,4 +69,5 @@ private:
 	UPROPERTY()
 	UGSPoolSubsystem* PoolSubsystem;
 
+	
 };

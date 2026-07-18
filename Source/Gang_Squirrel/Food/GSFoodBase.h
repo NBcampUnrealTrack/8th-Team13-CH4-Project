@@ -54,6 +54,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<UUserWidget> FoodWidgetClassDefaults;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Food | Visual", meta = (AllowPrivateAccess = "true"))
+	class UMaterialInterface* OverlayMaterialAsset;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
