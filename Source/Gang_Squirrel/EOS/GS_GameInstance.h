@@ -15,6 +15,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGSJoinSessionComplete, bool, bWas
 
 class USoundClass;
 class USoundMix;
+class UGS_SettingWidget;
 
 USTRUCT(BlueprintType)
 struct FGSFriendInfo
@@ -126,6 +127,17 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Settings")
 	TObjectPtr<USoundClass> MasterSoundClass;
 	
+#pragma region SettingsWidget
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	UGS_SettingWidget* ToggleSettingsWidget(APlayerController* OwningPC);
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UGS_SettingWidget> SettingWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UGS_SettingWidget> SettingWidgetInstance;
+#pragma endregion 
+
 protected:
 #if WITH_EDITOR
 	virtual FGameInstancePIEResult StartPlayInEditorGameInstance(ULocalPlayer* LocalPlayer, const FGameInstancePIEParameters& Params) override;
