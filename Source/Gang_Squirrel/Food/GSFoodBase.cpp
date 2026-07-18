@@ -6,10 +6,12 @@
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Gang_Squirrel/Food/GSFoodWidgetComponent.h"
 #include "Gang_Squirrel/Character/GSCharacter.h"
 #include "Gang_Squirrel/Food/GSFoodWidget.h"
+#include "Gang_Squirrel/SpawnSystem/GSSpawnManager.h"
 #include "Misc/OutputDeviceNull.h"
 
 // Sets default values
@@ -197,7 +199,18 @@ void AGSFoodBase::OnRep_FoodData() const
        StaticMeshComponent->SetRelativeScale3D(FVector(CurrentMeshSize,CurrentMeshSize,CurrentMeshSize));
        SphereComponent->SetSphereRadius(5.f);
 
-       UStaticMeshComponent* MutableMeshComp = const_cast<UStaticMeshComponent*>(StaticMeshComponent.Get());
+       // 오버레이 머티리얼 할당
+       if (GetWorld())
+       {
+           AActor* FoundManager = UGameplayStatics::GetActorOfClass(GetWorld(), AGSSpawnManager::StaticClass());
+           AGSSpawnManager* SpawnManager = Cast<AGSSpawnManager>(FoundManager);
+
+           if (SpawnManager && SpawnManager->LinkOverlayMat)
+           {
+               StaticMeshComponent->SetOverlayMaterial(SpawnManager->LinkOverlayMat);
+           }
+       }
+       /*UStaticMeshComponent* MutableMeshComp = const_cast<UStaticMeshComponent*>(StaticMeshComponent.Get());
        if (MutableMeshComp)
        {
           UMaterialInterface* LoadedOverlayMat = Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr, TEXT("/Game/ExternalContent/LevelPrototyping/Materials/M_Outline.M_Outline")));
@@ -205,7 +218,7 @@ void AGSFoodBase::OnRep_FoodData() const
           {
              StaticMeshComponent->SetOverlayMaterial(LoadedOverlayMat);
           }
-       }
+       }*/
     }
 }
 
