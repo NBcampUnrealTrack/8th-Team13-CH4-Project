@@ -4,6 +4,9 @@
 #include "GameFramework/GameModeBase.h"
 #include "GS_LobbyGameMode.generated.h"
 
+
+class AGS_LobbyPlayerController;
+
 UCLASS()
 class GANG_SQUIRREL_API AGS_LobbyGameMode : public AGameModeBase
 {
@@ -14,6 +17,10 @@ public:
 
 protected:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
+
+	void StartTravelToMainStage();
+
+	FTimerHandle StartGameTimerHandle;
 	
 public:
 	UFUNCTION(BlueprintCallable,Category="Lobby")

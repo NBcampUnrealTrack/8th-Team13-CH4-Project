@@ -16,16 +16,7 @@ void UGS_GameInstance::Init()
 	Super::Init();
 
 	//Loading
-	FCoreUObjectDelegates::PreLoadMap.AddUObject(
-		this,
-		&UGS_GameInstance::BeginLoadingScreen
-	);
-
-	FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(
-		this,
-		&UGS_GameInstance::EndLoadingScreen
-	);
-
+	
 	if (IOnlineSubsystem* OnlineSub = Online::GetSubsystem(GetWorld()))
 	{
 		SessionInterface = OnlineSub->GetSessionInterface();
@@ -54,9 +45,6 @@ void UGS_GameInstance::Init()
 
 void UGS_GameInstance::Shutdown()
 {
-	FCoreUObjectDelegates::PreLoadMap.RemoveAll(this);
-	FCoreUObjectDelegates::PostLoadMapWithWorld.RemoveAll(this);
-
 	if (IdentityInterface.IsValid())
 	{
 		IdentityInterface->ClearOnLoginCompleteDelegate_Handle(0, LoginCompleteDelegateHandle);
@@ -492,7 +480,7 @@ void UGS_GameInstance::HandleDestroySessionForJoin(FName SessionName, bool bWasS
 }
 
 //Loading
-void UGS_GameInstance::BeginLoadingScreen(const FString& MapName)
+void UGS_GameInstance::StartLoadingScreen()
 {
 #if !UE_SERVER
 	if (IsRunningDedicatedServer())
@@ -500,59 +488,58 @@ void UGS_GameInstance::BeginLoadingScreen(const FString& MapName)
 		return;
 	}
 
-	const bool bIsMainStage =
-		MapName.Contains(TEXT("/Game/ProjectFile/Level/L_Main_Stage")) ||
-		MapName.Contains(TEXT("L_Main_Stage"));
-
-	if (!bIsMainStage)
+	if (bIsLoadingScreenPlaying)
 	{
 		return;
 	}
 
 	IGameMoviePlayer* MoviePlayer = GetMoviePlayer();
-	if (!MoviePlayer || !MoviePlayer->IsInitialized())
+	if (!MoviePlayer)
 	{
 		return;
 	}
 
-	bIsMainStageLoading = true;
+	if (!MoviePlayer->IsInitialized())
+	{
+		return;
+	}
 
 	FLoadingScreenAttributes LoadingScreen;
 	LoadingScreen.MinimumLoadingScreenDisplayTime = 5.0f;
-	LoadingScreen.bAutoCompleteWhenLoadingCompletes = true;
-	LoadingScreen.bWaitForManualStop = false;
+
+	// Seamless Travel에서는 우리가 직접 종료시킨다.
+	LoadingScreen.bAutoCompleteWhenLoadingCompletes = false;
+	LoadingScreen.bWaitForManualStop = true;
+
+	LoadingScreen.bAllowEngineTick = true;
 	LoadingScreen.bMoviesAreSkippable = false;
 	LoadingScreen.PlaybackType = MT_Looped;
-
 	LoadingScreen.MoviePaths.Add(TEXT("LoadingDancing"));
 
 	MoviePlayer->SetupLoadingScreen(LoadingScreen);
 	MoviePlayer->PlayMovie();
 
-	UE_LOG(
-		LogTemp,
-		Log,
-		TEXT("[LoadingScreen] Started for map: %s"),
-		*MapName
-	);
+	bIsLoadingScreenPlaying = true;
+
 #endif
 }
 
-void UGS_GameInstance::EndLoadingScreen(UWorld* LoadedWorld)
+
+void UGS_GameInstance::StopLoadingScreen()
 {
 #if !UE_SERVER
-	if (!bIsMainStageLoading)
+	if (!bIsLoadingScreenPlaying)
 	{
 		return;
 	}
 
-	bIsMainStageLoading = false;
+	IGameMoviePlayer* MoviePlayer = GetMoviePlayer();
 
-	UE_LOG(
-		LogTemp,
-		Log,
-		TEXT("[LoadingScreen] Map load completed: %s"),
-		LoadedWorld ? *LoadedWorld->GetName() : TEXT("Unknown")
-	);
+	if (MoviePlayer && MoviePlayer->IsMovieCurrentlyPlaying())
+	{
+		MoviePlayer->StopMovie();
+	}
+
+	bIsLoadingScreenPlaying = false;
 #endif
 }
