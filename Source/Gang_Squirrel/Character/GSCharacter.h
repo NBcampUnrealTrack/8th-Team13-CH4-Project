@@ -526,4 +526,12 @@ public:
 	UFUNCTION(Client, Unreliable)
 	void Client_PlayAttackHitSound();
 
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound|Score")
+	TObjectPtr<USoundBase> ScoreReturnSound;
+
+public:
+	UFUNCTION(Client, Unreliable)
+	void Client_PlayScoreReturnSound();
+
 };

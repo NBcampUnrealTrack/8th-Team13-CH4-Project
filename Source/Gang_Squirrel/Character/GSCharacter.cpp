@@ -37,6 +37,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
 
+
+
 AGSCharacter::AGSCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -1793,4 +1795,14 @@ void AGSCharacter::Client_PlayAttackHitSound_Implementation()
 	}
 
 	UGameplayStatics::PlaySound2D(this, AttackHitSound);
+}
+
+void AGSCharacter::Client_PlayScoreReturnSound_Implementation()
+{
+	if (!ScoreReturnSound)
+	{
+		return;
+	}
+
+	UGameplayStatics::PlaySound2D(this, ScoreReturnSound);
 }
