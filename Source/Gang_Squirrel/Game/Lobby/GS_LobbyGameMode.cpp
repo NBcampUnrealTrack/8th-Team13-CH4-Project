@@ -53,7 +53,7 @@ void AGS_LobbyGameMode::TryStartGame(APlayerController* Requester)
 		false
 	);
 
-	for (
+	/*for (
 		FConstPlayerControllerIterator It =
 		GetWorld()->GetPlayerControllerIterator();
 		It;
@@ -69,7 +69,7 @@ void AGS_LobbyGameMode::TryStartGame(APlayerController* Requester)
 		}
 
 		LobbyPC->ClientStartLoadingScreen();
-	}
+	}*/
 
 
 }
