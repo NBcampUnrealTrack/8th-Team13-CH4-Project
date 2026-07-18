@@ -26,6 +26,12 @@ void AGSPlayerController::BeginPlay()
 		return;
 	}
 
+	if (UGS_GameInstance* GSInstance =
+		GetGameInstance<UGS_GameInstance>())
+	{
+		GSInstance->StopLoadingScreen();
+	}
+
 	//로비에서 설정한 밝기값을 메인스테이지에 가져오는 코드
 	if (UGS_GameInstance* GSInst = GetGameInstance<UGS_GameInstance>())
 	{

@@ -62,9 +62,9 @@ void AGSSpawnManager::BeginPlay()
 			SpawnTimer,
 			this,
 			&AGSSpawnManager::Spawn,
-			60.f,
+			30.f,
 			true,
-			60.f
+			30.f
 		);
 	}
 }
@@ -88,6 +88,8 @@ void AGSSpawnManager::Spawn()
     if (!HasAuthority()) return;
     if (!IsValid(PoolSubsystem)) return;
     
+	UE_LOG(LogTemp, Warning, TEXT("Spawn Work Completed"));
+	
     for (AGSSpawnPoint* SpawnPoint : SpawnPoints)
     {
        if (!IsValid(SpawnPoint))
@@ -95,11 +97,10 @@ void AGSSpawnManager::Spawn()
           UE_LOG(LogTemp, Warning, TEXT("SpawnPoint null"));
           continue;
        }
+    	
+       if (SpawnPoint->MaxSpawnAmount <= 0) continue;
 
-       int32 DesiredSpawnAmount = SpawnPoint->MaxSpawnAmount - SpawnPoint->CurrentFoodCount;
-       if (DesiredSpawnAmount <= 0) continue;
-
-       for (int32 SpawnIdx = 0; SpawnIdx < DesiredSpawnAmount; ++SpawnIdx)
+       for (int32 SpawnIdx = 0; SpawnIdx < SpawnPoint->MaxSpawnAmount; ++SpawnIdx)
        {
           FVector SpawnLocation = FVector::ZeroVector;
           bool bFoundLocation = false;
@@ -143,8 +144,6 @@ void AGSSpawnManager::Spawn()
           
           Food->SetActorLocation(SpawnLocation);
           Food->Activate();
-          
-          SpawnPoint->CurrentFoodCount += 1;
        }
     }
     
@@ -164,8 +163,11 @@ bool AGSSpawnManager::bCheckAround(const FVector& CheckLocation)
 		OverlappingActors
 		);
 	
-
+	UE_LOG(LogTemp, Warning, TEXT("bOverlap : %d, Count : %d"),
+		bOverlap,
+		OverlappingActors.Num());
 	
+	for (AActor* Actor : OverlappingActors) { UE_LOG(LogTemp, Warning, TEXT("%s"), *Actor->GetName()); }
 	IgnoreActors.Reset();
 	OverlappingActors.Reset();
 	

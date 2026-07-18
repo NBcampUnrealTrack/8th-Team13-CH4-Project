@@ -34,6 +34,9 @@
 #include "Materials/MaterialParameterCollection.h"
 #include "Components/AudioComponent.h"
 #include "Gang_Squirrel/DataAsset/GSFoodPrimaryDataAsset.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
+
 
 
 AGSCharacter::AGSCharacter()
@@ -427,13 +430,19 @@ void AGSCharacter::Multicast_InflateCheeks_Implementation(float Value)
 	}
 }
 
-void AGSCharacter::ResetCheekSize()
+void AGSCharacter::Multicast_ResetCheeks_Implementation()
 {
 	CurrentCheekSize = 0.f;
-	
-	Multicast_InflateCheeks(0.f);
-	
-	//UE_LOG(LogTemp, Error, TEXT("ResetCheekSize!"));
+
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		MeshComp->SetMorphTarget(TEXT("CheeksSize"), 0.f);
+	}
+
+	if (CheekWidgetUIInstance)
+	{
+		CheekWidgetUIInstance->SetProgressValue(0.f);
+	}
 }
 
 void AGSCharacter::AddMaxCheekSize(float Value)
@@ -1001,12 +1010,17 @@ void AGSCharacter::Server_NotifyAddScore_Implementation(int32 Score)
 	}
 }
 
-void AGSCharacter::ShowSlideWidget(AGSCharacter* CurrentCharacter, int32 Score) const
+void AGSCharacter::ShowSlideWidget_Implementation(int32 Score)
 {
+	if (!SlideWidgetClass) return;
+	
 	UGSSlideWidget* CurrentSlideWidget = CreateWidget<UGSSlideWidget>(GetWorld(),SlideWidgetClass);
 		
-	CurrentSlideWidget->AddToViewport();
-	CurrentSlideWidget->UpdateSlideWidget(Score);
+	if (CurrentSlideWidget)
+	{
+		CurrentSlideWidget->AddToViewport();
+		CurrentSlideWidget->UpdateSlideWidget(Score);
+	}
 }
 
 void AGSCharacter::Server_AddTempScore_Implementation(int32 Amount)
@@ -1782,4 +1796,24 @@ void AGSCharacter::NetMulticast_SetCameraFollowRagdoll_Implementation(bool bEnab
 		SpringArm->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 		SpringArm->SetRelativeLocationAndRotation(DefaultSpringArmRelativeLocation,DefaultSpringArmRelativeRotation);
 	}
+}
+
+void AGSCharacter::Client_PlayAttackHitSound_Implementation()
+{
+	if (!AttackHitSound)
+	{
+		return;
+	}
+
+	UGameplayStatics::PlaySound2D(this, AttackHitSound);
+}
+
+void AGSCharacter::Client_PlayScoreReturnSound_Implementation()
+{
+	if (!ScoreReturnSound)
+	{
+		return;
+	}
+
+	UGameplayStatics::PlaySound2D(this, ScoreReturnSound);
 }

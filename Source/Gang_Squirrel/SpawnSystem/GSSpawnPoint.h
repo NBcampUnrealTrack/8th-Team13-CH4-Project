@@ -26,9 +26,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpawnSetting")
 	int32 MaxSpawnAmount = 1;
 	
-	UPROPERTY(EditAnywhere)
-	int32 CurrentFoodCount = 0;
-	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpawnSetting")
 	int32 Floor;
 

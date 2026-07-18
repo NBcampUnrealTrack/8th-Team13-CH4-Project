@@ -57,10 +57,14 @@ void AGSHideoutPoint::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, A
 	}
 	
 	CurrentCharacter->Server_NotifyAddScore(TempScore);
-	CurrentCharacter->ShowSlideWidget(CurrentCharacter, TempScore);
+
+	//Sound
+	CurrentCharacter->Client_PlayScoreReturnSound();
+
+	CurrentCharacter->ShowSlideWidget(TempScore);
 	
 	CurrentCharacter->ResetTempScore();
-	CurrentCharacter->ResetCheekSize();
+	CurrentCharacter->Multicast_ResetCheeks_Implementation();
 }
 
 void AGSHideoutPoint::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)

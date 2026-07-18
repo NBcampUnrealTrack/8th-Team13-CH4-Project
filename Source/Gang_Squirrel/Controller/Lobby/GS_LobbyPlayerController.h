@@ -41,6 +41,9 @@ public:
 	UFUNCTION(BlueprintCallable,Category="Lobby")
 	void RequestStartGame();
 	
+	UFUNCTION(Client, Reliable)
+	void ClientStartLoadingScreen();
+
 private:
 	UFUNCTION(Server,Reliable)
 	void ServerRequestStartGame();

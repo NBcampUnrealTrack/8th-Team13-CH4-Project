@@ -3,6 +3,7 @@
 #include "Gang_Squirrel/EOS/GS_GameInstance.h"
 #include "Gang_Squirrel/Game/GS_GameState.h"
 #include "Gang_Squirrel/Player/GS_PlayerState.h"
+#include "Gang_Squirrel/Controller/Lobby/GS_LobbyPlayerController.h"
 
 AGS_LobbyGameMode::AGS_LobbyGameMode()
 {
@@ -39,10 +40,38 @@ void AGS_LobbyGameMode::TryStartGame(APlayerController* Requester)
 		return;
 	}
 	
-	if (UGS_GameInstance* GSInstance = Cast<UGS_GameInstance>(GetGameInstance()))
+	if (GetWorldTimerManager().IsTimerActive(StartGameTimerHandle))
 	{
-		GSInstance->StartGame(MainStageLevelName);
+		return;
 	}
+
+	GetWorldTimerManager().SetTimer(
+		StartGameTimerHandle,
+		this,
+		&AGS_LobbyGameMode::StartTravelToMainStage,
+		0.3f,
+		false
+	);
+
+	/*for (
+		FConstPlayerControllerIterator It =
+		GetWorld()->GetPlayerControllerIterator();
+		It;
+		++It
+		)
+	{
+		AGS_LobbyPlayerController* LobbyPC =
+			Cast<AGS_LobbyPlayerController>(It->Get());
+
+		if (!LobbyPC)
+		{
+			continue;
+		}
+
+		LobbyPC->ClientStartLoadingScreen();
+	}*/
+
+
 }
 
 bool AGS_LobbyGameMode::CanStartGame()
@@ -71,4 +100,23 @@ bool AGS_LobbyGameMode::CanStartGame()
 		}
 	}
 	return true;
+}
+
+void AGS_LobbyGameMode::StartTravelToMainStage()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	UGS_GameInstance* GSInstance =
+		Cast<UGS_GameInstance>(GetGameInstance());
+
+	if (!GSInstance)
+	{
+	
+		return;
+	}
+
+	GSInstance->StartGame(MainStageLevelName);
 }
