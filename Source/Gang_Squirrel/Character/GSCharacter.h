@@ -29,6 +29,7 @@ class UGS_StaminaBarWidget;
 class UGSCheekWidget;
 class UGSFoodWidget;
 class UGameplayEffect;
+class USoundBase;
 
 UCLASS()
 class GANG_SQUIRREL_API AGSCharacter : public ACharacter ,public IAbilitySystemInterface, public IGS_RagdollReactorInterface
@@ -353,7 +354,7 @@ public:
 
 private:	
 	// Don't trust this Values. Go to AttributeSet
-	float CachedMoveSpeed = 20.f;
+	float CachedMoveSpeed = 40.f;
 	float CachedSlowSpeedMultiplier = 1.f;
 
 	bool bMovementSpeedDelegateBound = false;
@@ -520,4 +521,21 @@ private:
 	void RecoverFromKnockdown();
 	void RepositionCapsuleToRagdoll();
 #pragma endregion 
+
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound|Combat")
+	TObjectPtr<USoundBase> AttackHitSound;
+
+public:
+	UFUNCTION(Client, Unreliable)
+	void Client_PlayAttackHitSound();
+
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound|Score")
+	TObjectPtr<USoundBase> ScoreReturnSound;
+
+public:
+	UFUNCTION(Client, Unreliable)
+	void Client_PlayScoreReturnSound();
+
 };

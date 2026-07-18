@@ -57,6 +57,10 @@ void AGSHideoutPoint::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, A
 	}
 	
 	CurrentCharacter->Server_NotifyAddScore(TempScore);
+
+	//Sound
+	CurrentCharacter->Client_PlayScoreReturnSound();
+
 	CurrentCharacter->ShowSlideWidget(TempScore);
 	
 	CurrentCharacter->ResetTempScore();

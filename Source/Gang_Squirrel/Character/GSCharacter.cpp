@@ -34,6 +34,9 @@
 #include "Materials/MaterialParameterCollection.h"
 #include "Components/AudioComponent.h"
 #include "Gang_Squirrel/DataAsset/GSFoodPrimaryDataAsset.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
+
 
 
 AGSCharacter::AGSCharacter()
@@ -135,6 +138,11 @@ void AGSCharacter::BeginPlay()
 	AudioComponent->Stop();
 	
 	SetupUpperBodyRagdoll();
+	
+	if (ULocalPlayer* LocalViewer = GetGameInstance() ? GetGameInstance()->GetFirstGamePlayer() : nullptr)
+	{
+		PlayerNameTagWidget->SetOwnerPlayer(LocalViewer);
+	}
 
 	if (IsLocallyControlled())
 	{
@@ -916,6 +924,14 @@ void AGSCharacter::PossessedBy(AController* NewController)
 			PS->GetAbilitySystemComponent()->GiveAbility(FGameplayAbilitySpec(GA_DropKick, 1));
 		}
 		
+		if (PS->OnPlayerNameChanged.IsAlreadyBound(this, &ThisClass::UpdateNameTag) == false)
+		{
+			PS->OnPlayerNameChanged.AddDynamic(this, &ThisClass::UpdateNameTag);
+		}
+		if (PS->PlayerNickname.IsEmpty() == false)
+		{
+			UpdateNameTag(PS->PlayerNickname);
+		}
 		// When State.Dead Tag Was Attached or Detached Call to Func
 		PS->GetAbilitySystemComponent()->RegisterGameplayTagEvent(StateTag::TAG_State_Dead, EGameplayTagEventType::NewOrRemoved).AddUObject(this,&AGSCharacter::OnDeathStateTagChanged);
 	}
@@ -1780,4 +1796,24 @@ void AGSCharacter::NetMulticast_SetCameraFollowRagdoll_Implementation(bool bEnab
 		SpringArm->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 		SpringArm->SetRelativeLocationAndRotation(DefaultSpringArmRelativeLocation,DefaultSpringArmRelativeRotation);
 	}
+}
+
+void AGSCharacter::Client_PlayAttackHitSound_Implementation()
+{
+	if (!AttackHitSound)
+	{
+		return;
+	}
+
+	UGameplayStatics::PlaySound2D(this, AttackHitSound);
+}
+
+void AGSCharacter::Client_PlayScoreReturnSound_Implementation()
+{
+	if (!ScoreReturnSound)
+	{
+		return;
+	}
+
+	UGameplayStatics::PlaySound2D(this, ScoreReturnSound);
 }

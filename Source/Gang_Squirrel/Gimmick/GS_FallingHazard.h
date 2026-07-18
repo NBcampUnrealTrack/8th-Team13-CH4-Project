@@ -10,6 +10,7 @@ class UBoxComponent;
 class UStaticMeshComponent;
 class UDecalComponent;
 class UGameplayEffect;
+class USoundBase;
 
 UENUM(BlueprintType)
 enum class EGSFallingHazardState : uint8
@@ -74,6 +75,10 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Falling Hazard|Damage")
 	TSubclassOf<UGameplayEffect> GE_Damage;
+
+	//sound
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Falling Hazard|Sound")
+	TObjectPtr<USoundBase> ImpactSound;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Hazard|Trace")
 	float GroundTraceUpOffset = 150.f;
