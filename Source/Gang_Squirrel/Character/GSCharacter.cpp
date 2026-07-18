@@ -988,13 +988,6 @@ void AGSCharacter::OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount
 	
 }
 
-void AGSCharacter::PlayVictoryMontage()
-{
-	if(AM_Victory)
-	{
-		PlayAnimMontage(AM_Victory);
-	}
-}
 
 // GA_Attack ComboAttackWindow
 void AGSCharacter::ServerRequestComboAttack_Implementation()
