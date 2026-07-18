@@ -45,6 +45,14 @@ void AGS_LobbyGameMode::TryStartGame(APlayerController* Requester)
 		return;
 	}
 
+	GetWorldTimerManager().SetTimer(
+		StartGameTimerHandle,
+		this,
+		&AGS_LobbyGameMode::StartTravelToMainStage,
+		0.3f,
+		false
+	);
+
 	for (
 		FConstPlayerControllerIterator It =
 		GetWorld()->GetPlayerControllerIterator();
@@ -63,13 +71,6 @@ void AGS_LobbyGameMode::TryStartGame(APlayerController* Requester)
 		LobbyPC->ClientStartLoadingScreen();
 	}
 
-	GetWorldTimerManager().SetTimer(
-		StartGameTimerHandle,
-		this,
-		&AGS_LobbyGameMode::StartTravelToMainStage,
-		0.3f,
-		false
-	);
 
 }
 
