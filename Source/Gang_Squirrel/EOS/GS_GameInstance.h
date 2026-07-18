@@ -15,6 +15,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGSJoinSessionComplete, bool, bWas
 
 class USoundClass;
 class USoundMix;
+class UGS_SettingWidget;
 
 USTRUCT(BlueprintType)
 struct FGSFriendInfo
@@ -73,6 +74,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "EOS")
 	void StartGame(FName GameLevelName);
 
+	// 로딩 화면 수동 시작/종료
+	void StartLoadingScreen();
+	void StopLoadingScreen();
+
 	UPROPERTY(BlueprintAssignable)
 	FOnGSLoginComplete OnGSLoginComplete;
 
@@ -122,6 +127,17 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Settings")
 	TObjectPtr<USoundClass> MasterSoundClass;
 	
+#pragma region SettingsWidget
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	UGS_SettingWidget* ToggleSettingsWidget(APlayerController* OwningPC);
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UGS_SettingWidget> SettingWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UGS_SettingWidget> SettingWidgetInstance;
+#pragma endregion 
+
 protected:
 #if WITH_EDITOR
 	virtual FGameInstancePIEResult StartPlayInEditorGameInstance(ULocalPlayer* LocalPlayer, const FGameInstancePIEParameters& Params) override;
@@ -156,7 +172,9 @@ private:
 	void DoJoinSession();
 	void HandleDestroySessionForJoin(FName SessionName, bool bWasSuccessful);
 #pragma endregion 
-	
+
+	bool bIsLoadingScreenPlaying = false;
+
 #if WITH_EDITOR
 	bool bWantsListenServerInPIE = false;
 	int32 PendingPIEListenPort = 0;

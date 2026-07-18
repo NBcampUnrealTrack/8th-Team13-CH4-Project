@@ -27,11 +27,16 @@
 #include "Gang_Squirrel/Gang_Squirrel.h"
 #include "Gang_Squirrel/Food/GSCheekWidget.h"
 #include "Net/UnrealNetwork.h"
+#include "PhysicsEngine/BodyInstance.h"
 #include "Gang_Squirrel/EOS/GS_GameInstance.h"
 #include "Gang_Squirrel/Food/Score/GSSlideWidget.h"
 #include "Kismet/KismetMaterialLibrary.h"
 #include "Materials/MaterialParameterCollection.h"
 #include "Components/AudioComponent.h"
+#include "Gang_Squirrel/DataAsset/GSFoodPrimaryDataAsset.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
+
 
 
 AGSCharacter::AGSCharacter()
@@ -58,6 +63,7 @@ AGSCharacter::AGSCharacter()
 	SpringArm->bUsePawnControlRotation = true;
 	SpringArm->bDoCollisionTest = true;
 	//Camera Lag Settings
+	SpringArm->bEnableCameraLag = true;
 	SpringArm->CameraLagSpeed = 10.f;
 	SpringArm->bEnableCameraRotationLag = true;
 	SpringArm->CameraRotationLagSpeed = 10.f;
@@ -132,6 +138,11 @@ void AGSCharacter::BeginPlay()
 	AudioComponent->Stop();
 	
 	SetupUpperBodyRagdoll();
+	
+	if (ULocalPlayer* LocalViewer = GetGameInstance() ? GetGameInstance()->GetFirstGamePlayer() : nullptr)
+	{
+		PlayerNameTagWidget->SetOwnerPlayer(LocalViewer);
+	}
 
 	if (IsLocallyControlled())
 	{
@@ -163,6 +174,12 @@ void AGSCharacter::BeginPlay()
 		{
 			UpdateNameTag(PS->PlayerNickname);
 		}
+		
+		if (!PS->OnPlayerReadyChanged.IsAlreadyBound(this, &ThisClass::UpdateReadyCheck))
+		{
+			PS->OnPlayerReadyChanged.AddDynamic(this, &ThisClass::UpdateReadyCheck);
+		}
+		UpdateReadyCheck(PS->bIsReady);
 	}
 
 	BindMovementSpeedDelegates();
@@ -227,6 +244,7 @@ void AGSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME(AGSCharacter, bIsGrabbed);
 	DOREPLIFETIME(AGSCharacter, GrabbedTarget);
 	DOREPLIFETIME(AGSCharacter, GrabOwner);
+	DOREPLIFETIME(AGSCharacter, TempScore);
 
 	
 }
@@ -336,7 +354,7 @@ void AGSCharacter::Server_SetEating_Implementation(bool bEating)
 
 void AGSCharacter::InflateCheeks(float Value)
 {
-	if (HasAuthority())
+	if (HasAuthority() || IsLocallyControlled())
 	{
 		Multicast_InflateCheeks(Value);
 	}
@@ -412,13 +430,19 @@ void AGSCharacter::Multicast_InflateCheeks_Implementation(float Value)
 	}
 }
 
-void AGSCharacter::ResetCheekSize()
+void AGSCharacter::Multicast_ResetCheeks_Implementation()
 {
 	CurrentCheekSize = 0.f;
-	
-	Multicast_InflateCheeks(0.f);
-	
-	//UE_LOG(LogTemp, Error, TEXT("ResetCheekSize!"));
+
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		MeshComp->SetMorphTarget(TEXT("CheeksSize"), 0.f);
+	}
+
+	if (CheekWidgetUIInstance)
+	{
+		CheekWidgetUIInstance->SetProgressValue(0.f);
+	}
 }
 
 void AGSCharacter::AddMaxCheekSize(float Value)
@@ -470,7 +494,7 @@ void AGSCharacter::IAAttack(const FInputActionValue& InValue)
 			return;
 		}
 	}
-	
+
 	ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AbilityTag::TAG_Ability_Attack));
 }
 
@@ -580,6 +604,15 @@ void AGSCharacter::UpdateNameTag(const FString& Newname)
 	if (NameTag)
 	{
 		NameTag->SetNickname(Newname);
+	}
+}
+
+void AGSCharacter::UpdateReadyCheck(bool bReady)
+{
+	UGSPlayerNameTag* NameTag = Cast<UGSPlayerNameTag>(PlayerNameTagWidget->GetWidget());
+	if (NameTag)
+	{
+		NameTag->SetReadyState(bReady);
 	}
 }
 
@@ -726,14 +759,18 @@ float AGSCharacter::GetFinalMoveSpeedMultiplier() const
 void AGSCharacter::UpdateMaxWalkSpeedFromAttribute()
 {
 	const float SafeMoveSpeed = FMath::Max(CachedMoveSpeed, 0.f);
-	const float SafeSlowMultiplier = FMath::Clamp(CachedSlowSpeedMultiplier, 0.1f, 1.f);
+	const float SafeSlowMultiplier =
+		FMath::Clamp(CachedSlowSpeedMultiplier, 0.1f, 1.f);
+
+	const float FinalMultiplier = GetFinalMoveSpeedMultiplier();
 
 	const float FinalSpeed =
 		SafeMoveSpeed *
 		SafeSlowMultiplier *
-		GetFinalMoveSpeedMultiplier();
+		FinalMultiplier;
 
 	GetCharacterMovement()->MaxWalkSpeed = FinalSpeed;
+
 }
 
 void AGSCharacter::StartRolling(const FVector& InRollingDirection)
@@ -887,6 +924,14 @@ void AGSCharacter::PossessedBy(AController* NewController)
 			PS->GetAbilitySystemComponent()->GiveAbility(FGameplayAbilitySpec(GA_DropKick, 1));
 		}
 		
+		if (PS->OnPlayerNameChanged.IsAlreadyBound(this, &ThisClass::UpdateNameTag) == false)
+		{
+			PS->OnPlayerNameChanged.AddDynamic(this, &ThisClass::UpdateNameTag);
+		}
+		if (PS->PlayerNickname.IsEmpty() == false)
+		{
+			UpdateNameTag(PS->PlayerNickname);
+		}
 		// When State.Dead Tag Was Attached or Detached Call to Func
 		PS->GetAbilitySystemComponent()->RegisterGameplayTagEvent(StateTag::TAG_State_Dead, EGameplayTagEventType::NewOrRemoved).AddUObject(this,&AGSCharacter::OnDeathStateTagChanged);
 	}
@@ -915,6 +960,13 @@ void AGSCharacter::OnRep_PlayerState()
 			UpdateNameTag(PS->PlayerNickname);
 		}
 		
+		if (!PS->OnPlayerReadyChanged.IsAlreadyBound(this, &ThisClass::UpdateReadyCheck))
+		{
+			PS->OnPlayerReadyChanged.AddDynamic(this, &ThisClass::UpdateReadyCheck);
+		}
+		UpdateReadyCheck(PS->bIsReady);
+		
+		
 		// When State.Dead Tag Was Attached or Detached Call to Func
 		PS->GetAbilitySystemComponent()->RegisterGameplayTagEvent(StateTag::TAG_State_Dead, EGameplayTagEventType::NewOrRemoved).AddUObject(this,&AGSCharacter::OnDeathStateTagChanged);
 	
@@ -931,9 +983,16 @@ UAbilitySystemComponent* AGSCharacter::GetAbilitySystemComponent() const
 	return PS ? PS->GetAbilitySystemComponent() : nullptr;
 }
 
-void AGSCharacter::Server_NotifyFoodEaten_Implementation(AGSFoodBase* EatenFood)
+void AGSCharacter::Server_NotifyFoodEaten_Implementation(AGSFoodBase* EatenFood, AGSCharacter*  EatingCharacter)
 {
-	if (!EatenFood) return;
+	if (!IsValid(EatenFood) || !IsValid(EatingCharacter)) return;
+	
+	if (IsValid(EatenFood->FoodData))
+	{
+		EatingCharacter->InflateCheeks(EatenFood->FoodData->SquirrelScale);
+	}
+	
+	EatenFood->SetCurrentCharacter(EatingCharacter);
 	
 	EatenFood->Eaten();
 }
@@ -947,14 +1006,28 @@ void AGSCharacter::Server_NotifyAddScore_Implementation(int32 Score)
 	{
 		PS->AddScore(Score);
 		
-		UGSSlideWidget* CurrentSlideWidget = CreateWidget<UGSSlideWidget>(GetWorld(),SlideWidgetClass);
-		
-		CurrentSlideWidget->AddToViewport();
-		CurrentSlideWidget->UpdateSlideWidget(Score);
-		
-		
 		// UE_LOG(LogTemp, Warning, TEXT("UpdateScore"));
 	}
+}
+
+void AGSCharacter::ShowSlideWidget_Implementation(int32 Score)
+{
+	if (!SlideWidgetClass) return;
+	
+	UGSSlideWidget* CurrentSlideWidget = CreateWidget<UGSSlideWidget>(GetWorld(),SlideWidgetClass);
+		
+	if (CurrentSlideWidget)
+	{
+		CurrentSlideWidget->AddToViewport();
+		CurrentSlideWidget->UpdateSlideWidget(Score);
+	}
+}
+
+void AGSCharacter::Server_AddTempScore_Implementation(int32 Amount)
+{
+	AddTempScore(Amount);
+	
+	UE_LOG(LogTemp, Log, TEXT("[Server] 캐릭터 %s의 임시 점수가 %d 더해졌습니다. (현재 TempScore: %d)"), *GetName(), Amount, TempScore);
 }
 
 void AGSCharacter::AddTempScore(int32 Value)
@@ -974,18 +1047,21 @@ void AGSCharacter::OnDeathStateTagChanged(const FGameplayTag Tag, int32 NewCount
 	
 	TempScore = 0;
 	CurrentCheekSize = 0;
+	MaxFallSpeedDuringFall = 0.f; // 낙하 가속도 0으로 초기화
 	Multicast_InflateCheeks(0.f);
 
 	if (IsLocallyControlled())
 	{
-		float TargetGrayValue = (NewCount > 0) ? 1.0f : 0.0f;
-		static UMaterialParameterCollection* MyMPC = Cast<UMaterialParameterCollection>(StaticLoadObject(UMaterialParameterCollection::StaticClass(), nullptr, TEXT("/Script/Engine.MaterialParameterCollection'/Game/ExternalContent/LevelPrototyping/Materials/MPC_ScreenEffects.MPC_ScreenEffects'")));
-		if (MyMPC)
+		float TargetGrayValue = (NewCount > 0) ? 1.0f : 0.0f; //포스트 프로세스 머티리얼 파라미터 변수
+		UMaterialParameterCollection* MyMPC = Cast<UMaterialParameterCollection>(
+			StaticLoadObject(UMaterialParameterCollection::StaticClass(), nullptr, TEXT(
+				"/Script/Engine.MaterialParameterCollection'/Game/ExternalContent/LevelPrototyping/Materials/MPC_ScreenEffects.MPC_ScreenEffects'")));
+		
+		if (GetWorld() && MyMPC) //방어 코드
 		{
 			UKismetMaterialLibrary::SetScalarParameterValue(GetWorld(), MyMPC, FName("GrayAlpha"), TargetGrayValue);
 		}
 	}
-	
 }
 
 
@@ -1569,7 +1645,7 @@ void AGSCharacter::StopGrab()
 	UpdateMaxWalkSpeedFromAttribute();
 }
 
-void AGSCharacter::UpdateSlideWidget(int32 Value)
+void AGSCharacter::UpdateSlideWidget_Implementation(int32 Value)
 {
 	UGSSlideWidget* CurrentSlideRewardWidget = CreateWidget<UGSSlideWidget>(GetWorld(), SlideWidgetRewardClass);
 	
@@ -1676,13 +1752,23 @@ void AGSCharacter::NetMulticast_SetFullRagdollEnable_Implementation(bool bEnable
 	
 	if (bEnable)
 	{
+		MeshComp->RecreatePhysicsState();
 		MeshComp->SetAllBodiesSimulatePhysics(true);
+		for (FBodyInstance* Body : MeshComp->Bodies)
+		{
+			if (Body)
+			{
+				Body->SetUseCCD(true);
+			}
+		}
 		MeshComp->WakeAllRigidBodies();
 	}
 	else
 	{
 		MeshComp->SetAllBodiesSimulatePhysics(false);
 		MeshComp->SetRelativeLocationAndRotation(DefaultMeshRelativeLocation,DefaultMeshRelativeRotation);
+		MeshComp->TickAnimation(0.f, false);
+		MeshComp->RefreshBoneTransforms();
 		SetupUpperBodyRagdoll();
 	}
 }
@@ -1703,4 +1789,24 @@ void AGSCharacter::NetMulticast_SetCameraFollowRagdoll_Implementation(bool bEnab
 		SpringArm->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 		SpringArm->SetRelativeLocationAndRotation(DefaultSpringArmRelativeLocation,DefaultSpringArmRelativeRotation);
 	}
+}
+
+void AGSCharacter::Client_PlayAttackHitSound_Implementation()
+{
+	if (!AttackHitSound)
+	{
+		return;
+	}
+
+	UGameplayStatics::PlaySound2D(this, AttackHitSound);
+}
+
+void AGSCharacter::Client_PlayScoreReturnSound_Implementation()
+{
+	if (!ScoreReturnSound)
+	{
+		return;
+	}
+
+	UGameplayStatics::PlaySound2D(this, ScoreReturnSound);
 }

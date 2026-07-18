@@ -13,6 +13,8 @@
 #include "Gang_Squirrel/Character/GSCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/GameViewportClient.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
 
 void AGSPlayerController::BeginPlay()
 {
@@ -23,6 +25,12 @@ void AGSPlayerController::BeginPlay()
 	if (IsLocalController() == false)
 	{
 		return;
+	}
+
+	if (UGS_GameInstance* GSInstance =
+		GetGameInstance<UGS_GameInstance>())
+	{
+		GSInstance->StopLoadingScreen();
 	}
 
 	//로비에서 설정한 밝기값을 메인스테이지에 가져오는 코드
@@ -90,6 +98,49 @@ void AGSPlayerController::BeginPlay()
 	}
 	
 	ServerSetNickname(DisplayName);
+}
+
+void AGSPlayerController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+
+	if (!IsLocalController())
+	{
+		return;
+	}
+
+	if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
+		ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
+	{
+		Subsystem->AddMappingContext(IMC_UI, 1);
+	}
+
+	if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(InputComponent))
+	{
+		EIC->BindAction(IA_ToggleSettings, ETriggerEvent::Started, this, &AGSPlayerController::HandleToggleSettings);
+	}
+}
+
+void AGSPlayerController::HandleToggleSettings()
+{
+	UGS_GameInstance* GSInst = GetGameInstance<UGS_GameInstance>();
+	if (!GSInst)
+	{
+		return;
+	}
+
+	if (GSInst->ToggleSettingsWidget(this))
+	{
+		SetShowMouseCursor(true);
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		SetInputMode(InputMode);
+	}
+	else
+	{
+		SetShowMouseCursor(false);
+		SetInputMode(FInputModeGameOnly());
+	}
 }
 
 void AGSPlayerController::ClientShowResultStage_Implementation()

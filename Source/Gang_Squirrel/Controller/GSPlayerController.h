@@ -7,6 +7,8 @@
 class UGS_GameEndWidget;
 class AGSCharacter;
 class UGS_HUDWidget;
+class UInputMappingContext;
+class UInputAction;
 
 UCLASS()
 class GANG_SQUIRREL_API AGSPlayerController : public APlayerController
@@ -15,7 +17,8 @@ class GANG_SQUIRREL_API AGSPlayerController : public APlayerController
 
 public:
 	virtual void BeginPlay() override;
-	
+	virtual void SetupInputComponent() override;
+
 	//UFUNCTION(Client, Reliable)
 	//void ClientShowGameEndUI();
 
@@ -59,6 +62,15 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UGS_HUDWidget> HUDWidgetInstance;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputMappingContext> IMC_UI;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> IA_ToggleSettings;
+
+public:
+	void HandleToggleSettings();
 
 #pragma region Debugging
 public:

@@ -4,11 +4,11 @@
 #include "Blueprint/UserWidget.h"
 #include "GS_LobbyWidget.generated.h"
 
+class UTextBlock;
 class UGS_FriendListWidget;
 class UButton;
 class UGS_LobbySlotWidget;
 class UPanelWidget;
-class UGS_SettingWidget;
 
 UCLASS()
 class GANG_SQUIRREL_API UGS_LobbyWidget : public UUserWidget
@@ -29,6 +29,8 @@ protected:
 	TObjectPtr<UPanelWidget> SlotContainer;
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> Button_Start;
+	UPROPERTY(meta=(BindWidgetOptional))
+	TObjectPtr<UTextBlock> Text_ButtonStart;
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UButton> Button_Invite;
 	UPROPERTY(meta=(BindWidget))
@@ -41,9 +43,7 @@ protected:
 	TSubclassOf<UGS_LobbySlotWidget> SlotWidgetClass;
 	UPROPERTY(EditDefaultsOnly,Category="UI")
 	TSubclassOf<UGS_FriendListWidget> FriendWidgetClass;
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<UGS_SettingWidget> SettingWidgetClass;
-	
+
 	UPROPERTY(EditDefaultsOnly,Category="UI")
 	int32 MaxLobbySize = 4;
 	UPROPERTY(EditDefaultsOnly,Category="Lobby")
@@ -54,9 +54,7 @@ private:
 	TArray<TObjectPtr<UGS_LobbySlotWidget>> Slots;
 	UPROPERTY()
 	TObjectPtr<UGS_FriendListWidget> FriendListWidgetInst;
-	UPROPERTY()
-	TObjectPtr<UGS_SettingWidget> SettingWidgetInst;
-	
+
 	FTimerHandle RefreshTimerHandle;
 	
 	void CreateSlotPool();

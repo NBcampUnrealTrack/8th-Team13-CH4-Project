@@ -18,7 +18,7 @@ void UGA_Attack::RequestComboInput()
 	{
 		return;
 	}
-	
+
 	bIsSecondCombo = !bIsSecondCombo;
 	bComboWindowOpen = false;
 	HitActors.Empty();
@@ -31,7 +31,7 @@ void UGA_Attack::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
                                  const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-	
+
 	AGSCharacter* Character = Cast<AGSCharacter>(GetAvatarActorFromActorInfo());
 	if (!Character || !AM_Attack)
 	{
@@ -151,10 +151,18 @@ void UGA_Attack::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Ta
 				}
 				SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 				
+				if (AGSCharacter* AttackerCharacter =
+					Cast<AGSCharacter>(GetAvatarActorFromActorInfo()))
+				{
+					AttackerCharacter->Client_PlayAttackHitSound();
+				}
+
 				if (IGS_RagdollReactorInterface* TargetReactor = Cast<IGS_RagdollReactorInterface>(TargetActor.Get()))
 				{
 					const FName HitBone = (HitResultPtr && HitResultPtr->BoneName != NAME_None) ? HitResultPtr->BoneName : TargetReactor->GetRagdollStartBone();
-					const FVector ImpulseDir = (HitResultPtr && !HitResultPtr->ImpactNormal.IsNearlyZero()) ? -HitResultPtr->ImpactNormal : GetAvatarActorFromActorInfo()->GetActorForwardVector();
+					FVector ImpulseDir = (HitResultPtr && !HitResultPtr->ImpactNormal.IsNearlyZero()) ? -HitResultPtr->ImpactNormal : GetAvatarActorFromActorInfo()->GetActorForwardVector();
+					ImpulseDir.Z = 0.f;
+					ImpulseDir = ImpulseDir.GetSafeNormal(UE_KINDA_SMALL_NUMBER, GetAvatarActorFromActorInfo()->GetActorForwardVector());
 					
 					if (bIsSecondCombo)
 					{

@@ -8,6 +8,8 @@
 #include "Gang_Squirrel/Game/Lobby/GS_LobbyGameMode.h"
 #include "Gang_Squirrel/Player/GS_PlayerState.h"
 #include "Kismet/GameplayStatics.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
 
 void AGS_LobbyPlayerController::BeginPlay()
 {
@@ -17,7 +19,13 @@ void AGS_LobbyPlayerController::BeginPlay()
 	{
 		return;
 	}
-	
+
+	if (UGS_GameInstance* GSInstance =
+		GetGameInstance<UGS_GameInstance>())
+	{
+		GSInstance->StopLoadingScreen();
+	}
+
 	if (LobbyWidgetClass)
 	{
 		UUserWidget* LobbyWidget = CreateWidget<UUserWidget>(this, LobbyWidgetClass);
@@ -25,7 +33,11 @@ void AGS_LobbyPlayerController::BeginPlay()
 		{
 			LobbyWidget->AddToViewport();
 			SetShowMouseCursor(true);
-			SetInputMode(FInputModeUIOnly());
+			
+			FInputModeGameAndUI InputMode;
+			InputMode.SetWidgetToFocus(LobbyWidget->TakeWidget());
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			SetInputMode(InputMode);
 		}
 	}
 	
@@ -51,9 +63,65 @@ void AGS_LobbyPlayerController::BeginPlay()
 	
 }
 
+void AGS_LobbyPlayerController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+
+	if (!IsLocalController())
+	{
+		return;
+	}
+
+	if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
+		ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
+	{
+		Subsystem->AddMappingContext(IMC_UI, 1);
+	}
+
+	if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(InputComponent))
+	{
+		EIC->BindAction(IA_ToggleSettings, ETriggerEvent::Started, this, &AGS_LobbyPlayerController::HandleToggleSettings);
+	}
+}
+
+void AGS_LobbyPlayerController::HandleToggleSettings()
+{
+	if (UGS_GameInstance* GSInst = GetGameInstance<UGS_GameInstance>())
+	{
+		// 로비는 이미 FInputModeUIOnly + 커서 표시 상태라 입력 모드 변경 불필요
+		GSInst->ToggleSettingsWidget(this);
+	}
+}
+
 void AGS_LobbyPlayerController::RequestStartGame()
 {
 	ServerRequestStartGame();
+}
+
+void AGS_LobbyPlayerController::RequestToggleReady()
+{
+	ServerToggleReady();
+}
+
+void AGS_LobbyPlayerController::ServerToggleReady_Implementation()
+{
+	AGS_PlayerState* PS = GetPlayerState<AGS_PlayerState>();
+	if (!PS || PS->bIsHost)
+	{
+		return;
+	}
+	PS->SetReady(!PS->bIsReady);
+}
+
+void AGS_LobbyPlayerController::ClientStartLoadingScreen_Implementation()
+{
+	UGS_GameInstance* GSInstance = GetGameInstance<UGS_GameInstance>();
+	if (!GSInstance)
+	{
+		return;
+	}
+
+	GSInstance->StartLoadingScreen();
 }
 
 void AGS_LobbyPlayerController::ServerRequestStartGame_Implementation()
@@ -197,6 +265,7 @@ void AGS_LobbyPlayerController::RefreshCharacterDisplay()
 				if (AGSCharacter* GSChar = Cast<AGSCharacter>(GSCharacter))
 				{
 					GSChar->UpdateNameTag(CandidatePS->PlayerNickname);
+					GSChar->UpdateReadyCheck(CandidatePS->bIsReady);
 				}
 				break;
 			}

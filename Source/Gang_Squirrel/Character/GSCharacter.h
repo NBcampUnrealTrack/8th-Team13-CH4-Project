@@ -29,6 +29,7 @@ class UGS_StaminaBarWidget;
 class UGSCheekWidget;
 class UGSFoodWidget;
 class UGameplayEffect;
+class USoundBase;
 
 UCLASS()
 class GANG_SQUIRREL_API AGSCharacter : public ACharacter ,public IAbilitySystemInterface, public IGS_RagdollReactorInterface
@@ -84,6 +85,8 @@ private:
 public:
 	UFUNCTION()
 	void UpdateNameTag(const FString& Newname);
+	UFUNCTION()
+	void UpdateReadyCheck(bool bReady);
 
 protected:
 
@@ -252,7 +255,7 @@ public:
 	
 	//Food
 	UFUNCTION(Server, Reliable)
-	void Server_NotifyFoodEaten(AGSFoodBase* EatenFood);
+	void Server_NotifyFoodEaten(AGSFoodBase* EatenFood, AGSCharacter* EatingCharacter);
 	
 	UFUNCTION(Server, Reliable)
 	void Server_NotifyAddScore(int32 Value);
@@ -273,6 +276,7 @@ public:
 	
 	void ResetTempScore();
 	
+	UFUNCTION(Client, Reliable)
 	void UpdateSlideWidget(int32 Value);
 	
 	FORCEINLINE int32 GetTempScore() { return TempScore; }
@@ -284,6 +288,12 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Score")
 	TSubclassOf<UGSSlideWidget> SlideWidgetRewardClass;
+	
+	UFUNCTION(Server, Reliable)
+	void Server_AddTempScore(int32 Amount);
+	
+	UFUNCTION(Client, Reliable)
+	void ShowSlideWidget(int32 Score);
 	
 protected:
 	
@@ -312,11 +322,15 @@ private:
 	UPROPERTY(ReplicatedUsing = OnRep_CheekSize)
 	float MaxCheekSize = 1.f;
 	
-	UPROPERTY()
+	UPROPERTY(Replicated)
 	int32 TempScore = 0;
 
 	UFUNCTION()
 	void OnRep_CheekSize();
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ResetCheeks();
+	
 
 	bool bCheekFullTutorialShown = false;
 	
@@ -340,7 +354,7 @@ public:
 
 private:	
 	// Don't trust this Values. Go to AttributeSet
-	float CachedMoveSpeed = 50.f;
+	float CachedMoveSpeed = 40.f;
 	float CachedSlowSpeedMultiplier = 1.f;
 
 	bool bMovementSpeedDelegateBound = false;
@@ -500,4 +514,21 @@ private:
 	void RecoverFromKnockdown();
 	void RepositionCapsuleToRagdoll();
 #pragma endregion 
+
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound|Combat")
+	TObjectPtr<USoundBase> AttackHitSound;
+
+public:
+	UFUNCTION(Client, Unreliable)
+	void Client_PlayAttackHitSound();
+
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound|Score")
+	TObjectPtr<USoundBase> ScoreReturnSound;
+
+public:
+	UFUNCTION(Client, Unreliable)
+	void Client_PlayScoreReturnSound();
+
 };
