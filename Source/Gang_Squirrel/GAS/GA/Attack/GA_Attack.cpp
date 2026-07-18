@@ -151,6 +151,12 @@ void UGA_Attack::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Ta
 				}
 				SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 				
+				if (AGSCharacter* AttackerCharacter =
+					Cast<AGSCharacter>(GetAvatarActorFromActorInfo()))
+				{
+					AttackerCharacter->Client_PlayAttackHitSound();
+				}
+
 				if (IGS_RagdollReactorInterface* TargetReactor = Cast<IGS_RagdollReactorInterface>(TargetActor.Get()))
 				{
 					const FName HitBone = (HitResultPtr && HitResultPtr->BoneName != NAME_None) ? HitResultPtr->BoneName : TargetReactor->GetRagdollStartBone();

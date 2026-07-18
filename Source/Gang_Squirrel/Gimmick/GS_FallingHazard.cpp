@@ -11,6 +11,8 @@
 #include "Gang_Squirrel/Character/GSCharacter.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
 
 AGS_FallingHazard::AGS_FallingHazard()
 {
@@ -513,6 +515,16 @@ void AGS_FallingHazard::MulticastFinishImpactVisual_Implementation(FVector InGro
 	);
 
 	SetActorLocation(ImpactLocation);
+
+	if (ImpactSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,
+			ImpactSound,
+			ImpactLocation
+		);
+	}
+
 
 	if (DamageBox)
 	{
