@@ -33,8 +33,10 @@ class GANG_SQUIRREL_API UGS_GameEndWidget : public UUserWidget
 public:
 	virtual void NativeConstruct() override;
 
-	UFUNCTION(BlueprintCallable, Category = "Game End")
-	void SetGameEndResult();
+	void SetGameEndResultFromData(
+		const TArray<FGSLeaderboardEntry>& LeaderboardEntries,
+		int32 MyScore
+	);
 
 protected:
 	UPROPERTY(meta = (BindWidget))

@@ -156,8 +156,7 @@ void AGSPlayerController::ClientShowResultStage_Implementation()
 		{
 			GameEndWidgetInstance->AddToViewport(100);
 
-			ResultDataRetryCount = 0;
-			TrySetGameEndResult();
+			ServerRequestLeaderboardData();
 
 			SetShowMouseCursor(true);
 
@@ -185,9 +184,6 @@ void AGSPlayerController::RequestRestartGame()
 
 void AGSPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	GetWorldTimerManager().ClearTimer(
-		ResultDataRetryTimerHandle
-	);
 
 	if (IsValid(HUDWidgetInstance))
 	{
@@ -309,7 +305,99 @@ void AGSPlayerController::ServerSetNickname_Implementation(const FString& Nickna
 //	}
 //}
 
-void AGSPlayerController::TrySetGameEndResult()
+void AGSPlayerController::ServerRequestLeaderboardData_Implementation()
+{
+	UWorld* World = GetWorld();
+	if (!IsValid(World))
+	{
+		return;
+	}
+
+	AGameStateBase* GameState =
+		World->GetGameState<AGameStateBase>();
+
+	if (!IsValid(GameState))
+	{
+		return;
+	}
+
+	TArray<FGSLeaderboardEntry> LeaderboardEntries;
+
+	LeaderboardEntries.Reserve(4);
+
+	for (APlayerState* BasePlayerState : GameState->PlayerArray)
+	{
+		AGS_PlayerState* GSPlayerState =
+			Cast<AGS_PlayerState>(BasePlayerState);
+
+		if (!IsValid(GSPlayerState))
+		{
+			continue;
+		}
+
+		FGSLeaderboardEntry NewEntry;
+
+		NewEntry.PlayerName =
+			GSPlayerState->PlayerNickname;
+
+		if (NewEntry.PlayerName.IsEmpty())
+		{
+			NewEntry.PlayerName =
+				GSPlayerState->GetPlayerName();
+		}
+
+		if (NewEntry.PlayerName.IsEmpty())
+		{
+			NewEntry.PlayerName = TEXT("Player");
+		}
+
+		NewEntry.Score =
+			GSPlayerState->GetPlayerScore();
+
+		LeaderboardEntries.Add(NewEntry);
+
+	}
+
+	LeaderboardEntries.Sort(
+		[](const FGSLeaderboardEntry& A,
+			const FGSLeaderboardEntry& B)
+		{
+			if (A.Score == B.Score)
+			{
+				return A.PlayerName < B.PlayerName;
+			}
+
+			return A.Score > B.Score;
+		}
+	);
+
+	for (int32 Index = 0;
+		Index < LeaderboardEntries.Num();
+		++Index)
+	{
+		LeaderboardEntries[Index].Rank = Index + 1;
+	}
+
+	int32 MyScore = 0;
+
+	AGS_PlayerState* MyPlayerState =
+		GetPlayerState<AGS_PlayerState>();
+
+	if (IsValid(MyPlayerState))
+	{
+		MyScore = MyPlayerState->GetPlayerScore();
+	}
+
+	ClientReceiveLeaderboardData(
+		LeaderboardEntries,
+		MyScore
+	);
+}
+
+void AGSPlayerController::ClientReceiveLeaderboardData_Implementation(
+	const TArray<FGSLeaderboardEntry>& LeaderboardEntries,
+	int32 MyScore
+)
 {
 	if (!IsLocalController())
 	{
@@ -321,80 +409,9 @@ void AGSPlayerController::TrySetGameEndResult()
 		return;
 	}
 
-	UWorld* World = GetWorld();
-	if (!IsValid(World))
-	{
-		return;
-	}
-
-	AGameStateBase* GameState =
-		World->GetGameState<AGameStateBase>();
-
-	bool bLeaderboardDataReady = IsValid(GameState);
-
-	if (bLeaderboardDataReady)
-	{
-		if (GameState->PlayerArray.IsEmpty())
-		{
-			bLeaderboardDataReady = false;
-		}
-		else
-		{
-			for (APlayerState* BasePlayerState :
-				GameState->PlayerArray)
-			{
-				AGS_PlayerState* GSPlayerState =
-					Cast<AGS_PlayerState>(BasePlayerState);
-
-				if (!IsValid(GSPlayerState))
-				{
-					bLeaderboardDataReady = false;
-					break;
-				}
-
-				// 점수는 실제로 0점일 수도 있으므로
-				// 닉네임 복제 여부를 준비 기준으로 사용
-				if (GSPlayerState->PlayerNickname.IsEmpty())
-				{
-					bLeaderboardDataReady = false;
-					break;
-				}
-			}
-		}
-	}
-
-	if (bLeaderboardDataReady)
-	{
-		GetWorldTimerManager().ClearTimer(
-			ResultDataRetryTimerHandle
-		);
-
-		GameEndWidgetInstance->SetGameEndResult();
-
-		return;
-	}
-
-	ResultDataRetryCount++;
-
-
-	// 약 5초 동안 재시도
-	if (ResultDataRetryCount >= 25)
-	{
-		GetWorldTimerManager().ClearTimer(
-			ResultDataRetryTimerHandle
-		);
-
-		// 최종적으로 현재까지 들어온 데이터라도 표시
-		GameEndWidgetInstance->SetGameEndResult();
-		return;
-	}
-
-	GetWorldTimerManager().SetTimer(
-		ResultDataRetryTimerHandle,
-		this,
-		&ThisClass::TrySetGameEndResult,
-		0.2f,
-		false
+	GameEndWidgetInstance->SetGameEndResultFromData(
+		LeaderboardEntries,
+		MyScore
 	);
 }
 
