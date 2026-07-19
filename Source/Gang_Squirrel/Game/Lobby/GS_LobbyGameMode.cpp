@@ -94,7 +94,7 @@ void AGS_LobbyGameMode::StartTravelToMainStage()
 		TravelTimerHandle,
 		this,
 		&AGS_LobbyGameMode::ExecuteTravelToMainStage,
-		0.5f,
+		3.0f,
 		false
 	);
 }
