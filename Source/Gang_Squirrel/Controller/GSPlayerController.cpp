@@ -154,14 +154,16 @@ void AGSPlayerController::ClientShowResultStage_Implementation()
 
 		if (IsValid(GameEndWidgetInstance))
 		{
-			GameEndWidgetInstance->SetGameEndResult();
 			GameEndWidgetInstance->AddToViewport(100);
 
-			//UE_LOG(LogTemp, Warning, TEXT("[Result] AddToViewport called"));
+			ServerRequestLeaderboardData();
 
 			SetShowMouseCursor(true);
+
 			FInputModeUIOnly InputMode;
-			InputMode.SetWidgetToFocus(GameEndWidgetInstance->TakeWidget());
+			InputMode.SetWidgetToFocus(
+				GameEndWidgetInstance->TakeWidget()
+			);
 			SetInputMode(InputMode);
 		}
 	}
@@ -182,6 +184,7 @@ void AGSPlayerController::RequestRestartGame()
 
 void AGSPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+
 	if (IsValid(HUDWidgetInstance))
 	{
 		HUDWidgetInstance->RemoveFromParent();
@@ -301,6 +304,116 @@ void AGSPlayerController::ServerSetNickname_Implementation(const FString& Nickna
 //		SetInputMode(InputMode);
 //	}
 //}
+
+void AGSPlayerController::ServerRequestLeaderboardData_Implementation()
+{
+	UWorld* World = GetWorld();
+	if (!IsValid(World))
+	{
+		return;
+	}
+
+	AGameStateBase* GameState =
+		World->GetGameState<AGameStateBase>();
+
+	if (!IsValid(GameState))
+	{
+		return;
+	}
+
+	TArray<FGSLeaderboardEntry> LeaderboardEntries;
+
+	LeaderboardEntries.Reserve(4);
+
+	for (APlayerState* BasePlayerState : GameState->PlayerArray)
+	{
+		AGS_PlayerState* GSPlayerState =
+			Cast<AGS_PlayerState>(BasePlayerState);
+
+		if (!IsValid(GSPlayerState))
+		{
+			continue;
+		}
+
+		FGSLeaderboardEntry NewEntry;
+
+		NewEntry.PlayerName =
+			GSPlayerState->PlayerNickname;
+
+		if (NewEntry.PlayerName.IsEmpty())
+		{
+			NewEntry.PlayerName =
+				GSPlayerState->GetPlayerName();
+		}
+
+		if (NewEntry.PlayerName.IsEmpty())
+		{
+			NewEntry.PlayerName = TEXT("Player");
+		}
+
+		NewEntry.Score =
+			GSPlayerState->GetPlayerScore();
+
+		LeaderboardEntries.Add(NewEntry);
+
+	}
+
+	LeaderboardEntries.Sort(
+		[](const FGSLeaderboardEntry& A,
+			const FGSLeaderboardEntry& B)
+		{
+			if (A.Score == B.Score)
+			{
+				return A.PlayerName < B.PlayerName;
+			}
+
+			return A.Score > B.Score;
+		}
+	);
+
+	for (int32 Index = 0;
+		Index < LeaderboardEntries.Num();
+		++Index)
+	{
+		LeaderboardEntries[Index].Rank = Index + 1;
+	}
+
+	int32 MyScore = 0;
+
+	AGS_PlayerState* MyPlayerState =
+		GetPlayerState<AGS_PlayerState>();
+
+	if (IsValid(MyPlayerState))
+	{
+		MyScore = MyPlayerState->GetPlayerScore();
+	}
+
+	ClientReceiveLeaderboardData(
+		LeaderboardEntries,
+		MyScore
+	);
+}
+
+void AGSPlayerController::ClientReceiveLeaderboardData_Implementation(
+	const TArray<FGSLeaderboardEntry>& LeaderboardEntries,
+	int32 MyScore
+)
+{
+	if (!IsLocalController())
+	{
+		return;
+	}
+
+	if (!IsValid(GameEndWidgetInstance))
+	{
+		return;
+	}
+
+	GameEndWidgetInstance->SetGameEndResultFromData(
+		LeaderboardEntries,
+		MyScore
+	);
+}
 
 void AGSPlayerController::Debug_GiveReward(int32 RewardType)
 {

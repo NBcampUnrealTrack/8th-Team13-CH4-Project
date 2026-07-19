@@ -27,7 +27,10 @@ void UGS_GameEndWidget::NativeConstruct()
 	}
 }
 
-void UGS_GameEndWidget::SetGameEndResult()
+void UGS_GameEndWidget::SetGameEndResultFromData(
+	const TArray<FGSLeaderboardEntry>& LeaderboardEntries,
+	int32 MyScore
+)
 {
 	UpdateRestartButtonVisibility();
 
@@ -41,80 +44,6 @@ void UGS_GameEndWidget::SetGameEndResult()
 	if (IsValid(VB_Leaderboard))
 	{
 		VB_Leaderboard->ClearChildren();
-	}
-
-	UWorld* World = GetWorld();
-	if (World == nullptr)
-	{
-		return;
-	}
-
-	AGameStateBase* GameState = World->GetGameState();
-	if (GameState == nullptr)
-	{
-		UE_LOG(
-			LogTemp,
-			Error,
-			TEXT("[Leaderboard] GameState is nullptr.")
-		);
-
-		return;
-	}
-
-	TArray<FGSLeaderboardEntry> LeaderboardEntries;
-
-	for (APlayerState* BasePlayerState : GameState->PlayerArray)
-	{
-		AGS_PlayerState* PlayerState =
-			Cast<AGS_PlayerState>(BasePlayerState);
-
-		if (PlayerState == nullptr)
-		{
-			continue;
-		}
-
-		FGSLeaderboardEntry NewEntry;
-
-		if (PlayerState->PlayerNickname.IsEmpty())
-		{
-			NewEntry.PlayerName = PlayerState->GetPlayerName();
-
-			if (NewEntry.PlayerName.IsEmpty())
-			{
-				NewEntry.PlayerName = TEXT("Player");
-			}
-		}
-		else
-		{
-			NewEntry.PlayerName = PlayerState->PlayerNickname;
-		}
-
-		NewEntry.Score = PlayerState->GetPlayerScore();
-
-		LeaderboardEntries.Add(NewEntry);
-	}
-
-	// SortPlayer
-	LeaderboardEntries.Sort(
-		[](const FGSLeaderboardEntry& A,
-			const FGSLeaderboardEntry& B)
-		{
-			if (A.Score == B.Score)
-			{
-				// 점수가 같으면 이름순으로 정렬
-				return A.PlayerName < B.PlayerName;
-			}
-
-			return A.Score > B.Score;
-		}
-	);
-
-	//Lank
-	for (int32 Index = 0;
-		Index < LeaderboardEntries.Num();
-		++Index)
-	{
-		LeaderboardEntries[Index].Rank = Index + 1;
 	}
 
 	if (LeaderboardEntries.IsEmpty())
@@ -145,7 +74,6 @@ void UGS_GameEndWidget::SetGameEndResult()
 		return;
 	}
 
-	//Winner
 	const FGSLeaderboardEntry& WinnerEntry =
 		LeaderboardEntries[0];
 
@@ -153,9 +81,22 @@ void UGS_GameEndWidget::SetGameEndResult()
 	{
 		TXT_Winner->SetText(
 			FText::FromString(
-				FString::Printf(TEXT("%s Win! (%d점)"), 
-					*WinnerEntry.PlayerName, 
-						WinnerEntry.Score
+				FString::Printf(
+					TEXT("%s Win! (%d점)"),
+					*WinnerEntry.PlayerName,
+					WinnerEntry.Score
+				)
+			)
+		);
+	}
+
+	if (IsValid(TXT_MyScore))
+	{
+		TXT_MyScore->SetText(
+			FText::FromString(
+				FString::Printf(
+					TEXT("내 점수: %d"),
+					MyScore
 				)
 			)
 		);
@@ -166,26 +107,6 @@ void UGS_GameEndWidget::SetGameEndResult()
 		TXT_Notice->SetText(
 			FText::FromString(TEXT("최종 순위"))
 		);
-	}
-
-	// 현재 로컬 플레이어 점수 표시
-	APlayerController* OwningPlayer = GetOwningPlayer();
-	if (OwningPlayer)
-	{
-		AGS_PlayerState* MyPlayerState =
-			OwningPlayer->GetPlayerState<AGS_PlayerState>();
-
-		if (MyPlayerState && IsValid(TXT_MyScore))
-		{
-			TXT_MyScore->SetText(
-				FText::FromString(
-					FString::Printf(
-						TEXT("내 점수: %d"),
-						MyPlayerState->GetPlayerScore()
-					)
-				)
-			);
-		}
 	}
 
 	CreateLeaderboardRows(LeaderboardEntries);

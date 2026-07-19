@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "Gang_Squirrel/UI/GS_GameEndWidget.h"
 #include "GSPlayerController.generated.h"
 
 class UGS_GameEndWidget;
@@ -37,6 +38,15 @@ private:
 
 	UFUNCTION(Server, Reliable)
 	void ServerRequestRestartGame();
+
+	UFUNCTION(Server, Reliable)
+	void ServerRequestLeaderboardData();
+
+	UFUNCTION(Client, Reliable)
+	void ClientReceiveLeaderboardData(
+		const TArray<FGSLeaderboardEntry>& LeaderboardEntries,
+		int32 MyScore
+	);
 
 	//FTimerHandle MatchEndCheckTimerHandle;
 	//
