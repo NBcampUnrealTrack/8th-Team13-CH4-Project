@@ -6,6 +6,8 @@
 #include "Components/TextBlock.h"
 #include "Components/Button.h"
 #include "Gang_Squirrel/EOS/GS_GameInstance.h"
+#include "Gang_Squirrel/Controller/GSPlayerController.h"
+#include "Gang_Squirrel/Controller/Lobby/GS_LobbyPlayerController.h"
 
 void UGS_SettingWidget::NativeConstruct()
 {
@@ -59,16 +61,35 @@ void UGS_SettingWidget::OnBrightnessChanged(float Value)
 
 void UGS_SettingWidget::OnCloseClicked()
 {
-    SetVisibility(ESlateVisibility::Collapsed);
+    CloseSettings();
 }
 
 FReply UGS_SettingWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
 {
     if (InKeyEvent.GetKey() == EKeys::Escape)
     {
-        SetVisibility(ESlateVisibility::Collapsed);
+        CloseSettings();
         return FReply::Handled();
     }
 
     return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+}
+
+void UGS_SettingWidget::CloseSettings()
+{
+    APlayerController* PC = GetOwningPlayer();
+
+    if (AGSPlayerController* GamePC = Cast<AGSPlayerController>(PC))
+    {
+        GamePC->HandleToggleSettings();
+        return;
+    }
+
+    if (AGS_LobbyPlayerController* LobbyPC = Cast<AGS_LobbyPlayerController>(PC))
+    {
+        LobbyPC->HandleToggleSettings();
+        return;
+    }
+    
+    SetVisibility(ESlateVisibility::Collapsed);
 }
