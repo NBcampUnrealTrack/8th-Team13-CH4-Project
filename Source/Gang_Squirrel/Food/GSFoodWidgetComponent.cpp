@@ -32,7 +32,6 @@ UGSFoodWidgetComponent::UGSFoodWidgetComponent()
 	SetPivot(FVector2D(0.5f, 0.5f));
     
 	PrimaryComponentTick.bCanEverTick = true;
-	PrimaryComponentTick.bStartWithTickEnabled = false;
 }
 
 void UGSFoodWidgetComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)

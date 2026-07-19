@@ -254,6 +254,9 @@ public:
 public:
 	
 	//Food
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ResetCheeks();
+	
 	UFUNCTION(Server, Reliable)
 	void Server_NotifyFoodEaten(AGSFoodBase* EatenFood, AGSCharacter* EatingCharacter);
 	
@@ -327,9 +330,6 @@ private:
 
 	UFUNCTION()
 	void OnRep_CheekSize();
-	
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_ResetCheeks();
 	
 
 	bool bCheekFullTutorialShown = false;
