@@ -12,6 +12,9 @@
 #include "Gang_Squirrel/EOS/GS_GameInstance.h"
 #include "Gang_Squirrel/Character/GSCharacter.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/GameViewportClient.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
 
 void AGSPlayerController::BeginPlay()
 {
@@ -30,6 +33,12 @@ void AGSPlayerController::BeginPlay()
 		GSInst->SetScreenBrightness(GSInst->ScreenBrightness);
 	}
 
+	TArray<AActor*> StageCameras;
+	UGameplayStatics::GetAllActorsWithTag(GetWorld(), VictoryStageCameraTag, StageCameras);
+	if (StageCameras.Num() > 0)
+	{
+		return;   // Result 레벨의 UI/카메라/캐릭터는 ClientShowResultStage(RPC)가 전담
+	}
 	// bGameEndUIShown = false;
 
 	//if (IsValid(GameEndWidgetInstance))
@@ -85,24 +94,70 @@ void AGSPlayerController::BeginPlay()
 	ServerSetNickname(DisplayName);
 }
 
+void AGSPlayerController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+
+	if (!IsLocalController())
+	{
+		return;
+	}
+
+	if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
+		ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
+	{
+		Subsystem->AddMappingContext(IMC_UI, 1);
+	}
+
+	if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(InputComponent))
+	{
+		EIC->BindAction(IA_ToggleSettings, ETriggerEvent::Started, this, &AGSPlayerController::HandleToggleSettings);
+	}
+}
+
+void AGSPlayerController::HandleToggleSettings()
+{
+	UGS_GameInstance* GSInst = GetGameInstance<UGS_GameInstance>();
+	if (!GSInst)
+	{
+		return;
+	}
+
+	if (GSInst->ToggleSettingsWidget(this))
+	{
+		SetShowMouseCursor(true);
+		FInputModeGameAndUI InputMode;
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		SetInputMode(InputMode);
+	}
+	else
+	{
+		SetShowMouseCursor(false);
+		SetInputMode(FInputModeGameOnly());
+	}
+}
+
 void AGSPlayerController::ClientShowResultStage_Implementation()
 {
-	UE_LOG(LogTemp, Warning, TEXT("[Result] GameEndWidgetClass=%s"),
-		GameEndWidgetClass ? TEXT("Valid") : TEXT("NULL"));
+	//UE_LOG(LogTemp, Warning, TEXT("[Result] GameEndWidgetClass=%s"),GameEndWidgetClass ? TEXT("Valid") : TEXT("NULL"));
+
+	if (UGameViewportClient* ViewportClient = GetWorld() ? GetWorld()->GetGameViewport() : nullptr)
+	{
+		ViewportClient->RemoveAllViewportWidgets();
+	}
 
 	if (GameEndWidgetClass)
 	{
 		GameEndWidgetInstance = CreateWidget<UGS_GameEndWidget>(this, GameEndWidgetClass);
 
-		UE_LOG(LogTemp, Warning, TEXT("[Result] GameEndWidgetInstance=%s"),
-			IsValid(GameEndWidgetInstance) ? TEXT("Valid") : TEXT("NULL"));
+		//UE_LOG(LogTemp, Warning, TEXT("[Result] GameEndWidgetInstance=%s"),IsValid(GameEndWidgetInstance) ? TEXT("Valid") : TEXT("NULL"));
 
 		if (IsValid(GameEndWidgetInstance))
 		{
 			GameEndWidgetInstance->SetGameEndResult();
 			GameEndWidgetInstance->AddToViewport(100);
 
-			UE_LOG(LogTemp, Warning, TEXT("[Result] AddToViewport called"));
+			//UE_LOG(LogTemp, Warning, TEXT("[Result] AddToViewport called"));
 
 			SetShowMouseCursor(true);
 			FInputModeUIOnly InputMode;
@@ -118,25 +173,28 @@ void AGSPlayerController::ClientShowResultStage_Implementation()
 	{
 		SetViewTargetWithBlend(FoundCameras[0], 0.5f);
 	}
-
-	TArray<AActor*> FoundSlots;
-	UGameplayStatics::GetAllActorsWithTag(GetWorld(), VictoryStageSlotTag, FoundSlots);
-	if (FoundSlots.Num() > 0 && VictoryDisplayCharacterClass)
-	{
-		AGSCharacter* DisplayCharacter = GetWorld()->SpawnActor<AGSCharacter>(
-			VictoryDisplayCharacterClass,
-			FoundSlots[0]->GetActorTransform()
-		);
-		if (IsValid(DisplayCharacter))
-		{
-			DisplayCharacter->PlayVictoryMontage();
-		}
-	}
 }
 
 void AGSPlayerController::RequestRestartGame()
 {
 	ServerRequestRestartGame();
+}
+
+void AGSPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (IsValid(HUDWidgetInstance))
+	{
+		HUDWidgetInstance->RemoveFromParent();
+		HUDWidgetInstance = nullptr;
+	}
+
+	if (IsValid(GameEndWidgetInstance))
+	{
+		GameEndWidgetInstance->RemoveFromParent();
+		GameEndWidgetInstance = nullptr;
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void AGSPlayerController::ServerRequestRestartGame_Implementation()

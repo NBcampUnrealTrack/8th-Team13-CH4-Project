@@ -8,7 +8,7 @@
 #include "Gang_Squirrel/Controller/Lobby/GS_LobbyPlayerController.h"
 #include "Gang_Squirrel/Game/GS_GameState.h"
 #include "Gang_Squirrel/Player/GS_PlayerState.h"
-#include "Gang_Squirrel/UI/Lobby/GS_SettingWidget.h"
+#include "Gang_Squirrel/EOS/GS_GameInstance.h"
 
 void UGS_LobbyWidget::NativeConstruct()
 {
@@ -180,16 +180,11 @@ void UGS_LobbyWidget::OnInviteButtonClicked()
 
 void UGS_LobbyWidget::OnSettingsButtonClicked()
 {
-	if (!SettingWidgetClass) return;
-
-	if (!IsValid(SettingWidgetInst))
+	// ESC 토글(GS_GameInstance::ToggleSettingsWidget)과 동일한 인스턴스를 공유해서
+	// 버튼으로 열든 ESC로 열든 같은 상태를 바라보게 한다.
+	if (UGS_GameInstance* GSInst = GetGameInstance<UGS_GameInstance>())
 	{
-		SettingWidgetInst = CreateWidget<UGS_SettingWidget>(this, SettingWidgetClass);
-	}
-
-	if (IsValid(SettingWidgetInst) && !SettingWidgetInst->IsInViewport())
-	{
-		SettingWidgetInst->AddToViewport(10);
+		GSInst->ToggleSettingsWidget(GetOwningPlayer());
 	}
 }
 

@@ -7,15 +7,18 @@
 class AGSCharacter;
 class UUserWidget;
 class AGSCharacter;
+class UInputMappingContext;
+class UInputAction;
 
 UCLASS()
 class GANG_SQUIRREL_API AGS_LobbyPlayerController : public APlayerController
 {
 	GENERATED_BODY()
-	
+
 protected:
 	virtual void BeginPlay() override;
-	
+	virtual void SetupInputComponent() override;
+
 private:
 	UPROPERTY(EditDefaultsOnly,Category="UI")
 	TSubclassOf<UUserWidget> LobbyWidgetClass;
@@ -27,8 +30,19 @@ private:
 	TSubclassOf<AGSCharacter> DisplayCharacterClass;
 	UPROPERTY(EditDefaultsOnly,Category="Lobby|Display")
 	FName LobbyCameraTag = "LobbyCamera";
-	
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputMappingContext> IMC_UI;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> IA_ToggleSettings;
+
 public:
+	// GS_SettingWidget이 ESC-in-widget / 닫기버튼으로 자체 종료할 때도
+	// 재사용할 수 있도록 public으로 노출
+	void HandleToggleSettings();
+
+
 	UFUNCTION(BlueprintCallable,Category="Lobby")
 	void RequestStartGame();
 

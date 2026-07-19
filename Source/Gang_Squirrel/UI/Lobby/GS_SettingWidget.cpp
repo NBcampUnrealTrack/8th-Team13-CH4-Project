@@ -59,5 +59,16 @@ void UGS_SettingWidget::OnBrightnessChanged(float Value)
 
 void UGS_SettingWidget::OnCloseClicked()
 {
-    RemoveFromParent();
+    SetVisibility(ESlateVisibility::Collapsed);
+}
+
+FReply UGS_SettingWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+    if (InKeyEvent.GetKey() == EKeys::Escape)
+    {
+        SetVisibility(ESlateVisibility::Collapsed);
+        return FReply::Handled();
+    }
+
+    return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
 }
