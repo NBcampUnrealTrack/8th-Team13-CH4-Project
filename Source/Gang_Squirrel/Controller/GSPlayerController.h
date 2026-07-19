@@ -72,6 +72,13 @@ protected:
 public:
 	void HandleToggleSettings();
 
+private:
+	FTimerHandle ResultDataRetryTimerHandle;
+
+	int32 ResultDataRetryCount = 0;
+
+	void TrySetGameEndResult();
+
 #pragma region Debugging
 public:
 	UFUNCTION(Exec)

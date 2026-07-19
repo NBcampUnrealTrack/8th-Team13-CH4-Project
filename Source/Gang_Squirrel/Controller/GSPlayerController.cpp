@@ -154,14 +154,17 @@ void AGSPlayerController::ClientShowResultStage_Implementation()
 
 		if (IsValid(GameEndWidgetInstance))
 		{
-			GameEndWidgetInstance->SetGameEndResult();
 			GameEndWidgetInstance->AddToViewport(100);
 
-			//UE_LOG(LogTemp, Warning, TEXT("[Result] AddToViewport called"));
+			ResultDataRetryCount = 0;
+			TrySetGameEndResult();
 
 			SetShowMouseCursor(true);
+
 			FInputModeUIOnly InputMode;
-			InputMode.SetWidgetToFocus(GameEndWidgetInstance->TakeWidget());
+			InputMode.SetWidgetToFocus(
+				GameEndWidgetInstance->TakeWidget()
+			);
 			SetInputMode(InputMode);
 		}
 	}
@@ -182,6 +185,10 @@ void AGSPlayerController::RequestRestartGame()
 
 void AGSPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	GetWorldTimerManager().ClearTimer(
+		ResultDataRetryTimerHandle
+	);
+
 	if (IsValid(HUDWidgetInstance))
 	{
 		HUDWidgetInstance->RemoveFromParent();
@@ -301,6 +308,95 @@ void AGSPlayerController::ServerSetNickname_Implementation(const FString& Nickna
 //		SetInputMode(InputMode);
 //	}
 //}
+
+void AGSPlayerController::TrySetGameEndResult()
+{
+	if (!IsLocalController())
+	{
+		return;
+	}
+
+	if (!IsValid(GameEndWidgetInstance))
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!IsValid(World))
+	{
+		return;
+	}
+
+	AGameStateBase* GameState =
+		World->GetGameState<AGameStateBase>();
+
+	bool bLeaderboardDataReady = IsValid(GameState);
+
+	if (bLeaderboardDataReady)
+	{
+		if (GameState->PlayerArray.IsEmpty())
+		{
+			bLeaderboardDataReady = false;
+		}
+		else
+		{
+			for (APlayerState* BasePlayerState :
+				GameState->PlayerArray)
+			{
+				AGS_PlayerState* GSPlayerState =
+					Cast<AGS_PlayerState>(BasePlayerState);
+
+				if (!IsValid(GSPlayerState))
+				{
+					bLeaderboardDataReady = false;
+					break;
+				}
+
+				// 점수는 실제로 0점일 수도 있으므로
+				// 닉네임 복제 여부를 준비 기준으로 사용
+				if (GSPlayerState->PlayerNickname.IsEmpty())
+				{
+					bLeaderboardDataReady = false;
+					break;
+				}
+			}
+		}
+	}
+
+	if (bLeaderboardDataReady)
+	{
+		GetWorldTimerManager().ClearTimer(
+			ResultDataRetryTimerHandle
+		);
+
+		GameEndWidgetInstance->SetGameEndResult();
+
+		return;
+	}
+
+	ResultDataRetryCount++;
+
+
+	// 약 5초 동안 재시도
+	if (ResultDataRetryCount >= 25)
+	{
+		GetWorldTimerManager().ClearTimer(
+			ResultDataRetryTimerHandle
+		);
+
+		// 최종적으로 현재까지 들어온 데이터라도 표시
+		GameEndWidgetInstance->SetGameEndResult();
+		return;
+	}
+
+	GetWorldTimerManager().SetTimer(
+		ResultDataRetryTimerHandle,
+		this,
+		&ThisClass::TrySetGameEndResult,
+		0.2f,
+		false
+	);
+}
 
 void AGSPlayerController::Debug_GiveReward(int32 RewardType)
 {
