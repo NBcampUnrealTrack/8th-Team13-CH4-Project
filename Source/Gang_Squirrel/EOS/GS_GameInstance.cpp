@@ -8,14 +8,13 @@
 #include "Engine/PostProcessVolume.h"
 #include "Sound/SoundClass.h"
 #include "Sound/SoundMix.h"
-#include "MoviePlayer.h"
 #include "UObject/UObjectGlobals.h"
 
 void UGS_GameInstance::Init()
 {
 	Super::Init();
 
-	//Loading
+
 	
 	if (IOnlineSubsystem* OnlineSub = Online::GetSubsystem(GetWorld()))
 	{
@@ -477,69 +476,4 @@ void UGS_GameInstance::DoJoinSession()
 void UGS_GameInstance::HandleDestroySessionForJoin(FName SessionName, bool bWasSuccessful)
 {
 	DoJoinSession();
-}
-
-//Loading
-void UGS_GameInstance::StartLoadingScreen()
-{
-#if !UE_SERVER
-	if (IsRunningDedicatedServer())
-	{
-		return;
-	}
-
-	if (bIsLoadingScreenPlaying)
-	{
-		return;
-	}
-
-	IGameMoviePlayer* MoviePlayer = GetMoviePlayer();
-	if (!MoviePlayer)
-	{
-		return;
-	}
-
-	if (!MoviePlayer->IsInitialized())
-	{
-		return;
-	}
-
-	FLoadingScreenAttributes LoadingScreen;
-	LoadingScreen.MinimumLoadingScreenDisplayTime = 5.0f;
-
-	// Seamless Travel에서는 우리가 직접 종료시킨다.
-	LoadingScreen.bAutoCompleteWhenLoadingCompletes = false;
-	LoadingScreen.bWaitForManualStop = true;
-
-	LoadingScreen.bAllowEngineTick = true;
-	LoadingScreen.bMoviesAreSkippable = false;
-	LoadingScreen.PlaybackType = MT_Looped;
-	LoadingScreen.MoviePaths.Add(TEXT("LoadingDancing"));
-
-	MoviePlayer->SetupLoadingScreen(LoadingScreen);
-	MoviePlayer->PlayMovie();
-
-	bIsLoadingScreenPlaying = true;
-
-#endif
-}
-
-
-void UGS_GameInstance::StopLoadingScreen()
-{
-#if !UE_SERVER
-	if (!bIsLoadingScreenPlaying)
-	{
-		return;
-	}
-
-	IGameMoviePlayer* MoviePlayer = GetMoviePlayer();
-
-	if (MoviePlayer && MoviePlayer->IsMovieCurrentlyPlaying())
-	{
-		MoviePlayer->StopMovie();
-	}
-
-	bIsLoadingScreenPlaying = false;
-#endif
 }
