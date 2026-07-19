@@ -64,7 +64,7 @@ void AGSHideoutPoint::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, A
 	CurrentCharacter->ShowSlideWidget(TempScore);
 	
 	CurrentCharacter->ResetTempScore();
-	CurrentCharacter->Multicast_ResetCheeks_Implementation();
+	CurrentCharacter->Multicast_ResetCheeks();
 }
 
 void AGSHideoutPoint::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
