@@ -4,6 +4,7 @@
 #include "Gang_Squirrel/Game/GS_GameState.h"
 #include "Gang_Squirrel/Player/GS_PlayerState.h"
 #include "Gang_Squirrel/Controller/Lobby/GS_LobbyPlayerController.h"
+#include "EngineUtils.h"
 
 AGS_LobbyGameMode::AGS_LobbyGameMode()
 {
@@ -40,38 +41,7 @@ void AGS_LobbyGameMode::TryStartGame(APlayerController* Requester)
 		return;
 	}
 	
-	if (GetWorldTimerManager().IsTimerActive(StartGameTimerHandle))
-	{
-		return;
-	}
-
-	GetWorldTimerManager().SetTimer(
-		StartGameTimerHandle,
-		this,
-		&AGS_LobbyGameMode::StartTravelToMainStage,
-		0.3f,
-		false
-	);
-
-	/*for (
-		FConstPlayerControllerIterator It =
-		GetWorld()->GetPlayerControllerIterator();
-		It;
-		++It
-		)
-	{
-		AGS_LobbyPlayerController* LobbyPC =
-			Cast<AGS_LobbyPlayerController>(It->Get());
-
-		if (!LobbyPC)
-		{
-			continue;
-		}
-
-		LobbyPC->ClientStartLoadingScreen();
-	}*/
-
-
+	StartTravelToMainStage();
 }
 
 bool AGS_LobbyGameMode::CanStartGame()
@@ -109,12 +79,38 @@ void AGS_LobbyGameMode::StartTravelToMainStage()
 		return;
 	}
 
+	for (TActorIterator<AGS_LobbyPlayerController> It(GetWorld()); It; ++It)
+	{
+		AGS_LobbyPlayerController* LobbyPC = *It;
+
+		if (IsValid(LobbyPC))
+		{
+			LobbyPC->ClientShowLoadingWidget();
+		}
+	}
+
+	// 로딩 위젯 애니메이션이 잠깐 보인 뒤 맵 이동
+	GetWorldTimerManager().SetTimer(
+		TravelTimerHandle,
+		this,
+		&AGS_LobbyGameMode::ExecuteTravelToMainStage,
+		3.0f,
+		false
+	);
+}
+
+void AGS_LobbyGameMode::ExecuteTravelToMainStage()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
 	UGS_GameInstance* GSInstance =
 		Cast<UGS_GameInstance>(GetGameInstance());
 
 	if (!GSInstance)
 	{
-	
 		return;
 	}
 

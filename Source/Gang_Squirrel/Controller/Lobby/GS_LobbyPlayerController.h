@@ -5,6 +5,8 @@
 #include "GS_LobbyPlayerController.generated.h"
 
 class AGSCharacter;
+class UUserWidget;
+class AGSCharacter;
 class UInputMappingContext;
 class UInputAction;
 
@@ -43,13 +45,20 @@ public:
 
 	UFUNCTION(BlueprintCallable,Category="Lobby")
 	void RequestStartGame();
-	
+
 	UFUNCTION(Client, Reliable)
-	void ClientStartLoadingScreen();
+	void ClientShowLoadingWidget();
 
 private:
 	UFUNCTION(Server,Reliable)
 	void ServerRequestStartGame();
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UUserWidget> LoadingWidgetClass;
+
+	UPROPERTY()
+	TObjectPtr<UUserWidget> LoadingWidgetInstance;
+
 #pragma region ReadySystem
 	
 public:
@@ -76,4 +85,6 @@ private:
 	TArray<TObjectPtr<AGSCharacter>> DisplayCharacters;
 	
 	FTimerHandle CharacterDisplayTimerHandle;
+
+	void ShowLoadingWidget();
 };

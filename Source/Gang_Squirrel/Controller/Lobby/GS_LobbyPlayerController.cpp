@@ -20,12 +20,6 @@ void AGS_LobbyPlayerController::BeginPlay()
 		return;
 	}
 
-	if (UGS_GameInstance* GSInstance =
-		GetGameInstance<UGS_GameInstance>())
-	{
-		GSInstance->StopLoadingScreen();
-	}
-
 	if (LobbyWidgetClass)
 	{
 		UUserWidget* LobbyWidget = CreateWidget<UUserWidget>(this, LobbyWidgetClass);
@@ -111,17 +105,6 @@ void AGS_LobbyPlayerController::ServerToggleReady_Implementation()
 		return;
 	}
 	PS->SetReady(!PS->bIsReady);
-}
-
-void AGS_LobbyPlayerController::ClientStartLoadingScreen_Implementation()
-{
-	UGS_GameInstance* GSInstance = GetGameInstance<UGS_GameInstance>();
-	if (!GSInstance)
-	{
-		return;
-	}
-
-	GSInstance->StartLoadingScreen();
 }
 
 void AGS_LobbyPlayerController::ServerRequestStartGame_Implementation()
@@ -274,4 +257,29 @@ void AGS_LobbyPlayerController::RefreshCharacterDisplay()
 		++NickIndex;
 	}
 	
+}
+void AGS_LobbyPlayerController::ShowLoadingWidget()
+{
+	if (!IsLocalController() || !LoadingWidgetClass)
+	{
+		return;
+	}
+
+	if (!IsValid(LoadingWidgetInstance))
+	{
+		LoadingWidgetInstance = CreateWidget<UUserWidget>(
+			this,
+			LoadingWidgetClass
+		);
+	}
+
+	if (IsValid(LoadingWidgetInstance))
+	{
+		LoadingWidgetInstance->AddToViewport(999);
+	}
+}
+
+void AGS_LobbyPlayerController::ClientShowLoadingWidget_Implementation()
+{
+	ShowLoadingWidget();
 }

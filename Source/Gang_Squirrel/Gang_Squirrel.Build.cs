@@ -24,7 +24,6 @@ public class Gang_Squirrel : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[] 
 		{  
-			"MoviePlayer"
 		
 		});
 
