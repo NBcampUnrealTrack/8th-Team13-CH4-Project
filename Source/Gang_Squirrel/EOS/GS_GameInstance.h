@@ -74,10 +74,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "EOS")
 	void StartGame(FName GameLevelName);
 
-	// 로딩 화면 수동 시작/종료
-	void StartLoadingScreen();
-	void StopLoadingScreen();
-
 	UPROPERTY(BlueprintAssignable)
 	FOnGSLoginComplete OnGSLoginComplete;
 
@@ -172,8 +168,6 @@ private:
 	void DoJoinSession();
 	void HandleDestroySessionForJoin(FName SessionName, bool bWasSuccessful);
 #pragma endregion 
-
-	bool bIsLoadingScreenPlaying = false;
 
 #if WITH_EDITOR
 	bool bWantsListenServerInPIE = false;

@@ -17,22 +17,26 @@ public:
 
 protected:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
-
+	
 	void StartTravelToMainStage();
 
-	FTimerHandle StartGameTimerHandle;
-	
 public:
 	UFUNCTION(BlueprintCallable,Category="Lobby")
 	void TryStartGame(APlayerController* Requester);
 	
 	UFUNCTION(BlueprintPure,Category="Lobby")
 	bool CanStartGame();
-	
+
+private:
+	void ExecuteTravelToMainStage();
+
+	FTimerHandle TravelTimerHandle;
+
 protected:
 	UPROPERTY(EditDefaultsOnly,Category="Lobby")
 	int32 MinPlayersToStart = 2;
 	UPROPERTY(EditDefaultsOnly,Category="Lobby")
 	FName MainStageLevelName = "/Game/ProjectFile/Level/L_Main_Stage";
 	
+
 };
