@@ -1810,3 +1810,13 @@ void AGSCharacter::Client_PlayScoreReturnSound_Implementation()
 
 	UGameplayStatics::PlaySound2D(this, ScoreReturnSound);
 }
+
+void AGSCharacter::Client_PlayDeathSound_Implementation()
+{
+	if (!PlayerDeathSound)
+	{
+		return;
+	}
+
+	UGameplayStatics::PlaySound2D(this, PlayerDeathSound);
+}

@@ -17,6 +17,7 @@ class USphereComponent;
 class UGameplayAbility;
 class UGS_PlayerAttributeSet;
 class AGS_PlayerState;
+class USoundBase;
 
 UCLASS()
 class GANG_SQUIRREL_API AGS_Enemy : public ACharacter, public IAbilitySystemInterface, public IGS_RagdollReactorInterface
@@ -176,5 +177,15 @@ private:
 	FTimerHandle ReturnToPoolTimerHandle;
 	void ReturnToPoolDeferred();
 #pragma endregion 
+
+#pragma region Sound
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound|Death")
+	TObjectPtr<USoundBase> DeathSound;
+
+public:
+	UFUNCTION(NetMulticast, Unreliable)
+	void NetMulticast_PlayDeathSound();
+#pragma endregion
 };
 

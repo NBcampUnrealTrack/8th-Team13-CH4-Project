@@ -72,6 +72,8 @@ void UGA_PlayerDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 			CachedRespawnRotation = MatchedPlayerStart->GetActorRotation();
 		}
 		
+		PlayerCharacter->Client_PlayDeathSound();
+
 		PlayerCharacter->NetMulticast_SetFullRagdollEnable(true);
 		PlayerCharacter->NetMulticast_ApplyRagdollImpulse(PlayerCharacter->GetLastHitImpulseDirection() * DeathImpulseStrength, PlayerCharacter->GetRagdollStartBone());
 		PlayerCharacter->NetMulticast_SetCameraFollowRagdoll(true);

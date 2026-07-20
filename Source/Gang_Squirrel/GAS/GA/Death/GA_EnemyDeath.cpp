@@ -51,6 +51,8 @@ void UGA_EnemyDeath::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 			ASC->CancelAllAbilities(this);
 		}
 		
+		Enemy->NetMulticast_PlayDeathSound();
+		
 		Enemy->NetMulticast_SetFullRagdollEnable(true);
 		Enemy->NetMulticast_ApplyRagdollImpulse(Enemy->GetLastHitImpulseDirection() * DeathImpulseStrength, Enemy->GetRagdollStartBone());
 	}
@@ -81,3 +83,4 @@ void UGA_EnemyDeath::EndAbility(const FGameplayAbilitySpecHandle Handle, const F
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
+

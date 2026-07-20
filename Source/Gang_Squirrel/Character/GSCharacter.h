@@ -531,4 +531,11 @@ public:
 	UFUNCTION(Client, Unreliable)
 	void Client_PlayScoreReturnSound();
 
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound|Death")
+	TObjectPtr<USoundBase> PlayerDeathSound;
+
+public:
+	UFUNCTION(Client, Unreliable)
+	void Client_PlayDeathSound();
 };
