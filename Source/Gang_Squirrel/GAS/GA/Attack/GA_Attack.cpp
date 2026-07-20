@@ -5,6 +5,7 @@
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Gang_Squirrel/Character/GSCharacter.h"
 #include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
+#include "Gang_Squirrel/Gang_Squirrel.h"
 
 UGA_Attack::UGA_Attack()
 {
@@ -163,7 +164,7 @@ void UGA_Attack::OnTargetDataReceived(const FGameplayAbilityTargetDataHandle& Ta
 					FVector ImpulseDir = (HitResultPtr && !HitResultPtr->ImpactNormal.IsNearlyZero()) ? -HitResultPtr->ImpactNormal : GetAvatarActorFromActorInfo()->GetActorForwardVector();
 					ImpulseDir.Z = 0.f;
 					ImpulseDir = ImpulseDir.GetSafeNormal(UE_KINDA_SMALL_NUMBER, GetAvatarActorFromActorInfo()->GetActorForwardVector());
-					
+
 					if (bIsSecondCombo)
 					{
 						TargetReactor->Applyknockdown(ImpulseDir * StrongHitImpulseStrength, HitBone, KnockdownDuration);
