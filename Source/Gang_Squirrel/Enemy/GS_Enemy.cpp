@@ -18,6 +18,8 @@
 #include "Gang_Squirrel/UI/Stat_Widget/GS_HPCountWidget.h"
 #include "Net/UnrealNetwork.h"
 #include "PhysicsEngine/BodyInstance.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
 
 
 AGS_Enemy::AGS_Enemy()
@@ -474,4 +476,18 @@ void AGS_Enemy::ReturnToPoolDeferred()
 	{
 		DeactivateEnemy();
 	}
+}
+
+void AGS_Enemy::NetMulticast_PlayDeathSound_Implementation()
+{
+	if (!DeathSound)
+	{
+		return;
+	}
+
+	UGameplayStatics::PlaySoundAtLocation(
+		this,
+		DeathSound,
+		GetActorLocation()
+	);
 }
