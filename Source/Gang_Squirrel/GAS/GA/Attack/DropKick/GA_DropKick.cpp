@@ -3,6 +3,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
+#include "Gang_Squirrel/Gang_Squirrel.h"
 #include "Gang_Squirrel/Character/GSCharacter.h"
 #include "Gang_Squirrel/GAS/Tags/GS_GamePlayTag.h"
 
@@ -33,6 +34,8 @@ void UGA_DropKick::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 	
 	if (ActorInfo->IsNetAuthority())
 	{
+		FGameplayTagContainer AttackTagContainer(AbilityTag::TAG_Ability_Attack);
+		GetAbilitySystemComponentFromActorInfo()->CancelAbilities(&AttackTagContainer);
 		GetAbilitySystemComponentFromActorInfo()->AbilityTargetDataSetDelegate(Handle,ActivationInfo.GetActivationPredictionKey()).AddUObject(this,&UGA_DropKick::OnTargetReceived);
 	}
 	
@@ -128,8 +131,10 @@ void UGA_DropKick::OnTargetReceived(const FGameplayAbilityTargetDataHandle& Targ
 				if (IGS_RagdollReactorInterface* TargetReactor = Cast<IGS_RagdollReactorInterface>(TargetActor.Get()))
 				{
 					const FName HitBone = (HitResultPtr && HitResultPtr->BoneName != NAME_None) ? HitResultPtr->BoneName : TargetReactor->GetRagdollStartBone();
-					const FVector ImpulseDir = (HitResultPtr && !HitResultPtr->ImpactNormal.IsNearlyZero()) ? -HitResultPtr->ImpactNormal : GetAvatarActorFromActorInfo()->GetActorForwardVector();
-					
+					FVector ImpulseDir = (HitResultPtr && !HitResultPtr->ImpactNormal.IsNearlyZero()) ? -HitResultPtr->ImpactNormal : GetAvatarActorFromActorInfo()->GetActorForwardVector();
+					ImpulseDir.Z = 0.f;
+					ImpulseDir = ImpulseDir.GetSafeNormal(UE_KINDA_SMALL_NUMBER, GetAvatarActorFromActorInfo()->GetActorForwardVector());
+
 					TargetReactor->Applyknockdown(ImpulseDir * KnockdownImpulseStrength, HitBone, KnockdownDuration);
 				}
 			}
