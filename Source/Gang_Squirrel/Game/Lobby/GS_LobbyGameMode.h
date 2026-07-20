@@ -1,0 +1,42 @@
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/GameModeBase.h"
+#include "GS_LobbyGameMode.generated.h"
+
+
+class AGS_LobbyPlayerController;
+
+UCLASS()
+class GANG_SQUIRREL_API AGS_LobbyGameMode : public AGameModeBase
+{
+	GENERATED_BODY()
+
+public:
+	AGS_LobbyGameMode();
+
+protected:
+	virtual void PostLogin(APlayerController* NewPlayer) override;
+	
+	void StartTravelToMainStage();
+
+public:
+	UFUNCTION(BlueprintCallable,Category="Lobby")
+	void TryStartGame(APlayerController* Requester);
+	
+	UFUNCTION(BlueprintPure,Category="Lobby")
+	bool CanStartGame();
+
+private:
+	void ExecuteTravelToMainStage();
+
+	FTimerHandle TravelTimerHandle;
+
+protected:
+	UPROPERTY(EditDefaultsOnly,Category="Lobby")
+	int32 MinPlayersToStart = 2;
+	UPROPERTY(EditDefaultsOnly,Category="Lobby")
+	FName MainStageLevelName = "/Game/ProjectFile/Level/L_Main_Stage";
+	
+
+};

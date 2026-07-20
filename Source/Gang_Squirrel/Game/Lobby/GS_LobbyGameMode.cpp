@@ -1,0 +1,118 @@
+#include "GS_LobbyGameMode.h"
+
+#include "Gang_Squirrel/EOS/GS_GameInstance.h"
+#include "Gang_Squirrel/Game/GS_GameState.h"
+#include "Gang_Squirrel/Player/GS_PlayerState.h"
+#include "Gang_Squirrel/Controller/Lobby/GS_LobbyPlayerController.h"
+#include "EngineUtils.h"
+
+AGS_LobbyGameMode::AGS_LobbyGameMode()
+{
+	GameStateClass = AGS_GameState::StaticClass();
+	DefaultPawnClass = nullptr;
+	bUseSeamlessTravel = true;
+}
+
+void AGS_LobbyGameMode::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+
+	if (AGS_PlayerState* PS = NewPlayer ? NewPlayer->GetPlayerState<AGS_PlayerState>() : nullptr)
+	{
+		PS->bIsHost = NewPlayer->IsLocalController();
+	}
+}
+
+void AGS_LobbyGameMode::TryStartGame(APlayerController* Requester)
+{
+	if (!HasAuthority() || !Requester)
+	{
+		return;
+	}
+	
+	const AGS_PlayerState* RequesterPS = Requester->GetPlayerState<AGS_PlayerState>();
+	if (!RequesterPS || !RequesterPS->bIsHost)
+	{
+		return;
+	}
+	
+	if (!CanStartGame())
+	{
+		return;
+	}
+	
+	StartTravelToMainStage();
+}
+
+bool AGS_LobbyGameMode::CanStartGame()
+{
+	if (GetNumPlayers() < MinPlayersToStart)
+	{
+		return false;
+	}
+	
+	const AGS_GameState* GS = GetGameState<AGS_GameState>();
+	if (!GS)
+	{
+		return false;
+	}
+	
+	for (APlayerState* PS : GS->PlayerArray)
+	{
+		const AGS_PlayerState* CandidatePS = Cast<AGS_PlayerState>(PS);
+		if (!CandidatePS || CandidatePS->bIsHost)
+		{
+			continue;
+		}
+		if (!CandidatePS->bIsReady)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+void AGS_LobbyGameMode::StartTravelToMainStage()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	for (TActorIterator<AGS_LobbyPlayerController> It(GetWorld()); It; ++It)
+	{
+		AGS_LobbyPlayerController* LobbyPC = *It;
+
+		if (IsValid(LobbyPC))
+		{
+			LobbyPC->ClientShowLoadingWidget();
+		}
+	}
+
+	// 로딩 위젯 애니메이션이 잠깐 보인 뒤 맵 이동
+	GetWorldTimerManager().SetTimer(
+		TravelTimerHandle,
+		this,
+		&AGS_LobbyGameMode::ExecuteTravelToMainStage,
+		3.0f,
+		false
+	);
+}
+
+void AGS_LobbyGameMode::ExecuteTravelToMainStage()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	UGS_GameInstance* GSInstance =
+		Cast<UGS_GameInstance>(GetGameInstance());
+
+	if (!GSInstance)
+	{
+		return;
+	}
+
+	GSInstance->StartGame(MainStageLevelName);
+}

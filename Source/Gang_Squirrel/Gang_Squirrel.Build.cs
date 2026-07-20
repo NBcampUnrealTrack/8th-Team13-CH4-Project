@@ -16,9 +16,16 @@ public class Gang_Squirrel : ModuleRules
 			,"GameplayAbilities","GameplayTags","GameplayTasks"
 			// UMG Module
 			,"UMG","Slate","SlateCore"
+			// AI Module
+			,"AIModule","NavigationSystem"
+			// EOS
+			,"OnlineSubsystem","OnlineSubsystemEOS","OnlineSubsystemUtils"
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] {  });
+		PrivateDependencyModuleNames.AddRange(new string[] 
+		{  
+		
+		});
 
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
