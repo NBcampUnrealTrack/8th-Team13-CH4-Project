@@ -34,6 +34,8 @@ void UGA_DropKick::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 	
 	if (ActorInfo->IsNetAuthority())
 	{
+		FGameplayTagContainer AttackTagContainer(AbilityTag::TAG_Ability_Attack);
+		GetAbilitySystemComponentFromActorInfo()->CancelAbilities(&AttackTagContainer);
 		GetAbilitySystemComponentFromActorInfo()->AbilityTargetDataSetDelegate(Handle,ActivationInfo.GetActivationPredictionKey()).AddUObject(this,&UGA_DropKick::OnTargetReceived);
 	}
 	
