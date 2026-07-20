@@ -49,4 +49,3 @@
 ## 👥 팀 협업 및 규칙
 * **데일리 스크럼 (Daily Scrum):** **매일 오전 10:00** 진행
   * 전일 작업 공유, 오늘 목표 설정 및 장애 요인 토론
-* **작업 및 설계 아카이브:** [week1_progress.md](file:///C:/Users/gimunkwon/Desktop/Ch4TeamProject/Gang_Squirrel/Docs/week1_progress.md) 파일에서 설계 방향 및 1주차 진행 상황을 확인할 수 있습니다.
