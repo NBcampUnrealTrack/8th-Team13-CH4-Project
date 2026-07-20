@@ -119,7 +119,7 @@ void UGA_EnemyAttack::ApplyDamageToTarget(AActor* TargetActor, const FHitResult&
 				FVector ImpulseDir = !Hit.ImpactNormal.IsNearlyZero() ? -Hit.ImpactNormal : GetAvatarActorFromActorInfo()->GetActorForwardVector();
 				ImpulseDir.Z = 0.f;
 				ImpulseDir = ImpulseDir.GetSafeNormal(UE_KINDA_SMALL_NUMBER, GetAvatarActorFromActorInfo()->GetActorForwardVector());
-				
+
 				if (bIsSecondCombo)
 				{
 					TargetReactor->Applyknockdown(ImpulseDir * StrongHitImpulseStrength, HitBone, KnockdownDuration);
