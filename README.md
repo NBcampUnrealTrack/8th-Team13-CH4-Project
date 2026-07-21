@@ -46,7 +46,7 @@
 * **엔진:** Unreal Engine 5
 * **핵심 기술:** **GAS (Gameplay Ability System)**
   * 캐릭터의 스탯(Attributes), 버프/디버프(Gameplay Effects), 전투 및 특수 액션(Gameplay Abilities) 등 핵심 게임 로직을 GAS를 활용하여 체계적이고 안정적인 멀티플레이 환경으로 구축합니다.
-* **네트워크 아키텍처:** 데디케이트 서버 기반의 멀티플레이 루프 및 복제(Replication), 로컬 예측(Local Prediction) 적용
+* **네트워크 아키텍처:** EOS 멀티 크로스 플레이 + 리슨 서버 기반의 멀티플레이 루프 및 복제(Replication), 로컬 예측(Local Prediction) 적용
 * **코드 컨벤션:** **언리얼 공식 문서 코딩 표준(Unreal Engine Coding Standard)** 준수
 
 ---
