@@ -12,6 +12,11 @@
 
 ---
 
+## 🎞️ 시연 영상
+[![시연 영상](https://img.youtube.com/vi/xXyoTbcUP_A/0.jpg)](https://youtu.be/xXyoTbcUP_A?si=nkAskeWUxBSnShlm)
+
+---
+
 ## ⚙️ 주요 게임 시스템
 
 ### 1. 식량 수집 & 볼 용량 시스템
@@ -49,3 +54,7 @@
 ## 👥 팀 협업 및 규칙
 * **데일리 스크럼 (Daily Scrum):** **매일 오전 10:00** 진행
   * 전일 작업 공유, 오늘 목표 설정 및 장애 요인 토론
+
+---
+## 🗃️ 패키징 파일
+[![다운로드](https://img.shields.io/badge/Download-Google_Drive-4285F4?style=for-the-badge&logo=googledrive&logoColor=white)](https://drive.google.com/file/d/1_eVryJ-L5anchUBRW889Kt7guwIp27iy/view?usp=sharing)
